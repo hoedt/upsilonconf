@@ -26,7 +26,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install black
       - name: format code
-        run: black --check upsilonconf tests
+        run: black --diff --check upsilonconf tests
   test:
     name: test py${{ matrix.python-version }} on ${{ matrix.os }}
     strategy:
