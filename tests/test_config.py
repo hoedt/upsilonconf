@@ -61,6 +61,14 @@ class TestConfiguration(TestCase):
                 self.assertIn(str(k), _str)
                 self.assertIn(str(v), _str)
 
+    def test_serialisation(self):
+        import pickle
+
+        serial = pickle.dumps(self.complex_config)
+        config = pickle.loads(serial)
+        self.assertNotIn(b"_content", serial)
+        self.assertEqual(self.complex_config, config)
+
     # # # Mapping Interface # # #
 
     def test_getitem(self):

@@ -1,4 +1,4 @@
-from typing import MutableMapping, Any, Iterator, Iterable, Union, Tuple
+from typing import MutableMapping, Any, Iterator, Iterable, Union, Tuple, Dict
 
 from upsilonconf.errors import InvalidKeyError
 
@@ -80,6 +80,12 @@ class Configuration(MutableMapping[str, Any]):
     def __str__(self) -> str:
         kwargs = [": ".join([k, "{!s}".format(v)]) for k, v in self.items()]
         return f"{{{', '.join(kwargs)}}}"
+
+    def __getstate__(self) -> Dict[str, Any]:
+        return {k: v for k, v in self.items()}
+
+    def __setstate__(self, state: Dict[str, Any]) -> None:
+        self.__init__(**state)
 
     # # # Mapping Interface # # #
 
