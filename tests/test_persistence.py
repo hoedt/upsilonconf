@@ -85,15 +85,15 @@ class TestFileOperations(TestCase):
         c = yaml_load(io.StringIO("foo: .5e3"))
         self.assertEqual(0.5e3, c["foo"])
 
-    @unittest.skip("TODO: specify behaviour")
     def test_save_dir(self):
         path = Path.home()
-        self.fail()
+        with self.assertRaisesRegex(ValueError, "directory"):
+            save(CONFIG, path)
 
-    @unittest.skip("TODO: specify behaviour")
     def test_load_dir(self):
         path = Path.home()
-        self.fail()
+        with self.assertRaisesRegex(ValueError, "directory"):
+            save(CONFIG, path)
 
     def test_save_bad_extension(self):
         path = Path.home() / "test.invalid"

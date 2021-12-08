@@ -57,6 +57,9 @@ def load(path: Union[Path, str]) -> Configuration:
         A configuration object with the values as provided in the file.
     """
     path = Path(path).expanduser().resolve()
+    if path.is_dir():
+        raise ValueError("The path can not be a directory")
+
     ext = path.suffix.lower()
     if ext == ".json":
         _load = json_load
@@ -83,6 +86,9 @@ def save(config: Configuration, path: Union[Path, str]) -> None:
         The path to the file where the configuration is written to.
     """
     path = Path(path).expanduser().resolve()
+    if path.is_dir():
+        raise ValueError("The path can not be a directory")
+
     ext = path.suffix.lower()
     if ext == ".json":
         _dump = json_dump
