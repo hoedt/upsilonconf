@@ -5,14 +5,19 @@ from upsilonconf._utils import optional_dependency_to
 from upsilonconf.config import Configuration
 
 
-def _json_load(fp: TextIO) -> Any:
+__all__ = ["load", "save"] + [
+    "_".join([fmt, kind]) for fmt in ("json", "yaml") for kind in ("load", "dump")
+]
+
+
+def json_load(fp: TextIO) -> Any:
     """Wrapper around a library function for reading JSON files."""
     from json import load
 
     return load(fp)
 
 
-def _json_dump(obj: Any, fp: TextIO, indent: int = 2, sort_keys: bool = False):
+def json_dump(obj: Any, fp: TextIO, indent: int = 2, sort_keys: bool = False):
     """Wrapper around a library function for writing JSON files."""
     from json import dump
 
@@ -22,17 +27,17 @@ def _json_dump(obj: Any, fp: TextIO, indent: int = 2, sort_keys: bool = False):
 
 
 @optional_dependency_to("read YAML files", "pyyaml")
-def _yaml_load(fp: TextIO) -> Any:
+def yaml_load(fp: TextIO) -> Any:
     """Wrapper around a library function for reading YAML files."""
-    from upsilonconf.persistence._yaml import load
+    from upsilonconf.serialisation._yaml import load
 
     return load(fp)
 
 
 @optional_dependency_to("write YAML files", "pyyaml")
-def _yaml_dump(obj: Any, fp: TextIO, indent: int = 2, sort_keys: bool = False):
+def yaml_dump(obj: Any, fp: TextIO, indent: int = 2, sort_keys: bool = False):
     """Wrapper around a library function for writing YAML files."""
-    from upsilonconf.persistence._yaml import dump
+    from upsilonconf.serialisation._yaml import dump
 
     dump(obj, fp, indent=indent, sort_keys=sort_keys)
 
@@ -54,9 +59,9 @@ def load(path: Union[Path, str]) -> Configuration:
     path = Path(path).expanduser().resolve()
     ext = path.suffix.lower()
     if ext == ".json":
-        _load = _json_load
+        _load = json_load
     elif ext == ".yaml":
-        _load = _yaml_load
+        _load = yaml_load
     else:
         raise ValueError(f"unknown config file extension: '{ext}'")
 
@@ -80,9 +85,9 @@ def save(config: Configuration, path: Union[Path, str]) -> None:
     path = Path(path).expanduser().resolve()
     ext = path.suffix.lower()
     if ext == ".json":
-        _dump = _json_dump
+        _dump = json_dump
     elif ext == ".yaml":
-        _dump = _yaml_dump
+        _dump = yaml_dump
     else:
         raise ValueError(f"unknown config file extension: '{ext}'")
 
