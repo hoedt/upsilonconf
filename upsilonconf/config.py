@@ -1,3 +1,4 @@
+import copy
 from typing import MutableMapping, Any, Iterator, Iterable, Union, Tuple, Dict
 
 from upsilonconf.errors import InvalidKeyError
@@ -86,6 +87,19 @@ class Configuration(MutableMapping[str, Any]):
 
     def __setstate__(self, state: Dict[str, Any]) -> None:
         self.__init__(**state)
+
+    def __copy__(self):
+        return Configuration(**self)
+
+    def __deepcopy__(self, memo: Dict = None):
+        if memo is None:
+            memo = {}
+
+        result = Configuration()
+        for k, v in self.items():
+            result[k] = copy.deepcopy(v, memo=memo)
+
+        return result
 
     # # # Mapping Interface # # #
 

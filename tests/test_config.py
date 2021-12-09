@@ -1,3 +1,4 @@
+import copy
 import doctest
 from unittest import TestCase
 
@@ -68,6 +69,20 @@ class TestConfiguration(TestCase):
         config = pickle.loads(serial)
         self.assertNotIn(b"_content", serial)
         self.assertEqual(self.complex_config, config)
+
+    def test_copy(self):
+        self.empty_config["key"] = []
+        new_config = copy.copy(self.empty_config)
+        self.assertIsNot(new_config, self.empty_config)
+        self.assertEqual(new_config, self.empty_config)
+        self.assertIs(new_config["key"], self.empty_config["key"])
+
+    def test_deepcopy(self):
+        self.empty_config["key"] = []
+        new_config = copy.deepcopy(self.empty_config)
+        self.assertIsNot(new_config, self.empty_config)
+        self.assertEqual(new_config, self.empty_config)
+        self.assertIsNot(new_config["key"], self.empty_config["key"])
 
     # # # Mapping Interface # # #
 
@@ -190,6 +205,16 @@ class TestConfiguration(TestCase):
 
         with self.assertRaisesRegex(ValueError, "overwrite"):
             self.complex_config[".".join(["sub", k])] = None
+
+    def test_setitem_recursion(self):
+        self.empty_config["recursion"] = self.empty_config
+        self.assertIsNot(self.empty_config, self.empty_config["recursion"])
+
+        self.complex_config["recursion"] = self.complex_config
+        self.assertIsNot(self.complex_config, self.empty_config["recursion"])
+        self.assertIsNot(
+            self.complex_config["sub"], self.complex_config["recursion"]["sub"]
+        )
 
     def test_delitem(self):
         for k in list(self.simple_config.keys()):
