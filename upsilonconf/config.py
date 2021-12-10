@@ -1,5 +1,5 @@
 import copy
-from typing import MutableMapping, Any, Iterator, Iterable, Union, Tuple, Dict
+from typing import MutableMapping, Any, Iterator, Iterable, Union, Tuple, Dict, Mapping
 
 from upsilonconf.errors import InvalidKeyError
 
@@ -61,7 +61,7 @@ class Configuration(MutableMapping[str, Any]):
     >>> conf['new'] = "won't work"
     Traceback (most recent call last):
         ...
-    ValueError: 'new' already defined, use 'overwrite' method instead
+    ValueError: key 'new' already defined, use 'overwrite' method instead
     >>> conf.overwrite('new', "will work")
     'works'
     >>> conf.new
@@ -101,6 +101,20 @@ class Configuration(MutableMapping[str, Any]):
 
         return result
 
+    def __or__(self, other: Mapping[str, Any]):
+        kwargs = dict(**self)
+        kwargs.update(**other)
+        return Configuration(**kwargs)
+
+    def __ror__(self, other: Mapping[str, Any]):
+        kwargs = dict(**other)
+        kwargs.update(**self)
+        return Configuration(**kwargs)
+
+    def __ior__(self, other: Mapping[str, Any]):
+        self.update(**other)
+        return self
+
     # # # Mapping Interface # # #
 
     def __getitem__(self, key: Union[str, Iterable[str]]) -> Any:
@@ -111,7 +125,8 @@ class Configuration(MutableMapping[str, Any]):
         conf, key = self._resolve_key(key, create=True)
         conf._validate_key(key)
         if key in conf._content:
-            raise ValueError(f"'{key}' already defined, use 'overwrite' method instead")
+            msg = f"key '{key}' already defined, use 'overwrite' method instead"
+            raise ValueError(msg)
 
         try:
             value = Configuration(**value)
