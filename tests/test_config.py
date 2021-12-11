@@ -280,6 +280,8 @@ class TestConfiguration(TestCase):
         self.assertEqual(3, len(self.simple_config))
         self.assertEqual(3, len(self.complex_config))
 
+    # TODO: redo union (i.e. merging) tests
+
     def test_union(self):
         union = self.complex_config | self.simple_config
         self.assertIsNot(union, self.complex_config)
@@ -371,6 +373,60 @@ class TestConfiguration(TestCase):
         self.assertIsNot(union, self.simple_config)
         self.assertEqual(len(self.simple_config), len(union))
         for k, v in self.simple_config.items():
+            self.assertIn(k, union.keys())
+            self.assertEqual(v, union[k])
+
+    def test_union_overlap_subconfig(self):
+        k, v = next(iter(self.simple_config.items()))
+        union = self.complex_config | Configuration(sub={k: v})
+        self.assertIsNot(union, self.complex_config)
+        self.assertEqual(len(self.complex_config), len(union))
+        for k, v in self.complex_config.items():
+            self.assertIn(k, union.keys())
+            self.assertEqual(v, union[k])
+
+    def test_union_overlap_subconfig_flipped(self):
+        k, v = next(iter(self.simple_config.items()))
+        union = Configuration(sub={k: v}) | self.complex_config
+        self.assertIsNot(union, self.complex_config)
+        self.assertEqual(len(self.complex_config), len(union))
+        for k, v in self.complex_config.items():
+            self.assertIn(k, union.keys())
+            self.assertEqual(v, union[k])
+
+    def test_union_dict_overlap_subconfig(self):
+        k, v = next(iter(self.simple_config.items()))
+        union = self.complex_config | {"sub": {k: v}}
+        self.assertIsNot(union, self.complex_config)
+        self.assertEqual(len(self.complex_config), len(union))
+        for k, v in self.complex_config.items():
+            self.assertIn(k, union.keys())
+            self.assertEqual(v, union[k])
+
+    def test_union_dict_overlap_subconfig_flipped(self):
+        k, v = next(iter(self.simple_config.items()))
+        union = {"sub": {k: v}} | self.complex_config
+        self.assertIsNot(union, self.complex_config)
+        self.assertEqual(len(self.complex_config), len(union))
+        for k, v in self.complex_config.items():
+            self.assertIn(k, union.keys())
+            self.assertEqual(v, union[k])
+
+    def test_union_dict_overlap_dotted(self):
+        sub = {".".join(["sub", k]): v for k, v in self.simple_config.items()}
+        union = self.complex_config | sub
+        self.assertIsNot(union, self.complex_config)
+        self.assertEqual(len(self.complex_config), len(union))
+        for k, v in self.complex_config.items():
+            self.assertIn(k, union.keys())
+            self.assertEqual(v, union[k])
+
+    def test_union_dict_overlap_dotted_flipped(self):
+        sub = {".".join(["sub", k]): v for k, v in self.simple_config.items()}
+        union = sub | self.complex_config
+        self.assertIsNot(union, self.complex_config)
+        self.assertEqual(len(self.complex_config), len(union))
+        for k, v in self.complex_config.items():
             self.assertIn(k, union.keys())
             self.assertEqual(v, union[k])
 

@@ -101,20 +101,6 @@ class Configuration(MutableMapping[str, Any]):
 
         return result
 
-    def __or__(self, other: Mapping[str, Any]):
-        kwargs = dict(**self)
-        kwargs.update(**other)
-        return Configuration(**kwargs)
-
-    def __ror__(self, other: Mapping[str, Any]):
-        kwargs = dict(**other)
-        kwargs.update(**self)
-        return Configuration(**kwargs)
-
-    def __ior__(self, other: Mapping[str, Any]):
-        self.update(**other)
-        return self
-
     # # # Mapping Interface # # #
 
     def __getitem__(self, key: Union[str, Iterable[str]]) -> Any:
@@ -144,6 +130,32 @@ class Configuration(MutableMapping[str, Any]):
 
     def __iter__(self) -> Iterator[Any]:
         return self._content.__iter__()
+
+    # # # Merging # # #
+
+    def __or__(self, other: Mapping[str, Any]):
+        result = Configuration(**self)
+        for k, v in other.items():
+            try:
+                result.overwrite(k, v)
+            except KeyError:
+                result[k] = v
+
+        return result
+
+    def __ror__(self, other: Mapping[str, Any]):
+        result = Configuration(**other)
+        for k, v in self.items():
+            try:
+                result.overwrite(k, v)
+            except KeyError:
+                result[k] = v
+
+        return result
+
+    def __ior__(self, other: Mapping[str, Any]):
+        self.update(**other)
+        return self
 
     # # # Attribute Access # # #
 
@@ -264,5 +276,12 @@ class Configuration(MutableMapping[str, Any]):
             The value that has been overwritten.
         """
         old_value = self.pop(key)
+        try:
+            new_value = Configuration(**old_value)
+            old_value = {k: new_value.overwrite(k, v) for k, v in value.items()}
+            value = new_value
+        except (TypeError, AttributeError):
+            pass
+
         self.__setitem__(key, value)
         return old_value
