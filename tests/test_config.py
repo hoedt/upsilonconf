@@ -13,27 +13,26 @@ def load_tests(loader, tests, ignore):
 
 
 class TestConfiguration(TestCase):
-
-    KWARGS = {"a": 1, "b": "foo", "c": None, "d": object()}
-
     def setUp(self):
         self.empty_config = Configuration()
         self.simple_config = Configuration(a=1, b=2, c=3)
         self.complex_config = Configuration(foo=69, bar="test", sub=self.simple_config)
 
     def test_constructor(self):
-        c = Configuration(**self.KWARGS)
+        KWARGS = {"a": 1, "b": "foo", "c": None, "d": object()}
+        c = Configuration(**KWARGS)
 
-        for k, v in self.KWARGS.items():
+        for k, v in KWARGS.items():
             self.assertIn(k, c.keys())
             self.assertIn(v, c.values())
             self.assertEqual(v, c[k])
 
     def test_constructor_sub(self):
-        c = Configuration(sub=self.KWARGS)
+        KWARGS = {"a": 1, "b": "foo", "c": None, "d": object()}
+        c = Configuration(sub=KWARGS)
 
         self.assertIsInstance(c.sub, Configuration)
-        for k, v in self.KWARGS.items():
+        for k, v in KWARGS.items():
             self.assertEqual(v, c.sub[k])
 
     def test_constructor_copy(self):
@@ -280,61 +279,15 @@ class TestConfiguration(TestCase):
         self.assertEqual(3, len(self.simple_config))
         self.assertEqual(3, len(self.complex_config))
 
-    # TODO: redo union (i.e. merging) tests
+    # # # Merging # # #
 
     def test_union(self):
         union = self.complex_config | self.simple_config
         self.assertIsNot(union, self.complex_config)
         self.assertIsNot(union, self.simple_config)
-        self.assertEqual(len(self.complex_config) + len(self.simple_config), len(union))
-        for k, v in self.simple_config.items():
-            self.assertIn(k, union.keys())
-            self.assertEqual(v, union[k])
-        for k, v in self.complex_config.items():
-            self.assertIn(k, union.keys())
-            self.assertEqual(v, union[k])
-
-    def test_union_inplace(self):
-        old_config = self.complex_config
-        expected_len = len(self.complex_config) + len(self.simple_config)
-        self.complex_config |= self.simple_config
-        self.assertIs(old_config, self.complex_config)
-        self.assertEqual(expected_len, len(self.complex_config))
-        for k, v in self.simple_config.items():
-            self.assertIn(k, self.complex_config.keys())
-            self.assertEqual(v, self.complex_config[k])
-
-    def test_union_dict(self):
-        other = dict(self.simple_config)
-        union = self.complex_config | other
-        self.assertIsNot(union, self.complex_config)
-        self.assertEqual(len(self.complex_config) + len(other), len(union))
-        for k, v in other.items():
-            self.assertIn(k, union.keys())
-            self.assertEqual(v, union[k])
-        for k, v in self.complex_config.items():
-            self.assertIn(k, union.keys())
-            self.assertEqual(v, union[k])
-
-    def test_union_dict_inplace(self):
-        other = dict(self.simple_config)
-        old_config = self.complex_config
-        expected_len = len(self.complex_config) + len(other)
-        self.complex_config |= other
-        self.assertIs(old_config, self.complex_config)
-        self.assertEqual(expected_len, len(self.complex_config))
-        for k, v in other.items():
-            self.assertIn(k, self.complex_config.keys())
-            self.assertEqual(v, self.complex_config[k])
-
-    def test_union_dict_flipped(self):
-        other = dict(self.simple_config)
-        union = other | self.complex_config
-        self.assertEqual(len(self.complex_config) + len(other), len(union))
-        for k, v in other.items():
-            self.assertEqual(v, union[k])
-        for k, v in self.complex_config.items():
-            self.assertEqual(v, union[k])
+        self.assertDictEqual(
+            dict(union), dict(self.complex_config) | dict(self.simple_config)
+        )
 
     def test_union_empty(self):
         union = self.simple_config | self.empty_config
@@ -342,99 +295,129 @@ class TestConfiguration(TestCase):
         self.assertIsNot(union, self.empty_config)
         self.assertEqual(self.simple_config, union)
 
-    def test_union_dict_empty(self):
-        union = self.simple_config | {}
-        self.assertIsNot(union, self.simple_config)
-        self.assertEqual(len(self.simple_config), len(union))
-        for k, v in self.simple_config.items():
-            self.assertIn(k, union.keys())
-            self.assertEqual(v, union[k])
-
     def test_union_overlap(self):
-        union = self.simple_config | self.simple_config
-        self.assertIsNot(union, self.simple_config)
-        self.assertEqual(len(self.simple_config), len(union))
-        for k, v in self.simple_config.items():
-            self.assertIn(k, union.keys())
-            self.assertEqual(v, union[k])
-
-    def test_union_dict_overlap(self):
-        other = dict(self.simple_config)
+        _k, _v = next(iter(self.simple_config)), []
+        other = Configuration(**{_k: _v, _k + "_duplicate": _v})
         union = self.simple_config | other
         self.assertIsNot(union, self.simple_config)
-        self.assertEqual(len(self.simple_config), len(union))
-        for k, v in self.simple_config.items():
-            self.assertIn(k, union.keys())
-            self.assertEqual(v, union[k])
+        self.assertIsNot(union, other)
+        self.assertDictEqual(dict(union), dict(self.simple_config) | dict(other))
 
-    def test_union_dict_overlap_flipped(self):
+    def test_union_subconfig(self):
+        _k, _v = next(iter(self.simple_config)), []
+        other = Configuration(sub={_k: _v, _k + "_duplicate": _v})
+        union = self.complex_config | other
+        self.assertIsNot(union, self.complex_config)
+        self.assertDictEqual(
+            dict(union["sub"]), dict(self.complex_config["sub"]) | dict(other["sub"])
+        )
+
+    def test_union_dict(self):
         other = dict(self.simple_config)
+        union = self.complex_config | other
+        self.assertIsNot(union, self.complex_config)
+        self.assertDictEqual(dict(union), dict(self.complex_config) | other)
+
+    def test_union_dict_dotted(self):
+        other = dict({"sub.test": None})
+        expected = Configuration(**self.simple_config)
+        for k, v in other.items():
+            expected[k] = v
+
+        union = self.simple_config | other
+        self.assertIsNot(union, self.simple_config)
+        self.assertDictEqual(dict(union), dict(expected))
+
+    def test_union_dict_overlap(self):
+        _k, _v = next(iter(self.simple_config)), []
+        other = {_k: _v, _k + "_duplicate": _v}
+        union = self.simple_config | other
+        self.assertIsNot(union, self.simple_config)
+        self.assertDictEqual(dict(union), dict(self.simple_config) | other)
+
+    def test_union_dict_subconfig(self):
+        _k, _v = next(iter(self.simple_config)), []
+        other = {"sub": {_k: _v, _k + "_duplicate": _v}}
+        union = self.complex_config | other
+        self.assertIsNot(union, self.complex_config)
+        self.assertDictEqual(
+            dict(union["sub"]), dict(self.complex_config["sub"]) | other["sub"]
+        )
+
+    def test_union_dict_subconfig_dotted(self):
+        _k, _v = next(iter(self.simple_config)), []
+        other = {".".join(["sub", k]): _v for k in (_k, _k + "_duplicate")}
+        expected = Configuration(**self.complex_config)
+        for k, v in other.items():
+            expected.overwrite(k, v)
+
+        union = self.complex_config | other
+        self.assertIsNot(union, self.complex_config)
+        self.assertDictEqual(dict(union["sub"]), dict(expected["sub"]))
+
+    def test_union_dict_flipped(self):
+        other = dict(self.simple_config)
+        union = other | self.complex_config
+        self.assertIsNot(union, self.complex_config)
+        self.assertDictEqual(dict(union), other | dict(self.complex_config))
+
+    def test_union_dict_flipped_dotted(self):
+        other = dict({"sub.test": None})
+        expected = Configuration(**self.simple_config)
+        for k, v in other.items():
+            expected[k] = v
+
         union = other | self.simple_config
         self.assertIsNot(union, self.simple_config)
-        self.assertEqual(len(self.simple_config), len(union))
-        for k, v in self.simple_config.items():
-            self.assertIn(k, union.keys())
-            self.assertEqual(v, union[k])
+        self.assertDictEqual(dict(union), dict(expected))
 
-    def test_union_overlap_subconfig(self):
-        k, v = next(iter(self.simple_config.items()))
-        union = self.complex_config | Configuration(sub={k: v})
+    def test_union_dict_flipped_overlap(self):
+        _k, _v = next(iter(self.simple_config)), []
+        other = {_k: _v, _k + "_duplicate": _v}
+        union = other | self.simple_config
+        self.assertIsNot(union, self.simple_config)
+        self.assertDictEqual(dict(union), dict(other) | dict(self.simple_config))
+
+    def test_union_dict_flipped_subconfig(self):
+        _k, _v = next(iter(self.simple_config)), []
+        other = {"sub": {_k: _v, _k + "_duplicate": _v}}
+        union = other | self.complex_config
         self.assertIsNot(union, self.complex_config)
-        self.assertEqual(len(self.complex_config), len(union))
-        for k, v in self.complex_config.items():
-            self.assertIn(k, union.keys())
-            self.assertEqual(v, union[k])
+        self.assertDictEqual(
+            dict(union["sub"]), other["sub"] | dict(self.complex_config["sub"])
+        )
 
-    def test_union_overlap_subconfig_flipped(self):
-        k, v = next(iter(self.simple_config.items()))
-        union = Configuration(sub={k: v}) | self.complex_config
+    def test_union_dict_flipped_subconfig_dotted(self):
+        _k, _v = next(iter(self.simple_config)), []
+        other = {".".join(["sub", k]): _v for k in (_k, _k + "_duplicate")}
+        expected = Configuration(**other)
+        for k, v in self.complex_config.items():
+            expected.overwrite(k, v)
+
+        union = other | self.complex_config
         self.assertIsNot(union, self.complex_config)
-        self.assertEqual(len(self.complex_config), len(union))
-        for k, v in self.complex_config.items():
-            self.assertIn(k, union.keys())
-            self.assertEqual(v, union[k])
+        self.assertDictEqual(dict(union["sub"]), dict(expected["sub"]))
 
-    def test_union_dict_overlap_subconfig(self):
-        k, v = next(iter(self.simple_config.items()))
-        union = self.complex_config | {"sub": {k: v}}
-        self.assertIsNot(union, self.complex_config)
-        self.assertEqual(len(self.complex_config), len(union))
-        for k, v in self.complex_config.items():
-            self.assertIn(k, union.keys())
-            self.assertEqual(v, union[k])
+    def test_union_inplace(self):
+        old_config = Configuration(**self.complex_config)
+        old_ref = self.complex_config
+        self.complex_config |= self.simple_config
+        self.assertIs(old_ref, self.complex_config)
+        self.assertEqual(self.complex_config, old_config | self.simple_config)
 
-    def test_union_dict_overlap_subconfig_flipped(self):
-        k, v = next(iter(self.simple_config.items()))
-        union = {"sub": {k: v}} | self.complex_config
-        self.assertIsNot(union, self.complex_config)
-        self.assertEqual(len(self.complex_config), len(union))
-        for k, v in self.complex_config.items():
-            self.assertIn(k, union.keys())
-            self.assertEqual(v, union[k])
+    def test_union_inplace_dict(self):
+        other = dict(self.simple_config)
+        old_config = Configuration(**self.complex_config)
+        old_ref = self.complex_config
+        self.complex_config |= other
+        self.assertIs(old_ref, self.complex_config)
+        self.assertEqual(self.complex_config, old_config | other)
 
-    def test_union_dict_overlap_dotted(self):
-        sub = {".".join(["sub", k]): v for k, v in self.simple_config.items()}
-        union = self.complex_config | sub
-        self.assertIsNot(union, self.complex_config)
-        self.assertEqual(len(self.complex_config), len(union))
-        for k, v in self.complex_config.items():
-            self.assertIn(k, union.keys())
-            self.assertEqual(v, union[k])
-
-    def test_union_dict_overlap_dotted_flipped(self):
-        sub = {".".join(["sub", k]): v for k, v in self.simple_config.items()}
-        union = sub | self.complex_config
-        self.assertIsNot(union, self.complex_config)
-        self.assertEqual(len(self.complex_config), len(union))
-        for k, v in self.complex_config.items():
-            self.assertIn(k, union.keys())
-            self.assertEqual(v, union[k])
-
-    def test_union_overlap_inplace(self):
+    def test_union_inplace_overlap(self):
         with self.assertRaisesRegex(ValueError, "key"):
             self.simple_config |= self.simple_config
 
-    def test_union_dict_overlap_inplace(self):
+    def test_union_dict_inplace_overlap(self):
         with self.assertRaisesRegex(ValueError, "key"):
             self.simple_config |= dict(self.simple_config)
 
@@ -506,30 +489,39 @@ class TestConfiguration(TestCase):
 
     def test_overwrite(self):
         new_val = "bla"
-        for k in self.simple_config.keys():
-            self.simple_config.overwrite(k, new_val)
+        for k, v in self.simple_config.items():
+            old_val = self.simple_config.overwrite(k, new_val)
+            self.assertEqual(v, old_val)
             self.assertEqual(self.simple_config[k], new_val)
 
-    def test_overwrite_invalid(self):
-        with self.assertRaises(KeyError):
-            self.empty_config.overwrite("ridiculous", None)
+    def test_overwrite_existing(self):
+        new_key, new_val = "ridiculous", "bla"
+        old_val = self.empty_config.overwrite(new_key, new_val)
+        self.assertIsNone(old_val)
+        self.assertEqual(self.empty_config[new_key], new_val)
 
     def test_overwrite_tuple(self):
         new_val = "bla"
-        for k in self.simple_config.keys():
-            self.complex_config.overwrite(["sub", k], new_val)
+        for k, v in self.simple_config.items():
+            old_val = self.complex_config.overwrite(["sub", k], new_val)
+            self.assertEqual(v, old_val)
             self.assertEqual(self.complex_config["sub", k], new_val)
 
-    def test_overwrite_tuple_invalid(self):
-        with self.assertRaises(KeyError):
-            self.empty_config.overwrite(["sub", "ridiculous"], None)
+    def test_overwrite_tuple_existing(self):
+        new_key, new_val = "ridiculous", "bla"
+        old_val = self.empty_config.overwrite(["sub", new_key], new_val)
+        self.assertIsNone(old_val)
+        self.assertEqual(self.empty_config["sub", new_key], new_val)
 
     def test_overwrite_dotted(self):
         new_val = "bla"
-        for k in self.simple_config.keys():
-            self.complex_config.overwrite(".".join(["sub", k]), new_val)
+        for k, v in self.simple_config.items():
+            old_val = self.complex_config.overwrite(".".join(["sub", k]), new_val)
+            self.assertEqual(v, old_val)
             self.assertEqual(self.complex_config["sub", k], new_val)
 
-    def test_overwrite_dotted_invalid(self):
-        with self.assertRaises(KeyError):
-            self.empty_config.overwrite(".".join(["sub", "ridiculous"]), None)
+    def test_overwrite_dotted_existing(self):
+        new_key, new_val = "ridiculous", "bla"
+        old_val = self.empty_config.overwrite(".".join(["sub", new_key]), new_val)
+        self.assertIsNone(old_val)
+        self.assertEqual(self.empty_config["sub", new_key], new_val)

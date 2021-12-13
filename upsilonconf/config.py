@@ -136,20 +136,14 @@ class Configuration(MutableMapping[str, Any]):
     def __or__(self, other: Mapping[str, Any]):
         result = Configuration(**self)
         for k, v in other.items():
-            try:
-                result.overwrite(k, v)
-            except KeyError:
-                result[k] = v
+            result.overwrite(k, v)
 
         return result
 
     def __ror__(self, other: Mapping[str, Any]):
         result = Configuration(**other)
         for k, v in self.items():
-            try:
-                result.overwrite(k, v)
-            except KeyError:
-                result[k] = v
+            result.overwrite(k, v)
 
         return result
 
@@ -273,13 +267,11 @@ class Configuration(MutableMapping[str, Any]):
         Returns
         -------
         old_value
-            The value that has been overwritten.
+            The value that has been overwritten or `None` if no value was present.
         """
-        old_value = self.pop(key)
+        old_value = self.pop(key, None)
         try:
-            new_value = Configuration(**old_value)
-            old_value = {k: new_value.overwrite(k, v) for k, v in value.items()}
-            value = new_value
+            value = Configuration(**old_value) | value
         except (TypeError, AttributeError):
             pass
 
