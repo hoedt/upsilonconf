@@ -39,7 +39,7 @@ class TestFileOperations(TestCase):
         with mock.patch("upsilonconf.io.open", m_open):
             save(CONFIG, path)
 
-        m_open.assert_called_once_with(path, "r")
+        m_open.assert_called_once_with(path, "w")
         buffer.seek(0)
         for expected, truth in zip(CONFIG_JSON_LINES, buffer):
             self.assertEqual(expected, truth.rstrip())
@@ -62,7 +62,7 @@ class TestFileOperations(TestCase):
         with mock.patch("upsilonconf.io.open", m_open):
             save(CONFIG, path)
 
-        m_open.assert_called_once_with(path, "r")
+        m_open.assert_called_once_with(path, "w")
         buffer.seek(0)
         for expected, truth in zip(CONFIG_YAML_LINES, buffer):
             self.assertEqual(expected, truth.rstrip())

@@ -97,5 +97,5 @@ def save(config: Configuration, path: Union[Path, str]) -> None:
     else:
         raise ValueError(f"unknown config file extension: '{ext}'")
 
-    with open(path, "r") as fp:
+    with open(path, "w") as fp:
         _dump(config, fp)
