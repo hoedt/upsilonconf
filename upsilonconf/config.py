@@ -1,7 +1,13 @@
 import copy
 from typing import MutableMapping, Any, Iterator, Iterable, Union, Tuple, Dict, Mapping
 
-from upsilonconf.errors import InvalidKeyError
+__all__ = ["Configuration", "InvalidKeyError"]
+
+
+class InvalidKeyError(ValueError):
+    """Raised when a key can not be used in a configuration object."""
+
+    pass
 
 
 class Configuration(MutableMapping[str, Any]):

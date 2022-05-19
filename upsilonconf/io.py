@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Union, TextIO, Any
 
-from upsilonconf._utils import optional_dependency_to
+from upsilonconf.utils import optional_dependency_to
 from upsilonconf.config import Configuration
 
 
@@ -29,7 +29,7 @@ def json_dump(obj: Any, fp: TextIO, indent: int = 2, sort_keys: bool = False):
 @optional_dependency_to("read YAML files", "pyyaml")
 def yaml_load(fp: TextIO) -> Any:
     """Wrapper around a library function for reading YAML files."""
-    from upsilonconf.serialisation._yaml import load
+    from upsilonconf.utils._yaml import load
 
     return load(fp)
 
@@ -37,7 +37,7 @@ def yaml_load(fp: TextIO) -> Any:
 @optional_dependency_to("write YAML files", "pyyaml")
 def yaml_dump(obj: Any, fp: TextIO, indent: int = 2, sort_keys: bool = False):
     """Wrapper around a library function for writing YAML files."""
-    from upsilonconf.serialisation._yaml import dump
+    from upsilonconf.utils._yaml import dump
 
     dump(obj, fp, indent=indent, sort_keys=sort_keys)
 

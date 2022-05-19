@@ -3,8 +3,7 @@ import doctest
 from unittest import TestCase
 
 import upsilonconf.config
-from upsilonconf.config import Configuration
-from upsilonconf.errors import InvalidKeyError
+from upsilonconf.config import Configuration, InvalidKeyError
 
 
 def load_tests(loader, tests, ignore):

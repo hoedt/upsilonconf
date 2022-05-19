@@ -1,4 +1,7 @@
-from upsilonconf.errors import OptionalDependencyError
+class OptionalDependencyError(ImportError):
+    """Raised when an attempt is made to import an optional dependency."""
+
+    pass
 
 
 def optional_dependency_to(feature: str = None, package: str = None) -> callable:
@@ -27,12 +30,8 @@ def optional_dependency_to(feature: str = None, package: str = None) -> callable
     Returns
     -------
     _decorator : callable
-        A decorator that wraps the
-
-    Raises
-    ------
-    OptionalDependencyError
-        If the import of an optional dependency in the function failed.
+        A decorator for wrapping functions with imports of optional dependencies.
+        This wrapper will raise an `OptionalDependencyError` if the import fails.
     """
     if feature is None:
         feature = "make use of this feature"

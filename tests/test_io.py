@@ -1,13 +1,12 @@
 import io
 import os
-import unittest
 from pathlib import Path
 from unittest import TestCase
 from unittest import mock
 
 from upsilonconf.config import Configuration
-from upsilonconf.serialisation.persistence import load, save
-from upsilonconf.serialisation.persistence import yaml_load
+from upsilonconf.io import load, save
+from upsilonconf.io import yaml_load
 
 
 CONFIG = Configuration(foo=1, bar="test", baz={"a": 0.1, "b": 0.2})
@@ -37,7 +36,7 @@ class TestFileOperations(TestCase):
         m_open = mock.mock_open()
         buffer = io.StringIO()
         m_open.return_value.__enter__.side_effect = [buffer]
-        with mock.patch("upsilonconf.serialisation.persistence.open", m_open):
+        with mock.patch("upsilonconf.io.open", m_open):
             save(CONFIG, path)
 
         m_open.assert_called_once_with(path, "r")
@@ -49,7 +48,7 @@ class TestFileOperations(TestCase):
         path = Path.home() / "test.json"
 
         m_open = mock.mock_open(read_data=os.linesep.join(CONFIG_JSON_LINES))
-        with mock.patch("upsilonconf.serialisation.persistence.open", m_open):
+        with mock.patch("upsilonconf.io.open", m_open):
             c = load(path)
 
         self.assertEqual(CONFIG, c)
@@ -60,7 +59,7 @@ class TestFileOperations(TestCase):
         m_open = mock.mock_open()
         buffer = io.StringIO()
         m_open.return_value.__enter__.side_effect = [buffer]
-        with mock.patch("upsilonconf.serialisation.persistence.open", m_open):
+        with mock.patch("upsilonconf.io.open", m_open):
             save(CONFIG, path)
 
         m_open.assert_called_once_with(path, "r")
@@ -72,7 +71,7 @@ class TestFileOperations(TestCase):
         path = Path.home() / "test.yaml"
 
         m_open = mock.mock_open(read_data=os.linesep.join(CONFIG_YAML_LINES))
-        with mock.patch("upsilonconf.serialisation.persistence.open", m_open):
+        with mock.patch("upsilonconf.io.open", m_open):
             c = load(path)
 
         self.assertEqual(CONFIG, c)
