@@ -3,6 +3,8 @@ from typing import MutableMapping, Any, Iterator, Iterable, Union, Tuple, Dict, 
 
 __all__ = ["Configuration", "InvalidKeyError"]
 
+_MappingLike = Union[Mapping[str, Any], Iterable[Tuple[str, Any]]]
+
 
 class InvalidKeyError(ValueError):
     """Raised when a key can not be used in a configuration object."""
@@ -38,6 +40,8 @@ class Configuration(MutableMapping[str, Any]):
     -------
     overwrite(key, value)
         Explicitly overwrite an existing parameter value in the configuration.
+    overwrite_all(m, **kwargs)
+        Explicitly overwrite multiple existing parameter values in the configuration.
 
     Examples
     --------
@@ -67,7 +71,7 @@ class Configuration(MutableMapping[str, Any]):
     >>> conf['new'] = "won't work"
     Traceback (most recent call last):
         ...
-    ValueError: key 'new' already defined, use 'overwrite' method instead
+    ValueError: key 'new' already defined, use 'overwrite' methods instead
     >>> conf.overwrite('new', "will work")
     'works'
     >>> conf.new
@@ -117,7 +121,7 @@ class Configuration(MutableMapping[str, Any]):
         conf, key = self._resolve_key(key, create=True)
         conf._validate_key(key)
         if key in conf._content:
-            msg = f"key '{key}' already defined, use 'overwrite' method instead"
+            msg = f"key '{key}' already defined, use 'overwrite' methods instead"
             raise ValueError(msg)
 
         try:
@@ -141,16 +145,12 @@ class Configuration(MutableMapping[str, Any]):
 
     def __or__(self, other: Mapping[str, Any]):
         result = Configuration(**self)
-        for k, v in other.items():
-            result.overwrite(k, v)
-
+        result.update(other)
         return result
 
     def __ror__(self, other: Mapping[str, Any]):
         result = Configuration(**other)
-        for k, v in self.items():
-            result.overwrite(k, v)
-
+        result.update(self)
         return result
 
     def __ior__(self, other: Mapping[str, Any]):
@@ -261,7 +261,7 @@ class Configuration(MutableMapping[str, Any]):
 
     def overwrite(self, key: Union[str, Iterable[str]], value: Any) -> Any:
         """
-        Overwrite an existing parameter value in the configuration.
+        Overwrite a possibly existing parameter value in the configuration.
 
         Parameters
         ----------
@@ -274,12 +274,60 @@ class Configuration(MutableMapping[str, Any]):
         -------
         old_value
             The value that has been overwritten or `None` if no value was present.
+
+        See Also
+        --------
+        overwrite_all : overwrite multiple values in one go.
         """
         old_value = self.pop(key, None)
         try:
-            value = Configuration(**old_value) | value
-        except (TypeError, AttributeError):
+            sub_conf = Configuration(**old_value)
+            old_value = sub_conf.overwrite_all(value)
+            value = sub_conf
+        except TypeError:
             pass
 
         self.__setitem__(key, value)
         return old_value
+
+    def overwrite_all(self, other: _MappingLike = (), **kwargs) -> Mapping[str, Any]:
+        """
+        Overwrite multiple possibly existing parameter value in this configuration.
+
+        This method makes it possible to overwrite multiple values in one go.
+        It should produce the same results as calling `update`
+        when none of the keys are already contained in this configuration.
+        Unlike `update`, however, this method will not raise an error
+        if one or more of the keys already exist.
+
+        Parameters
+        ----------
+        other : Mapping or iterable of tuples
+            Dictionary-like object with values to overwrite.
+        **kwargs
+            Additional key-value pairs for overwrites.
+
+        Returns
+        -------
+        old_values : Mapping
+            Mapping from keys to the values that have been overwritten.
+            If the key did not exist, the corresponding value is `None`.
+
+        See Also
+        --------
+        overwrite : overwrite single values.
+        update : same functionality, but raises errors for duplicate keys.
+        """
+        old_values = {}
+
+        try:
+            for k in other.keys():
+                old_values[k] = self.overwrite(k, other[k])
+        except AttributeError:
+            for k, v in other:
+                old_values[k] = self.overwrite(k, v)
+
+        for k, v in kwargs.items():
+            old_values[k] = self.overwrite(k, v)
+
+        return old_values

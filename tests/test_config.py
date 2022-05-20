@@ -298,23 +298,16 @@ class TestConfiguration(TestCase):
     def test_union_overlap(self):
         _k, _v = next(iter(self.simple_config)), []
         other = Configuration(**{_k: _v, _k + "_duplicate": _v})
-        expected = dict(self.simple_config)
-        expected.update(**other)
 
-        union = self.simple_config | other
-        self.assertIsNot(union, self.simple_config)
-        self.assertIsNot(union, other)
-        self.assertDictEqual(dict(union), expected)
+        with self.assertRaisesRegex(ValueError, "overwrite"):
+            self.simple_config | other
 
     def test_union_subconfig(self):
         _k, _v = next(iter(self.simple_config)), []
         other = Configuration(sub={_k: _v, _k + "_duplicate": _v})
-        expected = dict(self.complex_config["sub"])
-        expected.update(**other["sub"])
 
-        union = self.complex_config | other
-        self.assertIsNot(union, self.complex_config)
-        self.assertDictEqual(dict(union["sub"]), expected)
+        with self.assertRaisesRegex(ValueError, "overwrite"):
+            self.complex_config | other
 
     def test_union_dict(self):
         other = dict(self.simple_config)
@@ -323,6 +316,7 @@ class TestConfiguration(TestCase):
 
         union = self.complex_config | other
         self.assertIsNot(union, self.complex_config)
+        self.assertIsNot(union, other)
         self.assertDictEqual(dict(union), expected)
 
     def test_union_dict_dotted(self):
@@ -333,38 +327,29 @@ class TestConfiguration(TestCase):
 
         union = self.simple_config | other
         self.assertIsNot(union, self.simple_config)
+        self.assertIsNot(union, other)
         self.assertDictEqual(dict(union), dict(expected))
 
     def test_union_dict_overlap(self):
         _k, _v = next(iter(self.simple_config)), []
         other = {_k: _v, _k + "_duplicate": _v}
-        expected = dict(self.simple_config)
-        expected.update(**other)
 
-        union = self.simple_config | other
-        self.assertIsNot(union, self.simple_config)
-        self.assertDictEqual(dict(union), expected)
+        with self.assertRaisesRegex(ValueError, "overwrite"):
+            self.simple_config | other
 
     def test_union_dict_subconfig(self):
         _k, _v = next(iter(self.simple_config)), []
         other = {"sub": {_k: _v, _k + "_duplicate": _v}}
-        expected = dict(self.complex_config["sub"])
-        expected.update(**other["sub"])
 
-        union = self.complex_config | other
-        self.assertIsNot(union, self.complex_config)
-        self.assertDictEqual(dict(union["sub"]), expected)
+        with self.assertRaisesRegex(ValueError, "overwrite"):
+            self.complex_config | other
 
     def test_union_dict_subconfig_dotted(self):
         _k, _v = next(iter(self.simple_config)), []
         other = {".".join(["sub", k]): _v for k in (_k, _k + "_duplicate")}
-        expected = Configuration(**self.complex_config)
-        for k, v in other.items():
-            expected.overwrite(k, v)
 
-        union = self.complex_config | other
-        self.assertIsNot(union, self.complex_config)
-        self.assertDictEqual(dict(union["sub"]), dict(expected["sub"]))
+        with self.assertRaisesRegex(ValueError, "overwrite"):
+            self.complex_config | other
 
     def test_union_dict_flipped(self):
         other = dict(self.simple_config)
@@ -372,6 +357,7 @@ class TestConfiguration(TestCase):
         expected.update(**self.complex_config)
 
         union = other | self.complex_config
+        self.assertIsNot(union, other)
         self.assertIsNot(union, self.complex_config)
         self.assertDictEqual(dict(union), expected)
 
@@ -382,39 +368,30 @@ class TestConfiguration(TestCase):
             expected[k] = v
 
         union = other | self.simple_config
+        self.assertIsNot(union, other)
         self.assertIsNot(union, self.simple_config)
         self.assertDictEqual(dict(union), dict(expected))
 
     def test_union_dict_flipped_overlap(self):
         _k, _v = next(iter(self.simple_config)), []
         other = {_k: _v, _k + "_duplicate": _v}
-        expected = dict(other)
-        expected.update(**self.simple_config)
 
-        union = other | self.simple_config
-        self.assertIsNot(union, self.simple_config)
-        self.assertDictEqual(dict(union), expected)
+        with self.assertRaisesRegex(ValueError, "overwrite"):
+            other | self.simple_config
 
     def test_union_dict_flipped_subconfig(self):
         _k, _v = next(iter(self.simple_config)), []
         other = {"sub": {_k: _v, _k + "_duplicate": _v}}
-        expected = dict(other["sub"])
-        expected.update(**self.complex_config["sub"])
 
-        union = other | self.complex_config
-        self.assertIsNot(union, self.complex_config)
-        self.assertDictEqual(dict(union["sub"]), expected)
+        with self.assertRaisesRegex(ValueError, "overwrite"):
+            other | self.complex_config
 
     def test_union_dict_flipped_subconfig_dotted(self):
         _k, _v = next(iter(self.simple_config)), []
         other = {".".join(["sub", k]): _v for k in (_k, _k + "_duplicate")}
-        expected = Configuration(**other)
-        for k, v in self.complex_config.items():
-            expected.overwrite(k, v)
 
-        union = other | self.complex_config
-        self.assertIsNot(union, self.complex_config)
-        self.assertDictEqual(dict(union["sub"]), dict(expected["sub"]))
+        with self.assertRaisesRegex(ValueError, "overwrite"):
+            other | self.complex_config
 
     def test_union_inplace(self):
         old_ref = self.complex_config
@@ -547,3 +524,121 @@ class TestConfiguration(TestCase):
         old_val = self.empty_config.overwrite(".".join(["sub", new_key]), new_val)
         self.assertIsNone(old_val)
         self.assertEqual(self.empty_config["sub", new_key], new_val)
+
+    # TODO: write overwrite_all tests!!!
+
+    def test_overwrite_all(self):
+        base_config = self.complex_config
+        expected = dict(base_config)
+        expected.update(**self.simple_config)
+
+        overwritten = base_config.overwrite_all(self.simple_config)
+        self.assertDictEqual({k: None for k in self.simple_config}, overwritten)
+        self.assertDictEqual(dict(base_config), expected)
+
+    def test_overwrite_all_kwargs(self):
+        base_config = self.complex_config
+        expected = dict(base_config)
+        expected.update(**self.simple_config)
+
+        overwritten = base_config.overwrite_all(**self.simple_config)
+        self.assertDictEqual({k: None for k in self.simple_config}, overwritten)
+        self.assertDictEqual(dict(base_config), expected)
+
+    def test_overwrite_all_empty(self):
+        expected = dict(self.simple_config)
+        overwritten = self.simple_config.overwrite_all(self.empty_config)
+        self.assertDictEqual({}, overwritten)
+        self.assertDictEqual(dict(self.simple_config), expected)
+
+    def test_overwrite_all_overlap(self):
+        base_config = self.simple_config
+        _k, _v = next(iter(self.simple_config)), []
+        other = Configuration(**{_k: _v, _k + "_duplicate": _v})
+        old_values = {k: base_config[_k] if k == _k else None for k in other}
+        expected = dict(base_config)
+        expected.update(**other)
+
+        overwritten = base_config.overwrite_all(other)
+        self.assertDictEqual(old_values, overwritten)
+        self.assertDictEqual(dict(base_config), expected)
+
+    def test_overwrite_all_subconfig(self):
+        base_config = self.complex_config
+        _k, _v = next(iter(self.simple_config)), []
+        other = Configuration(sub={_k: _v, _k + "_duplicate": _v})
+        old_values = {
+            "sub": {
+                k: base_config["sub"][_k] if k == _k else None for k in other["sub"]
+            }
+        }
+        expected = dict(base_config["sub"])
+        expected.update(**other["sub"])
+
+        overwritten = base_config.overwrite_all(other)
+        self.assertDictEqual(old_values, overwritten)
+        self.assertDictEqual(dict(base_config["sub"]), expected)
+
+    def test_overwrite_all_dict(self):
+        base_config = self.complex_config
+        other = dict(self.simple_config)
+        expected = dict(base_config)
+        expected.update(**other)
+
+        overwritten = base_config.overwrite_all(other)
+        self.assertDictEqual({k: None for k in other}, overwritten)
+        self.assertDictEqual(dict(base_config), expected)
+
+    def test_overwrite_all_dict_dotted(self):
+        base_config = self.simple_config
+        other = dict({"sub.test": 0})
+        expected = Configuration(**base_config)
+        for k, v in other.items():
+            expected[k] = v
+
+        overwritten = base_config.overwrite_all(other)
+        self.assertDictEqual({k: None for k in other}, overwritten)
+        self.assertDictEqual(dict(base_config), dict(expected))
+
+    def test_overwrite_all_dict_overlap(self):
+        base_config = self.simple_config
+        _k, _v = next(iter(self.simple_config)), []
+        other = {_k: _v, _k + "_duplicate": _v}
+        old_values = {k: base_config[k] if k == _k else None for k in other}
+        expected = dict(base_config)
+        expected.update(**other)
+
+        overwritten = base_config.overwrite_all(other)
+        self.assertDictEqual(old_values, overwritten)
+        self.assertDictEqual(dict(base_config), expected)
+
+    def test_overwrite_all_dict_subconfig(self):
+        base_config = self.complex_config
+        _k, _v = next(iter(self.simple_config)), []
+        other = {"sub": {_k: _v, _k + "_duplicate": _v}}
+        old_values = {
+            "sub": {
+                k: base_config["sub"][_k] if k == _k else None for k in other["sub"]
+            }
+        }
+        expected = dict(base_config["sub"])
+        expected.update(**other["sub"])
+
+        overwritten = base_config.overwrite_all(other)
+        self.assertDictEqual(old_values, overwritten)
+        self.assertDictEqual(dict(base_config["sub"]), expected)
+
+    def test_overwrite_all_dict_subconfig_dotted(self):
+        base_config = self.complex_config
+        _k, _v = next(iter(self.simple_config)), []
+        other = {".".join(["sub", k]): _v for k in (_k, _k + "_duplicate")}
+        old_values = {
+            k: base_config["sub"][_k] if k.endswith(_k) else None for k in other
+        }
+        expected = Configuration(**base_config)
+        for k, v in other.items():
+            expected.overwrite(k, v)
+
+        overwritten = base_config.overwrite_all(other)
+        self.assertDictEqual(old_values, overwritten)
+        self.assertDictEqual(dict(base_config["sub"]), dict(expected["sub"]))
