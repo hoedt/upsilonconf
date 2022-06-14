@@ -44,6 +44,34 @@ def yaml_dump(obj: Any, fp: TextIO, indent: int = 2, sort_keys: bool = False):
     dump(obj, fp, indent=indent, sort_keys=sort_keys)
 
 
+def _deduct_io_functions(path: Path):
+    """
+    Retrieve IO functions to read/write config files at a given path.
+
+    Parameters
+    ----------
+    path: Path
+        Path to deduct the correct IO functions from.
+
+    Returns
+    -------
+    load : callable
+        Function for reading config files at path.
+    dump : callable
+        Function for writing config files at path.
+    """
+    if path.is_dir():
+        raise ValueError("The path can not be a directory")
+
+    ext = path.suffix.lower()
+    if ext == ".json":
+        return json_load, json_dump
+    elif ext == ".yaml":
+        return yaml_load, yaml_dump
+    else:
+        raise ValueError(f"unknown config file extension: '{ext}'")
+
+
 def load(path: Union[Path, str]) -> Configuration:
     """
     Read configuration from a file.
@@ -59,16 +87,7 @@ def load(path: Union[Path, str]) -> Configuration:
         A configuration object with the values as provided in the file.
     """
     path = Path(path).expanduser().resolve()
-    if path.is_dir():
-        raise ValueError("The path can not be a directory")
-
-    ext = path.suffix.lower()
-    if ext == ".json":
-        _load = json_load
-    elif ext == ".yaml":
-        _load = yaml_load
-    else:
-        raise ValueError(f"unknown config file extension: '{ext}'")
+    _load, _ = _deduct_io_functions(path)
 
     with open(path, "r") as fp:
         data = _load(fp)
@@ -88,16 +107,7 @@ def save(config: Configuration, path: Union[Path, str]) -> None:
         The path to the file where the configuration is written to.
     """
     path = Path(path).expanduser().resolve()
-    if path.is_dir():
-        raise ValueError("The path can not be a directory")
-
-    ext = path.suffix.lower()
-    if ext == ".json":
-        _dump = json_dump
-    elif ext == ".yaml":
-        _dump = yaml_dump
-    else:
-        raise ValueError(f"unknown config file extension: '{ext}'")
+    _, _dump = _deduct_io_functions(path)
 
     with open(path, "w") as fp:
         _dump(config, fp)
