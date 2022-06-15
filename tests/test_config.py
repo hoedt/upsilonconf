@@ -97,6 +97,16 @@ class TestConfiguration(TestCase):
         with self.assertRaises(KeyError):
             _ = self.simple_config[k]
 
+    def test_getitem_invalid_key_type(self):
+        with self.assertRaises(TypeError):
+            _ = self.simple_config[1]
+
+        with self.assertRaises(TypeError):
+            _ = self.simple_config[1, 2, 3]
+
+        with self.assertRaises(TypeError):
+            _ = self.simple_config[object()]
+
     def test_getitem_tuple(self):
         for k, v in self.simple_config.items():
             self.assertEqual(v, self.complex_config["sub", k])
@@ -146,6 +156,16 @@ class TestConfiguration(TestCase):
 
         with self.assertRaisesRegex(InvalidKeyError, "special"):
             self.empty_config["overwrite"] = None
+
+    def test_setitem_invalid_key_type(self):
+        with self.assertRaises(TypeError):
+            self.simple_config[1] = None
+
+        with self.assertRaises(TypeError):
+            self.simple_config[1, 2, 3] = None
+
+        with self.assertRaises(TypeError):
+            self.simple_config[object()] = None
 
     def test_setitem_overwrite(self):
         k = next(iter(self.simple_config.keys()))
@@ -228,6 +248,16 @@ class TestConfiguration(TestCase):
         self.assertNotIn(k, self.simple_config, msg="bad test")
         with self.assertRaises(KeyError):
             del self.simple_config[k]
+
+    def test_delitem_invalid_key_type(self):
+        with self.assertRaises(TypeError):
+            del self.simple_config[1]
+
+        with self.assertRaises(TypeError):
+            del self.simple_config[1, 2, 3]
+
+        with self.assertRaises(TypeError):
+            del self.simple_config[object()]
 
     def test_delitem_tuple(self):
         for k in self.simple_config.keys():
