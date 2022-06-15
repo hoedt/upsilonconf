@@ -8,9 +8,12 @@ from upsilonconf.config import Configuration
 
 
 __all__ = ["from_cli", "load", "save"] + [
-    "_".join([fmt, kind]) for kind in ("load", "dump") for fmt in ("json", "yaml"))
+    "_".join([kind, fmt])
+    for kind in ("load", "save")
+    for fmt in ("json", "yaml", "dir")
 ]
 
+DEFAULT_NAME = "config.json"
 
 
 def load_json(path: Path) -> Mapping[str, Any]:
@@ -107,6 +110,79 @@ def save_yaml(
         dump(conf, fp, indent=indent, sort_keys=sort_keys)
 
 
+def load_dir(path: Path) -> Mapping[str, Any]:
+    """
+    Read config from a directory.
+
+    A config directory can hold any combination of the following three elements:
+     1. The base configuration file with the name `config` (e.g. `config.json`)
+     2. Config files/directories with sub-configs to be added to the base config.
+        These sub-configs are directly added to the base config.
+        The filename of this sub-config will be a new(!) key in the base config.
+     3. Config files/directories with config options for the base config.
+        These sub-configs provide one or more sub-config options
+        for an existing(!) key in the base config.
+        Therefore, the filename must match one of the keys in the base config.
+
+    Parameters
+    ----------
+    path : Path
+        Path to a readable directory with one or more configuration files.
+
+    Returns
+    -------
+    config : Mapping
+        The configuration represented by the directory at the given path.
+    """
+    try:
+        base_path = next(path.glob("config.*"))
+        base_conf = load(base_path)
+    except StopIteration:
+        base_path = None
+        base_conf = Configuration()
+
+    for sub in path.iterdir():
+        if sub == base_path:
+            continue
+
+        key, sub_conf = sub.stem, load(sub)
+        if key in base_conf:
+            option = base_conf.pop(key)
+            try:
+                sub_conf = sub_conf[option]
+            except (KeyError, TypeError):
+                raise ValueError(
+                    f"value corresponding to '{key}' in the base config "
+                    f"does not match any of the options in '{sub.name}'"
+                )
+
+        base_conf[key] = sub_conf
+
+    return base_conf
+
+
+def save_dir(conf: Mapping[str, Any], path: Path, name: str = None) -> None:
+    """
+    Write config to a directory.
+
+    Parameters
+    ----------
+    conf : Mapping
+        The configuration object to save.
+    path : Path
+        Path to a writeable directory.
+    name : str, optional
+        The filename to use for the output config file
+    """
+    if name is None:
+        name = DEFAULT_NAME
+
+    file_path = path / name
+    _save = _get_io_function(file_path, write=True)
+    path.mkdir(exist_ok=True)
+    _save(conf, file_path)
+
+
 @overload
 def _get_io_function(
     path: Path, write: bool = False
@@ -138,10 +214,9 @@ def _get_io_function(path: Path, write: bool = False):
     io_func : Path -> Mapping
         Function for reading/writing config files from/to path.
     """
-    if path.is_dir():
-        raise ValueError("The path can not be a directory")
-
     ext = path.suffix.lower()
+    if ext == "":
+        return save_dir if write else load_dir
     if ext == ".json":
         return save_json if write else load_json
     elif ext == ".yaml":
@@ -152,7 +227,7 @@ def _get_io_function(path: Path, write: bool = False):
 
 def load(path: Union[Path, str]) -> Configuration:
     """
-    Read configuration from a file.
+    Read configuration from a file or directory.
 
     Parameters
     ----------
@@ -171,7 +246,7 @@ def load(path: Union[Path, str]) -> Configuration:
 
 def save(config: Mapping[str, Any], path: Union[Path, str]) -> None:
     """
-    Write configuration to a file.
+    Write configuration to a file or directory.
 
     Parameters
     ----------
