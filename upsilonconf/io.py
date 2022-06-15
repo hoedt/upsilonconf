@@ -1,50 +1,127 @@
 import json
-from argparse import ArgumentParser, Namespace
+from argparse import ArgumentParser
 from pathlib import Path
-from typing import Union, TextIO, Any, Sequence, overload
+from typing import Union, TextIO, Any, Sequence, Mapping, Callable, overload
 
 from upsilonconf.utils import optional_dependency_to
 from upsilonconf.config import Configuration
 
 
 __all__ = ["from_cli", "load", "save"] + [
-    "_".join([fmt, kind]) for fmt in ("json", "yaml") for kind in ("load", "dump")
+    "_".join([fmt, kind]) for kind in ("load", "dump") for fmt in ("json", "yaml"))
 ]
 
 
-def json_load(fp: TextIO) -> Any:
-    """Wrapper around a library function for reading JSON files."""
+
+def load_json(path: Path) -> Mapping[str, Any]:
+    """
+    Read config from a JSON file.
+
+    Parameters
+    ----------
+    path : Path
+        Path to a readable JSON file.
+
+    Returns
+    -------
+    config: Mapping
+        A mapping constructed from the data in the file.
+    """
     from json import load
 
-    return load(fp)
+    with open(path, "r") as fp:
+        return load(fp)
 
 
-def json_dump(obj: Any, fp: TextIO, indent: int = 2, sort_keys: bool = False):
-    """Wrapper around a library function for writing JSON files."""
+def save_json(
+    conf: Mapping[str, Any], path: Path, indent: int = 2, sort_keys: bool = False
+):
+    """
+    Write config to a JSON file.
+
+    Parameters
+    ----------
+    conf : Mapping
+        The configuration object to save.
+    path : Path
+        Path to a writeable JSON file.
+    indent : int, optional
+        The number of spaces to use for indentation in the output file.
+    sort_keys : bool, optional
+        Whether keys should be sorted before writing to the output file.
+    """
     from json import dump
 
-    dump(
-        obj, fp, default=lambda o: o.__getstate__(), indent=indent, sort_keys=sort_keys
-    )
+    kwargs = {
+        "default": lambda o: o.__getstate__(),
+        "indent": indent,
+        "sort_keys": sort_keys,
+    }
+
+    with open(path, "w") as fp:
+        dump(conf, fp, **kwargs)
 
 
 @optional_dependency_to("read YAML files", "pyyaml")
-def yaml_load(fp: TextIO) -> Any:
-    """Wrapper around a library function for reading YAML files."""
+def load_yaml(path: Path) -> Mapping[str, Any]:
+    """
+    Read config from a YAML file.
+
+    Parameters
+    ----------
+    path : Path
+        Path to a readable YAML file.
+
+    Returns
+    -------
+    config: Mapping
+        A mapping constructed from the data in the file.
+    """
     from upsilonconf.utils._yaml import load
 
-    return load(fp)
+    with open(path, "r") as fp:
+        return load(fp)
 
 
 @optional_dependency_to("write YAML files", "pyyaml")
-def yaml_dump(obj: Any, fp: TextIO, indent: int = 2, sort_keys: bool = False):
-    """Wrapper around a library function for writing YAML files."""
+def save_yaml(
+    conf: Mapping[str, Any], path: Path, indent: int = 2, sort_keys: bool = False
+):
+    """
+    Write config to a YAML file.
+
+    Parameters
+    ----------
+    conf : Mapping
+        The configuration object to save.
+    path : Path
+        Path to a writeable YAML file.
+    indent : int, optional
+        The number of spaces to use for indentation in the output file.
+    sort_keys : bool, optional
+        Whether keys should be sorted before writing to the output file.
+    """
     from upsilonconf.utils._yaml import dump
 
-    dump(obj, fp, indent=indent, sort_keys=sort_keys)
+    with open(path, "w") as fp:
+        dump(conf, fp, indent=indent, sort_keys=sort_keys)
 
 
-def _deduct_io_functions(path: Path):
+@overload
+def _get_io_function(
+    path: Path, write: bool = False
+) -> Callable[[Path], Mapping[str, Any]]:
+    ...
+
+
+@overload
+def _get_io_function(
+    path: Path, write: bool = True
+) -> Callable[[Mapping[str, Any], Path], None]:
+    ...
+
+
+def _get_io_function(path: Path, write: bool = False):
     """
     Retrieve IO functions to read/write config files at a given path.
 
@@ -52,24 +129,25 @@ def _deduct_io_functions(path: Path):
     ----------
     path: Path
         Path to deduct the correct IO functions from.
+    write: bool, optional
+        Return function to write configs if `True`,
+        otherwise a function for reading configs is returned.
 
     Returns
     -------
-    load : callable
-        Function for reading config files at path.
-    dump : callable
-        Function for writing config files at path.
+    io_func : Path -> Mapping
+        Function for reading/writing config files from/to path.
     """
     if path.is_dir():
         raise ValueError("The path can not be a directory")
 
     ext = path.suffix.lower()
     if ext == ".json":
-        return json_load, json_dump
+        return save_json if write else load_json
     elif ext == ".yaml":
-        return yaml_load, yaml_dump
-    else:
-        raise ValueError(f"unknown config file extension: '{ext}'")
+        return save_yaml if write else load_yaml
+
+    raise ValueError(f"unknown config file extension: '{ext}'")
 
 
 def load(path: Union[Path, str]) -> Configuration:
@@ -79,7 +157,7 @@ def load(path: Union[Path, str]) -> Configuration:
     Parameters
     ----------
     path : Path or str
-        The path to the file to read the configuration from.
+        Path to a readable file.
 
     Returns
     -------
@@ -87,30 +165,25 @@ def load(path: Union[Path, str]) -> Configuration:
         A configuration object with the values as provided in the file.
     """
     path = Path(path).expanduser().resolve()
-    _load, _ = _deduct_io_functions(path)
-
-    with open(path, "r") as fp:
-        data = _load(fp)
-
-    return Configuration(**data)
+    _load = _get_io_function(path, write=False)
+    return Configuration(**_load(path))
 
 
-def save(config: Configuration, path: Union[Path, str]) -> None:
+def save(config: Mapping[str, Any], path: Union[Path, str]) -> None:
     """
     Write configuration to a file.
 
     Parameters
     ----------
-    config : Configuration
-        The configuration object to write to a file.
+    config : Mapping
+        The configuration object to save.
     path : Path or str
-        The path to the file where the configuration is written to.
+        Path to a writeable file.
     """
     path = Path(path).expanduser().resolve()
-    _, _dump = _deduct_io_functions(path)
-
-    with open(path, "w") as fp:
-        _dump(config, fp)
+    _save = _get_io_function(path, write=True)
+    path.parent.mkdir(exist_ok=True, parents=True)
+    return _save(config, path)
 
 
 def assignment_expr(s: str):
