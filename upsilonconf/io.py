@@ -3,8 +3,8 @@ from argparse import ArgumentParser, Namespace
 from pathlib import Path
 from typing import Union, Any, Sequence, Mapping, Callable, overload, Tuple
 
-from upsilonconf.utils import optional_dependency_to
-from upsilonconf.config import Configuration
+from .config import Configuration
+from ._optional_dependency import optional_dependency_to
 
 
 __all__ = ["from_cli", "load", "save"] + [
@@ -80,7 +80,7 @@ def load_yaml(path: Path) -> Mapping[str, Any]:
     config: Mapping
         A mapping constructed from the data in the file.
     """
-    from upsilonconf.utils._yaml import load
+    from upsilonconf._yaml import load
 
     with open(path, "r") as fp:
         return load(fp)
@@ -104,7 +104,7 @@ def save_yaml(
     sort_keys : bool, optional
         Whether keys should be sorted before writing to the output file.
     """
-    from upsilonconf.utils._yaml import dump
+    from upsilonconf._yaml import dump
 
     with open(path, "w") as fp:
         dump(conf, fp, indent=indent, sort_keys=sort_keys)

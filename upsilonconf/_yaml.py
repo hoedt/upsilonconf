@@ -1,9 +1,8 @@
 import re
 from typing import TextIO, Any
+from collections.abc import Mapping
 
 import yaml
-
-from upsilonconf.config import Configuration
 
 _yaml_float_tag = "tag:yaml.org,2002:float"
 _missing_yaml_floats = r"""^[-+]?(
@@ -23,7 +22,7 @@ def load(fp: TextIO) -> Any:
     return yaml.load(fp, Loader=yaml.SafeLoader)
 
 
-yaml.SafeDumper.add_representer(Configuration, yaml.SafeDumper.represent_dict)
+yaml.SafeDumper.add_multi_representer(Mapping, yaml.SafeDumper.represent_dict)
 
 
 def dump(data: Any, fp: TextIO, indent: int = 2, sort_keys: bool = False) -> None:

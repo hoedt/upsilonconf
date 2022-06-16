@@ -1,7 +1,7 @@
 from unittest import TestCase
 
-from upsilonconf.utils.optional_dependency import OptionalDependencyError
-from upsilonconf.utils.optional_dependency import optional_dependency_to
+from upsilonconf._optional_dependency import OptionalDependencyError
+from upsilonconf._optional_dependency import optional_dependency_to
 
 
 IMPORT_KEY = "import"
