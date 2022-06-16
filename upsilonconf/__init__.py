@@ -3,4 +3,4 @@
 from .io import load, save, from_cli
 from .config import *
 
-__version__ = "0.3.1.dev1"
+__version__ = "0.4.0.dev1"
