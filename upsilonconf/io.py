@@ -1,7 +1,7 @@
 import json
-from argparse import ArgumentParser
+from argparse import ArgumentParser, Namespace
 from pathlib import Path
-from typing import Union, TextIO, Any, Sequence, Mapping, Callable, overload
+from typing import Union, Any, Sequence, Mapping, Callable, overload, Tuple
 
 from upsilonconf.utils import optional_dependency_to
 from upsilonconf.config import Configuration
@@ -261,7 +261,7 @@ def save(config: Mapping[str, Any], path: Union[Path, str]) -> None:
     return _save(config, path)
 
 
-def assignment_expr(s: str):
+def assignment_expr(s: str) -> Tuple[str, Any]:
     """Parse assignment expression argument."""
     key, val = s.split("=", maxsplit=1)
     try:
@@ -270,6 +270,23 @@ def assignment_expr(s: str):
         pass
 
     return key, val
+
+
+@overload
+def from_cli() -> Configuration:
+    ...
+
+
+@overload
+def from_cli(args: Sequence[str]) -> Configuration:
+    ...
+
+
+@overload
+def from_cli(
+    args: Sequence[str], parser: ArgumentParser
+) -> Tuple[Configuration, Namespace]:
+    ...
 
 
 def from_cli(args: Sequence[str] = None, parser: ArgumentParser = None):
@@ -297,6 +314,8 @@ def from_cli(args: Sequence[str] = None, parser: ArgumentParser = None):
     -------
     config : Configuration
         The configuration as specified by the command line arguments.
+    ns : Namespace
+        The namespace with additional arguments from the command line arguments.
     """
     _parser = ArgumentParser() if parser is None else parser
 
