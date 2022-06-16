@@ -117,7 +117,7 @@ class TestFileOperations(TestCase):
         for name in filenames[::-1]:
             m_open.assert_any_call(path / name, "r")
 
-        self.assertDictEqual(dict(CONFIG) | {"sub1": CONFIG, "sub2": CONFIG}, dict(c))
+        self.assertDictEqual(dict(CONFIG, sub1=CONFIG, sub2=CONFIG), dict(c))
 
     def test_load_dir_yaml(self):
         path = Path.home()
@@ -135,7 +135,7 @@ class TestFileOperations(TestCase):
         for name in filenames[::-1]:
             m_open.assert_any_call(path / name, "r")
 
-        self.assertDictEqual(dict(CONFIG) | {"sub1": CONFIG, "sub2": CONFIG}, dict(c))
+        self.assertDictEqual(dict(CONFIG, sub1=CONFIG, sub2=CONFIG), dict(c))
 
     def test_load_dir_without_base(self):
         path = Path.home()
@@ -171,7 +171,7 @@ class TestFileOperations(TestCase):
         for name in filenames[::-1]:
             m_open.assert_any_call(path / name, "r")
 
-        self.assertDictEqual(dict(CONFIG) | {"bar": CONFIG["baz"]}, dict(c))
+        self.assertDictEqual(dict(CONFIG, bar=CONFIG["baz"]), dict(c))
 
     def test_load_dir_options_invalid(self):
         path = Path.home()
