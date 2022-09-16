@@ -226,9 +226,8 @@ def _get_io_function(path: Path, write: bool = False):
 
 
 def __replace_in_keys(
-        dictionary: Union[Dict[str, Any], list, Any],
-        s: str,
-        r: str) -> Union[Dict[str, Any], list, Any]:
+    dictionary: Union[Dict[str, Any], list, Any], s: str, r: str
+) -> Union[Dict[str, Any], list, Any]:
     """
     Take a list or dictionary and replace all occurrencies of `s` in any of its
     keys with `r`.
@@ -272,8 +271,8 @@ def __replace_in_keys(
 
 
 def _replace_in_keys(
-        config: Mapping[str, Any],
-        key_modifiers: Dict[str, str]) -> Dict[str, Any]:
+    config: Mapping[str, Any], key_modifiers: Dict[str, str]
+) -> Dict[str, Any]:
     """
     Replace strings in the keys of a mapping object.
 
@@ -298,9 +297,7 @@ def _replace_in_keys(
     return _config
 
 
-def load(
-        path: Union[Path, str],
-        key_modifiers: Dict[str, str] = {}) -> Configuration:
+def load(path: Union[Path, str], key_modifiers: Dict[str, str] = {}) -> Configuration:
     """
     Read configuration from a file or directory.
 
@@ -325,9 +322,10 @@ def load(
 
 
 def save(
-        config: Mapping[str, Any],
-        path: Union[Path, str],
-        key_modifiers: Dict[str, str] = {}) -> None:
+    config: Mapping[str, Any],
+    path: Union[Path, str],
+    key_modifiers: Dict[str, str] = {},
+) -> None:
     """
     Write configuration to a file or directory.
 
