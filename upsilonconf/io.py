@@ -297,7 +297,9 @@ def _replace_in_keys(
     return _config
 
 
-def load(path: Union[Path, str], key_modifiers: Mapping[str, str] = {}) -> Configuration:
+def load(
+    path: Union[Path, str], key_modifiers: Mapping[str, str] = {}
+) -> Configuration:
     """
     Read configuration from a file or directory.
 
