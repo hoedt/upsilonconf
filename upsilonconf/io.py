@@ -1,7 +1,7 @@
 import json
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
-from typing import Union, Any, Sequence, Mapping, Callable, overload, Tuple
+from typing import Union, Any, Sequence, Mapping, Callable, overload, Tuple, Dict
 
 from .config import Configuration
 from ._optional_dependency import optional_dependency_to
@@ -69,7 +69,7 @@ def save_json(
 def load_yaml(path: Path) -> Mapping[str, Any]:
     """
     Read config from a YAML file.
-
+key_modifiers
     Parameters
     ----------
     path : Path
@@ -225,7 +225,82 @@ def _get_io_function(path: Path, write: bool = False):
     raise ValueError(f"unknown config file extension: '{ext}'")
 
 
-def load(path: Union[Path, str]) -> Configuration:
+def __replace_in_keys(
+        dictionary: Union[Dict[str, Any], list, Any],
+        s: str,
+        r: str) -> Union[Dict[str, Any], list, Any]:
+    """
+    Take a list or dictionary and replace all occurrencies of `s` in any of its
+    keys with `r`.
+
+    This function is called recursively.
+
+    Modelled after the Stack Overflow answer by Farhan Haider:
+    https://stackoverflow.com/questions/21650850/pyyaml-replace-dash-in-keys-with-underscore#answer-55986782
+
+    Parameters
+    ----------
+    dictionary : dict|list
+        The list or dictionary to be modified.
+    s : str
+        The string to be replaced.
+    r : str
+        The replacement string.
+
+    Returns
+    -------
+        The object of the same type with all strings `s` replaced by `r`.
+    """
+    # For lists perform this method on every object
+    if isinstance(dictionary, list):
+        return [__replace_in_keys(item, s, r) for item in dictionary]
+
+    # For dictionaries traverse all the keys and replace 's' with 'r'
+    elif isinstance(dictionary, dict):
+        final_dict = {}
+        for key, value in dictionary.items():
+            if isinstance(dictionary[key], (dict, list)):
+                # If a sub dictionary or a list call this method recursively
+                value = __replace_in_keys(value, s, r)
+            final_dict[key.replace(s, r)] = value
+
+        return final_dict
+
+    # By default return the same object
+    else:
+        return dictionary
+
+
+def _replace_in_keys(
+        config: Mapping[str, Any],
+        key_modifiers: Dict[str, str]) -> Dict[str, Any]:
+    """
+    Replace strings in the keys of a mapping object.
+
+    Parameters
+    ----------
+    config : Mapping
+        The configuration object (or dictionary) to be modified.
+    key_modifiers : dict
+        The dictionary with the replacements.
+
+    Returns
+    -------
+    dict
+        A dictionary with the modified keys.
+
+    """
+    _config = config
+    # Replace longest strings first
+    # - `sorted(..., reverse=True)` takes care of that
+    for key in sorted(key_modifiers.keys(), reverse=True):
+        _config = __replace_in_keys(_config, key, key_modifiers[key])
+    return _config
+
+
+def load(
+        path: Union[Path, str],
+        key_modifiers: Dict[str, str] = {}) -> Configuration:
     """
     Read configuration from a file or directory.
 
@@ -233,18 +308,26 @@ def load(path: Union[Path, str]) -> Configuration:
     ----------
     path : Path or str
         Path to a readable file.
+    key_modifiers : dict, optional
+        A dictionary with replacement strings: The configuration keys will be
+        modified, by replacing the string from the key_modifiers key with its
+        value.
 
     Returns
     -------
-    config: Configuration
+    config : Configuration
         A configuration object with the values as provided in the file.
     """
     path = Path(path).expanduser().resolve()
     _load = _get_io_function(path, write=False)
-    return Configuration(**_load(path))
+    config = _replace_in_keys(_load(path), key_modifiers)
+    return Configuration(**config)
 
 
-def save(config: Mapping[str, Any], path: Union[Path, str]) -> None:
+def save(
+        config: Mapping[str, Any],
+        path: Union[Path, str],
+        key_modifiers: Dict[str, str] = {}) -> None:
     """
     Write configuration to a file or directory.
 
@@ -254,10 +337,15 @@ def save(config: Mapping[str, Any], path: Union[Path, str]) -> None:
         The configuration object to save.
     path : Path or str
         Path to a writeable file.
+    key_modifiers : dict, optional
+        A dictionary with replacement strings: The configuration keys will be
+        modified, by replacing the string from the key_modifiers key with its
+        value.
     """
     path = Path(path).expanduser().resolve()
     _save = _get_io_function(path, write=True)
     path.parent.mkdir(exist_ok=True, parents=True)
+    config = _replace_in_keys(config, key_modifiers)
     return _save(config, path)
 
 
