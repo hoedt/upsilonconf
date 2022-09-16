@@ -293,7 +293,7 @@ def _replace_in_keys(
     _config = config
     # Replace longest strings first
     # - `sorted(..., reverse=True)` takes care of that
-    for key in sorted(key_modifiers.keys(), reverse=True):
+    for key in sorted(key_modifiers.keys(), key=lambda k: len(k), reverse=True):
         _config = __replace_in_keys(_config, key, key_modifiers[key])
     return _config
 
