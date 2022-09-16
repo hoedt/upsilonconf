@@ -256,7 +256,7 @@ def __replace_in_keys(
         try:
             # Call this method recursively
             value = __replace_in_keys(value, s, r)
-        except Exception:
+        except AttributeError:
             # `value` is not of the mapping type
             pass
         dictionary[key.replace(s, r)] = value
