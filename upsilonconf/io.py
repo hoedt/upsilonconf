@@ -226,11 +226,11 @@ def _get_io_function(path: Path, write: bool = False):
 
 
 def __replace_in_keys(
-    dictionary: Union[Mapping[str, Any], list, Any], s: str, r: str
-) -> Union[Mapping[str, Any], list, Any]:
+    mapping: Union[Mapping[str, Any], Any], s: str, r: str
+) -> Union[Mapping[str, Any], Any]:
     """
-    Take a list or dictionary and replace all occurrencies of `s` in any of its
-    keys with `r`.
+    Take a mapping object and replace all occurrencies of `s` with `r` in any
+    of its keys.
 
     This function is called recursively.
 
@@ -239,35 +239,29 @@ def __replace_in_keys(
 
     Parameters
     ----------
-    dictionary : dict|list
-        The list or dictionary to be modified.
+    mapping : Mapping
+        The mapping object to be modified.
     s : str
-        The string to be replaced.
+        The string to be replaced in the keys.
     r : str
         The replacement string.
 
     Returns
     -------
-        The object of the same type with all strings `s` replaced by `r`.
+        The dictionary with all strings `s` replaced with `r` in the keys.
     """
-    # For lists perform this method on every object
-    if isinstance(dictionary, list):
-        return [__replace_in_keys(item, s, r) for item in dictionary]
+    # Traverse all the keys and replace `s` with `r`
+    dictionary = {}
+    for key, value in mapping.items():
+        try:
+            # Call this method recursively
+            value = __replace_in_keys(value, s, r)
+        except Exception:
+            # `value` is not of the mapping type
+            pass
+        dictionary[key.replace(s, r)] = value
 
-    # For dictionaries traverse all the keys and replace 's' with 'r'
-    elif isinstance(dictionary, dict):
-        final_dict = {}
-        for key, value in dictionary.items():
-            if isinstance(dictionary[key], (dict, list)):
-                # If a sub dictionary or a list call this method recursively
-                value = __replace_in_keys(value, s, r)
-            final_dict[key.replace(s, r)] = value
-
-        return final_dict
-
-    # By default return the same object
-    else:
-        return dictionary
+    return dictionary
 
 
 def _replace_in_keys(
