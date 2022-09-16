@@ -69,7 +69,7 @@ def save_json(
 def load_yaml(path: Path) -> Mapping[str, Any]:
     """
     Read config from a YAML file.
-key_modifiers
+
     Parameters
     ----------
     path : Path
