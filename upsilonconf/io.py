@@ -1,7 +1,7 @@
 import json
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
-from typing import Union, Any, Sequence, Mapping, Callable, overload, Tuple, Dict
+from typing import Union, Any, Sequence, Mapping, Callable, overload, Tuple
 
 from .config import Configuration
 from ._optional_dependency import optional_dependency_to
@@ -226,8 +226,8 @@ def _get_io_function(path: Path, write: bool = False):
 
 
 def __replace_in_keys(
-    dictionary: Union[Dict[str, Any], list, Any], s: str, r: str
-) -> Union[Dict[str, Any], list, Any]:
+    dictionary: Union[Mapping[str, Any], list, Any], s: str, r: str
+) -> Union[Mapping[str, Any], list, Any]:
     """
     Take a list or dictionary and replace all occurrencies of `s` in any of its
     keys with `r`.
@@ -271,8 +271,8 @@ def __replace_in_keys(
 
 
 def _replace_in_keys(
-    config: Mapping[str, Any], key_modifiers: Dict[str, str]
-) -> Dict[str, Any]:
+    config: Mapping[str, Any], key_modifiers: Mapping[str, str]
+) -> Mapping[str, Any]:
     """
     Replace strings in the keys of a mapping object.
 
@@ -297,7 +297,7 @@ def _replace_in_keys(
     return _config
 
 
-def load(path: Union[Path, str], key_modifiers: Dict[str, str] = {}) -> Configuration:
+def load(path: Union[Path, str], key_modifiers: Mapping[str, str] = {}) -> Configuration:
     """
     Read configuration from a file or directory.
 
@@ -324,7 +324,7 @@ def load(path: Union[Path, str], key_modifiers: Dict[str, str] = {}) -> Configur
 def save(
     config: Mapping[str, Any],
     path: Union[Path, str],
-    key_modifiers: Dict[str, str] = {},
+    key_modifiers: Mapping[str, str] = {},
 ) -> None:
     """
     Write configuration to a file or directory.
