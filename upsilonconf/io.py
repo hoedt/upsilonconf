@@ -1,4 +1,3 @@
-import json
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
 from typing import Union, Any, Sequence, Mapping, Callable, overload, Tuple
@@ -276,8 +275,10 @@ def save(
     return _save(config, path)
 
 
-def assignment_expr(s: str) -> Tuple[str, Any]:
+def _cli_assignment_expr(s: str) -> Tuple[str, Any]:
     """Parse assignment expression argument."""
+    import json
+
     key, val = s.split("=", maxsplit=1)
     try:
         val = json.loads(val)
@@ -345,7 +346,7 @@ def from_cli(args: Sequence[str] = None, parser: ArgumentParser = None):
     group.add_argument(
         "overrides",
         nargs="*",
-        type=assignment_expr,
+        type=_cli_assignment_expr,
         help="configuration options to override in the config file",
         metavar="KEY=VALUE",
     )
