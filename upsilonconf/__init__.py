@@ -19,7 +19,7 @@ def __getattr__(name: str):
     elif name == "save" or name == "save_config":
         return importlib.import_module(".io", __package__).save
     elif name == "from_cli" or name == "config_from_cli":
-        return importlib.import_module(".io", __package__).from_cli
+        return importlib.import_module(".cli", __package__).from_cli
     elif name == "OptionalDependencyError":
         return importlib.import_module(
             "._optional_dependency", __package__
