@@ -422,7 +422,7 @@ def _replace_in_keys(
        underscore and a space with a hyphen (and not an underscore).
     """
     if not key_modifiers:
-        return config
+        return dict(config)
 
     # To achieve the replacement strategy, we need a two step process (or
     # regular expressions):
@@ -456,4 +456,4 @@ def _replace_in_keys(
     for char, value in zip(chars, key_modifiers.values()):
         _config = __replace_in_keys(_config, char, value)
 
-    return dict(_config)
+    return _config
