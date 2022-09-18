@@ -555,8 +555,6 @@ class TestConfiguration(TestCase):
         self.assertIsNone(old_val)
         self.assertEqual(self.empty_config["sub", new_key], new_val)
 
-    # TODO: write overwrite_all tests!!!
-
     def test_overwrite_all(self):
         base_config = self.complex_config
         expected = dict(base_config)
@@ -672,3 +670,132 @@ class TestConfiguration(TestCase):
         overwritten = base_config.overwrite_all(other)
         self.assertDictEqual(old_values, overwritten)
         self.assertDictEqual(dict(base_config["sub"]), dict(expected["sub"]))
+
+    # # # Dict Conversion # # #
+
+    def test_from_dict(self):
+        d = dict(self.simple_config)
+        conf = Configuration.from_dict(d)
+        self.assertEqual(self.simple_config, conf)
+
+    def test_from_dict_empty(self):
+        conf = Configuration.from_dict({})
+        self.assertEqual(self.empty_config, conf)
+
+    def test_from_dict_nested(self):
+        d = dict(self.complex_config)
+        d["sub"] = dict(d["sub"])
+        conf = Configuration.from_dict(d)
+        self.assertEqual(self.complex_config, conf)
+
+    def test_from_dict_key_modifiers(self):
+        d = {"key 1": "with space", "key-2": "with hyphen"}
+        key_mods = {" ": "_", "-": "_minus_"}
+        conf = Configuration.from_dict(d, key_mods)
+        ref = Configuration(key_1="with space", key_minus_2="with hyphen")
+        self.assertEqual(ref, conf)
+
+    def test_from_dict_key_modifiers_missing(self):
+        d = {"key 1": "with space", "key-2": "with hyphen"}
+        with self.assertRaises(ValueError):
+            Configuration.from_dict(d)
+
+    def test_from_dict_key_modifiers_combination(self):
+        d = {"key 1": "with space", "key-2": "with hyphen"}
+        key_mods = {" ": "_", "-": "_minus_", "k": "K"}
+        conf = Configuration.from_dict(d, key_mods)
+        ref = Configuration(Key_1="with space", Key_minus_2="with hyphen")
+        self.assertEqual(ref, conf)
+
+    def test_from_dict_key_modifiers_order(self):
+        d = {"key 1": "with space", "key-2": "with hyphen"}
+        key_mods = {" ": "0", "-": "_"}
+        conf = Configuration.from_dict(d, key_mods)
+        ref = Configuration(key01="with space", key_2="with hyphen")
+        self.assertEqual(ref, conf)
+
+        key_mods = {"-": "_", " ": "-"}  # reversed
+        conf = Configuration.from_dict(d, key_mods)
+        ref = Configuration(key01="with space", key_2="with hyphen")
+        self.assertEqual(ref, conf)
+
+    def test_from_dict_key_modifiers_order_length(self):
+        d = {"key 1": "with space", "key-2": "with hyphen"}
+        key_mods = {"key ": "k", "key-": "K", "  ": "_", "-": "_"}
+        conf = Configuration.from_dict(d, key_mods)
+        ref = Configuration(k1="with space", K2="with hyphen")
+        self.assertEqual(ref, conf)
+
+        key_mods = {"-": "_", " ": "-", "key-": "K", "key ": "k"}  # reversed
+        conf = Configuration.from_dict(d, key_mods)
+        ref = Configuration(k1="with space", K2="with hyphen")
+        self.assertEqual(ref, conf)
+
+    def test_from_dict_key_modifiers_nested(self):
+        d = {"key 1": "with space", "key-2": {"key-1": 1, "key 2": 2}}
+        key_mods = {"key ": "k", "key-": "K", "  ": "_", "-": "_"}
+        conf = Configuration.from_dict(d, key_mods)
+        ref = Configuration(k1="with space", K2=Configuration(K1=1, k2=2))
+        self.assertEqual(ref, conf)
+
+        key_mods = {"-": "_", " ": "-", "key-": "K", "key ": "k"}  # reversed
+        conf = Configuration.from_dict(d, key_mods)
+        ref = Configuration(k1="with space", K2=Configuration(K1=1, k2=2))
+        self.assertEqual(ref, conf)
+
+    def test_to_dict(self):
+        d = self.simple_config.to_dict()
+        d_ref = dict(self.simple_config)
+        self.assertDictEqual(d_ref, d)
+
+    def test_to_dict_empty(self):
+        d = self.empty_config.to_dict()
+        self.assertDictEqual({}, d)
+
+    def test_to_dict_nested(self):
+        d = self.complex_config.to_dict()
+        d_ref = dict(self.complex_config)
+        d_ref["sub"] = dict(self.complex_config.sub)
+        self.assertDictEqual(d_ref, d)
+
+    def test_to_dict_key_modifiers(self):
+        conf = Configuration(key_1="with space", key02="with hyphen")
+        d = conf.to_dict({"_": " ", "0": "-"})
+        d_ref = {"key 1": "with space", "key-2": "with hyphen"}
+        self.assertDictEqual(d_ref, d)
+
+    def test_to_dict_key_modifiers_combination(self):
+        conf = Configuration(key_1="with space", key02="with hyphen")
+        d = conf.to_dict({"_": " ", "0": "-", "k": "K"})
+        d_ref = {"Key 1": "with space", "Key-2": "with hyphen"}
+        self.assertDictEqual(d_ref, d)
+
+    def test_to_dict_key_modifiers_order(self):
+        conf = Configuration(key_1="with space", key02="with space")
+        d = conf.to_dict({"0": "_", "_": " "})
+        d_ref = {"key 1": "with space", "key_2": "with space"}
+        self.assertDictEqual(d_ref, d)
+
+        d = conf.to_dict({"_": " ", "0": "_"})  # key-mods reversed
+        d_ref = {"key 1": "with space", "key_2": "with space"}
+        self.assertDictEqual(d_ref, d)
+
+    def test_to_dict_key_modifiers_order_length(self):
+        conf = Configuration(key_1="with space", key_2="with hyphen")
+        d = conf.to_dict({"_1": " 1", "_2": "-2", "_": "0"})
+        d_ref = {"key 1": "with space", "key-2": "with hyphen"}
+        self.assertDictEqual(d_ref, d)
+
+        d = conf.to_dict({"_": "0", "_2": "-2", "_1": " 1"})  # key-mods reversed
+        d_ref = {"key 1": "with space", "key-2": "with hyphen"}
+        self.assertDictEqual(d_ref, d)
+
+    def test_to_dict_key_modifiers_nested(self):
+        conf = Configuration(key_1="with space", key_2=Configuration(key_1=1, key_2=2))
+        d = conf.to_dict({"_1": " 1", "_2": "-2", "_": "0"})
+        d_ref = {"key 1": "with space", "key-2": {"key 1": 1, "key-2": 2}}
+        self.assertDictEqual(d_ref, d)
+
+        d = conf.to_dict({"_": "0", "_2": "-2", "_1": " 1"})  # key-mods reversed
+        d_ref = {"key 1": "with space", "key-2": {"key 1": 1, "key-2": 2}}
+        self.assertEqual(d_ref, d)

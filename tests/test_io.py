@@ -184,7 +184,7 @@ class TestFileOperations(TestCase):
             m_glob.return_value = (path / name for name in filenames)
             m_iterdir.return_value = (path / name for name in filenames)
             with self.assertRaisesRegex(ValueError, filenames[-1]):
-                c = load(path)
+                load(path)
 
         self.assertEqual(len(filenames), m_open.call_count)
         for name in filenames[::-1]:
