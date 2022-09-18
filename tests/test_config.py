@@ -714,7 +714,7 @@ class TestConfiguration(TestCase):
         ref = Configuration(key01="with space", key_2="with hyphen")
         self.assertEqual(ref, conf)
 
-        key_mods = {"-": "_", " ": "-"}  # reversed
+        key_mods = {"-": "_", " ": "0"}  # reversed
         conf = Configuration.from_dict(d, key_mods)
         ref = Configuration(key01="with space", key_2="with hyphen")
         self.assertEqual(ref, conf)
