@@ -404,17 +404,56 @@ def _replace_in_keys(
     config : Mapping
         The configuration object (or dictionary) to be modified.
     key_modifiers : dict
-        The dictionary with the replacements.
+        The dictionary with the replacements: All keys strings are replaced
+        with the corresponding values from the `key_modifiers` dictionary.
 
     Returns
     -------
     dict
         A dictionary with the modified keys.
 
+    Replacement strategy
+    --------------------
+    1. The replacement should be zealous, meaning that
+       `key_modifiers={'  ': '_', ' ': '-'}` should replace a single spaces
+       with a hyphen and two spaces with an underscore (and not two hypens).
+    2. The replacement should not be recursive, meaning that
+       `key_modifiers={' ': '-', '-': '_'}` should replace a hyphen with an
+       underscore and a space with a hyphen (and not an underscore).
     """
+    if not key_modifiers:
+        return config
+
+    # To achieve the replacement strategy, we need a two step process (or
+    # regular expressions):
+    #   1. Replace all occurrencies of the replacement keys with a special
+    #      character (which must not occur in the keys of `config`).
+    #   2. Replace all special characters with the final replacement values.
+    # Note:
+    #   This relies on ordered dictionaries, so Python>=3.6 is required!
+
+    # Make a list of special characters not occurring in `config.keys()`
+    keychars = set()
+    for key in config.keys():
+        keychars.update(key)
+    chars = []
+    i = 0   # Start with the first ascii character
+    while len(chars) < len(key_modifiers):
+        c = chr(i)
+        if c not in keychars:
+            chars.append(c)
+        i += 1
+
     _config = config
-    # Replace longest strings first
-    # - `sorted(..., reverse=True)` takes care of that
-    for key in key_modifiers.keys():
-        _config = __replace_in_keys(_config, key, key_modifiers[key])
+    # Perform first replacement (sorting by length in descending order makes
+    # this zealous)
+    for key, char in sorted(
+        zip(key_modifiers.keys(), chars), key=lambda k: len(k[0]), reverse=True
+    ):
+        _config = __replace_in_keys(_config, key, char)
+
+    # Perform second replacement
+    for char, value in zip(chars, key_modifiers.values()):
+        _config = __replace_in_keys(_config, char, value)
+
     return dict(_config)
