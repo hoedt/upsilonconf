@@ -1,5 +1,5 @@
 import copy
-from typing import MutableMapping, Any, Iterator, Iterable, Union, Tuple, Dict, Mapping
+from typing import MutableMapping, Any, Iterator, Iterable, Union, Tuple, Mapping
 
 __all__ = ["Configuration", "InvalidKeyError"]
 
@@ -92,16 +92,16 @@ class Configuration(MutableMapping[str, Any]):
         kwargs = [": ".join([k, "{!s}".format(v)]) for k, v in self.items()]
         return f"{{{', '.join(kwargs)}}}"
 
-    def __getstate__(self) -> Dict[str, Any]:
+    def __getstate__(self) -> Mapping[str, Any]:
         return {k: v for k, v in self.items()}
 
-    def __setstate__(self, state: Dict[str, Any]) -> None:
+    def __setstate__(self, state: Mapping[str, Any]) -> None:
         self.__init__(**state)
 
     def __copy__(self):
         return Configuration(**self)
 
-    def __deepcopy__(self, memo: Dict = None):
+    def __deepcopy__(self, memo: Mapping = None):
         if memo is None:
             memo = {}
 
@@ -331,3 +331,90 @@ class Configuration(MutableMapping[str, Any]):
             old_values[k] = self.overwrite(k, v)
 
         return old_values
+
+    # # # Dict Conversion # # #
+
+    @staticmethod
+    def from_dict(
+        d: Mapping[str, Any],
+        key_mods: Mapping[str, str] = None,
+    ) -> "Configuration":
+        if key_mods is None:
+            key_mods = {}
+
+        return Configuration(**_replace_in_keys(d, key_mods))
+
+    def to_dict(self, key_mods: Mapping[str, str] = None) -> Mapping[str, Any]:
+        if key_mods is None:
+            key_mods = {}
+
+        return _replace_in_keys(self, key_mods)
+
+
+# utilities
+
+
+def __replace_in_keys(
+    mapping: Union[Mapping[str, Any], Any], s: str, r: str
+) -> Union[Mapping[str, Any], Any]:
+    """
+    Take a mapping object and replace all occurrencies of `s` with `r` in any
+    of its keys.
+
+    This function is called recursively.
+
+    Modelled after the Stack Overflow answer by Farhan Haider:
+    https://stackoverflow.com/questions/21650850/pyyaml-replace-dash-in-keys-with-underscore#answer-55986782
+
+    Parameters
+    ----------
+    mapping : Mapping
+        The mapping object to be modified.
+    s : str
+        The string to be replaced in the keys.
+    r : str
+        The replacement string.
+
+    Returns
+    -------
+        The dictionary with all strings `s` replaced with `r` in the keys.
+    """
+    # Traverse all the keys and replace `s` with `r`
+    dictionary = {}
+    for key, value in mapping.items():
+        try:
+            # Call this method recursively
+            value = __replace_in_keys(value, s, r)
+        except AttributeError:
+            # `value` is not of the mapping type
+            pass
+        dictionary[key.replace(s, r)] = value
+
+    return dictionary
+
+
+def _replace_in_keys(
+    config: Mapping[str, Any], key_modifiers: Mapping[str, str]
+) -> Mapping[str, Any]:
+    """
+    Replace strings in the keys of a mapping object.
+
+    Parameters
+    ----------
+    config : Mapping
+        The configuration object (or dictionary) to be modified.
+    key_modifiers : dict
+        The dictionary with the replacements.
+
+    Returns
+    -------
+    dict
+        A dictionary with the modified keys.
+
+    """
+    _config = config
+    # Replace longest strings first
+    # - `sorted(..., reverse=True)` takes care of that
+    for key in key_modifiers.keys():
+        _config = __replace_in_keys(_config, key, key_modifiers[key])
+    return dict(_config)
