@@ -766,6 +766,7 @@ class TestConfiguration(TestCase):
         d = self.complex_config.to_dict()
         d_ref = dict(self.complex_config)
         d_ref["sub"] = dict(self.complex_config.sub)
+        self.assertDictEqual(d_ref["sub"], d["sub"])
         self.assertDictEqual(d_ref, d)
 
     def test_to_dict_key_modifiers(self):
