@@ -485,11 +485,14 @@ def _modify_keys(
     return __modify_keys(mapping, key_mods, pattern)
 
 
-def __modify_keys(mapping: Mapping[str, Any], key_mods: Mapping[str, str], pattern):
+def __modify_keys(
+    mapping: Mapping[str, Any], key_mods: Mapping[str, str], pattern
+) -> Dict[str, Any]:
     """
     Replace strings in the keys of a mapping object.
 
-    The replacement is done recursively.
+    This is the working horse for `_modify_keys` to do the replacement
+    recursively.
 
     Parameters
     ----------
