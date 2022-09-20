@@ -455,48 +455,38 @@ class Configuration(MutableMapping[str, Any]):
 # utilities
 
 
-def __replace_in_keys(
-    mapping: Union[Mapping[str, Any], Any], s: str, r: str
-) -> Union[Mapping[str, Any], Any]:
+def _modify_keys(
+    mapping: Mapping[str, Any], key_mods: Mapping[str, str]
+) -> Dict[str, Any]:
     """
-    Take a mapping object and replace all occurrencies of `s` with `r` in any
-    of its keys.
-
-    This function is called recursively.
-
-    Modelled after the Stack Overflow answer by Farhan Haider:
-    https://stackoverflow.com/questions/21650850/pyyaml-replace-dash-in-keys-with-underscore#answer-55986782
+    Replace strings in the keys of a mapping object recursively.
 
     Parameters
     ----------
     mapping : Mapping
-        The mapping object to be modified.
-    s : str
-        The string to be replaced in the keys.
-    r : str
-        The replacement string.
+        The mapping object (`Configuration`, `dict`, ...) whose keys are to be
+        modified.
+    key_mods : Mapping
+        The dictionary with the replacements: All key strings are replaced
+        with the corresponding values from the this dictionary.
 
     Returns
     -------
-        The dictionary with all strings `s` replaced with `r` in the keys.
+    dict
+        A dictionary with the modified keys.
+
     """
-    # Traverse all the keys and replace `s` with `r`
-    dictionary = {}
-    for key, value in mapping.items():
-        try:
-            # Call this method recursively
-            value = __replace_in_keys(value, s, r)
-        except AttributeError:
-            # `value` is not of the mapping type
-            pass
-        dictionary[key.replace(s, r)] = value
+    # Build and compile replacement pattern
+    pattern = re.compile(
+        "|".join(
+            [re.escape(k) for k in sorted(key_mods, key=lambda k: len(k), reverse=True)]
+        )
+    )
 
-    return dictionary
+    return __modify_keys(mapping, key_mods, pattern)
 
 
-def _modify_keys(
-    mapping: Mapping[str, Any], key_mods: Mapping[str, str]
-) -> Dict[str, Any]:
+def __modify_keys(mapping: Mapping[str, Any], key_mods: Mapping[str, str], pattern):
     """
     Replace strings in the keys of a mapping object.
 
@@ -507,9 +497,11 @@ def _modify_keys(
     mapping : Mapping
         The mapping object (`Configuration`, `dict`, ...) whose keys are to be
         modified.
-    key_mods : dict
+    key_mods : Mapping
         The dictionary with the replacements: All key strings are replaced
         with the corresponding values from the this dictionary.
+    pattern : ???
+        The compiled replacement pattern.
 
     Returns
     -------
@@ -517,46 +509,23 @@ def _modify_keys(
         A dictionary with the modified keys.
 
     """
-    # This fails with `AttributeError`, if `mapping` is not of a mapping type,
-    # thus breaking the recursive calls
-    keys_modified = {k: _modify_string(k, key_mods) for k in mapping.keys()}
-
     dictionary = {}
+
+    # `mapping.items()` fails with `AttributeError`, if `mapping` is not of a
+    # mapping type, thus breaking the recursive calls
     for key, value in mapping.items():
         try:
             # Call this method recursively
-            value = _modify_keys(value, key_mods)
+            value = __modify_keys(value, key_mods, pattern)
         except AttributeError:
             # `value` is not of the mapping type
             pass
-        dictionary[keys_modified[key]] = value
+
+        # Replace only, if there are replacements requested, otherwise just
+        # save the value
+        if key_mods:
+            dictionary[pattern.sub(lambda m: key_mods[m.group(0)], key)] = value
+        else:
+            dictionary[key] = value
 
     return dictionary
-
-
-def _modify_string(s: str, mods: Mapping[str, str]) -> str:
-    """
-    Replace strings in one key.
-
-    All strings from the `mods` keys are replaced with their corresponding
-    values.
-
-    Parameters
-    ----------
-    s : str
-        The string to be modified.
-    mods : Mapping
-        The keys represent the strings to be replaced by the corresponding
-        values.
-
-    Returns
-    -------
-    s : str
-        The string with all replacements according to `mods`.
-    """
-    if not mods:
-        return s
-
-    rep = {re.escape(k): mods[k] for k in sorted(mods, key=lambda k: len(k), reverse=True)}
-    pattern = re.compile("|".join(rep.keys()))
-    return pattern.sub(lambda m: rep[re.escape(m.group(0))], s)
