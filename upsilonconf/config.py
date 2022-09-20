@@ -1,4 +1,5 @@
 import copy
+import re
 from typing import (
     MutableMapping,
     Any,
@@ -548,47 +549,14 @@ def _modify_string(s: str, mods: Mapping[str, str]) -> str:
         The keys represent the strings to be replaced by the corresponding
         values.
 
-    Replacement strategy
-    --------------------
-    1. The replacement should be zealous, meaning that
-       `key_modifiers={'  ': '_', ' ': '-'}` should replace a single spaces
-       with a hyphen and two spaces with an underscore (and not two hypens).
-    2. The replacement should not be recursive, meaning that
-       `key_modifiers={' ': '-', '-': '_'}` should replace a hyphen with an
-       underscore and a space with a hyphen (and not an underscore).
+    Returns
+    -------
+    s : str
+        The string with all replacements according to `mods`.
     """
-    # To achieve the replacement strategy, we need a two step process (or
-    # regular expressions):
-    #   1. Replace all occurrencies of the replacement keys with a special
-    #      character (which must not occur in the keys of `config`).
-    #   2. Replace all special characters with the final replacement values.
+    if not mods:
+        return s
 
-    # Find a guard character not occurring in `s`,
-    # starting with the first ascii character
-    i = 0
-    while chr(i) in s:
-        i += 1
-    guard = chr(i)
-
-    # Find a count character not occurring in `s`
-    i += 1
-    while chr(i) in s:
-        i += 1
-    count = chr(i)
-
-    # Make a list with the 2-step replacements (sorting by length in descending
-    # order makes this zealous)
-    # Note, that we need at least one `count` character between the `guard`s
-    replacements = [
-        (k, f"{guard}{count * (i+1)}{guard}", mods[k])
-        for i, k in enumerate(sorted(mods, key=lambda k: len(k), reverse=True))
-    ]
-
-    # Perform first replacement
-    for k, value, _ in replacements:
-        s = s.replace(k, value)
-    # ... and second replacement
-    for _, k, value in replacements:
-        s = s.replace(k, value)
-
-    return s
+    rep = {re.escape(k): mods[k] for k in sorted(mods, key=lambda k: len(k), reverse=True)}
+    pattern = re.compile("|".join(rep.keys()))
+    return pattern.sub(lambda m: rep[re.escape(m.group(0))], s)
