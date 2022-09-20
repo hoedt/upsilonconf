@@ -676,16 +676,19 @@ class TestConfiguration(TestCase):
     def test_from_dict(self):
         d = dict(self.simple_config)
         conf = Configuration.from_dict(d)
+        self.assertIsInstance(conf, Configuration)
         self.assertEqual(self.simple_config, conf)
 
     def test_from_dict_empty(self):
         conf = Configuration.from_dict({})
+        self.assertIsInstance(conf, Configuration)
         self.assertEqual(self.empty_config, conf)
 
     def test_from_dict_nested(self):
         d = dict(self.complex_config)
         d["sub"] = dict(d["sub"])
         conf = Configuration.from_dict(d)
+        self.assertIsInstance(conf, Configuration)
         self.assertEqual(self.complex_config, conf)
 
     def test_from_dict_key_modifiers(self):
@@ -693,16 +696,19 @@ class TestConfiguration(TestCase):
         key_mods = {"X": "_", "O": "_minus_"}
         conf = Configuration.from_dict(d, key_mods)
         ref = Configuration(key_1="with X", key_minus_2="with O")
+        self.assertIsInstance(conf, Configuration)
         self.assertEqual(ref, conf)
 
     def test_from_dict_key_modifiers_neighbours(self):
         d = {"keyX1": "with X"}
         conf = Configuration.from_dict(d, {"X": "_", "1": "3"})
         ref = Configuration(key_3="with X")
+        self.assertIsInstance(conf, Configuration)
         self.assertEqual(ref, conf)
 
         conf = Configuration.from_dict(d, {"1": "3", "X": "_"})
         ref = Configuration(key_3="with X")
+        self.assertIsInstance(conf, Configuration)
         self.assertEqual(ref, conf)
 
     def test_from_dict_key_modifiers_missing(self):
@@ -715,6 +721,7 @@ class TestConfiguration(TestCase):
         key_mods = {"X": "_", "O": "_minus_", "k": "K"}
         conf = Configuration.from_dict(d, key_mods)
         ref = Configuration(Key_1="with X", Key_minus_2="with O")
+        self.assertIsInstance(conf, Configuration)
         self.assertEqual(ref, conf)
 
     def test_from_dict_key_modifiers_order(self):
@@ -722,11 +729,13 @@ class TestConfiguration(TestCase):
         key_mods = {"X": "0", "O": "_"}
         conf = Configuration.from_dict(d, key_mods)
         ref = Configuration(key01="with X", key_2="with O")
+        self.assertIsInstance(conf, Configuration)
         self.assertEqual(ref, conf)
 
         key_mods = {"O": "_", "X": "0"}  # reversed
         conf = Configuration.from_dict(d, key_mods)
         ref = Configuration(key01="with X", key_2="with O")
+        self.assertIsInstance(conf, Configuration)
         self.assertEqual(ref, conf)
 
     def test_from_dict_key_modifiers_order_length(self):
@@ -734,11 +743,13 @@ class TestConfiguration(TestCase):
         key_mods = {"keyX": "k", "keyO": "K", " X": "_", "O": "_"}
         conf = Configuration.from_dict(d, key_mods)
         ref = Configuration(k1="with X", K2="with O")
+        self.assertIsInstance(conf, Configuration)
         self.assertEqual(ref, conf)
 
-        key_mods = {"O": "_", "X": "-", "keyO": "K", "keyX": "k"}  # reversed
+        key_mods = {"O": "_", "X": "A", "keyO": "K", "keyX": "k"}  # reversed
         conf = Configuration.from_dict(d, key_mods)
         ref = Configuration(k1="with X", K2="with O")
+        self.assertIsInstance(conf, Configuration)
         self.assertEqual(ref, conf)
 
     def test_from_dict_key_modifiers_nested(self):
@@ -746,11 +757,13 @@ class TestConfiguration(TestCase):
         key_mods = {"keyX": "k", "keyO": "K", " X": "_", "O": "_"}
         conf = Configuration.from_dict(d, key_mods)
         ref = Configuration(k1="with X", K2=Configuration(K1=1, k2=2))
+        self.assertIsInstance(conf, Configuration)
         self.assertEqual(ref, conf)
 
-        key_mods = {"O": "_", "X": "-", "keyO": "K", "keyX": "k"}  # reversed
+        key_mods = {"O": "_", "X": "A", "keyO": "K", "keyX": "k"}  # reversed
         conf = Configuration.from_dict(d, key_mods)
         ref = Configuration(k1="with X", K2=Configuration(K1=1, k2=2))
+        self.assertIsInstance(conf, Configuration)
         self.assertEqual(ref, conf)
 
     def test_to_dict(self):
