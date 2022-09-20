@@ -370,7 +370,30 @@ class Configuration(MutableMapping[str, Any]):
 
         See Also
         --------
+        __init__ : regular configuration construction
         to_dict : convert configuration to dictionary
+
+        Examples
+        --------
+        Invalid characters in keys of a dictionary might lead to problems.
+
+        >>> d = {"key 1": "with space", "key-2": "with hyphen"}
+        >>> Configuration(**d)
+        Traceback (most recent call last):
+          ...
+        upsilonconf.config.InvalidKeyError: 'key 1' contains symbols that are not allowed
+
+        By using `from_dict` with `key_mods`, invalid characters can be replaced.
+
+        >>> Configuration.from_dict(d, key_mods={" ": "_", "-": "0"})
+        Configuration(key_1='with space', key02='with hyphen')
+
+        Construction will still fail if not all characters are addressed!
+
+        >>> Configuration.from_dict(d, key_mods={" ": "_"})
+        Traceback (most recent call last):
+          ...
+        upsilonconf.config.InvalidKeyError: 'key-2' contains symbols that are not allowed
         """
         if key_mods is None:
             key_mods = {}
@@ -384,6 +407,7 @@ class Configuration(MutableMapping[str, Any]):
         This method implements the inverse of `from_dict`.
         It is especially useful to create a mapping object
         without constraints on the format for keys.
+        Also, it ensures that sub-configs are transformed recursively.
 
         Parameters
         ----------
@@ -395,6 +419,30 @@ class Configuration(MutableMapping[str, Any]):
         mapping : Mapping[str, Any]
             An unconstrained mapping with the same
             key-value pairs as this configuration.
+
+        See Also
+        --------
+        from_dict : convert dictionary to configuration
+
+        Examples
+        --------
+        In order to convert a nested configuration to a dictionary,
+        it does not suffice to call `dict`.
+
+        >>> conf = Configuration(sub=Configuration(a=1))
+        >>> dict(conf)
+        {'sub': Configuration(a=1)}
+
+        Using `to_dict` does work recursively.
+
+        >>> conf.to_dict()
+        {'sub': {'a': 1}}
+
+        Similar to `from_dict`, key-modifiers can be used to transform keys.
+
+        >>> conf = Configuration(key_1='with space', key02='with hyphen')
+        >>> conf.to_dict(key_mods={"_": " ", "0": "-"})
+        {'key 1': 'with space', 'key-2': 'with hyphen'}
         """
         if key_mods is None:
             key_mods = {}
