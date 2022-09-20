@@ -1,5 +1,14 @@
 import copy
-from typing import MutableMapping, Any, Iterator, Iterable, Union, Tuple, Mapping
+from typing import (
+    MutableMapping,
+    Any,
+    Iterator,
+    Iterable,
+    Union,
+    Tuple,
+    Mapping,
+    Callable, Dict,
+)
 
 __all__ = ["Configuration", "InvalidKeyError"]
 
@@ -336,15 +345,105 @@ class Configuration(MutableMapping[str, Any]):
 
     @staticmethod
     def from_dict(
-        d: Mapping[str, Any],
+        mapping: Mapping[str, Any],
         key_mods: Mapping[str, str] = None,
     ) -> "Configuration":
+        """
+        Create a configuration object from a given mapping.
+
+        This method is especially useful to create a config from
+        a mapping that contains keys with invalid characters.
+        By means of `key_mods`, invalid characters can be
+        replaced to create keys that would be accepted by `__init__`.
+
+        Parameters
+        ----------
+        mapping : Mapping[str, Any]
+            The mapping to be converted into a configuration.
+        key_mods : Mapping[str, str], optional
+            A mapping from key patterns to their replacements.
+
+        Returns
+        -------
+        config : Configuration
+            A configuration object representing the original mapping.
+
+        See Also
+        --------
+        __init__ : regular configuration construction
+        to_dict : convert configuration to dictionary
+
+        Examples
+        --------
+        Invalid characters in keys of a dictionary might lead to problems.
+
+        >>> d = {"key 1": "with space", "key-2": "with hyphen"}
+        >>> Configuration(**d)
+        Traceback (most recent call last):
+          ...
+        upsilonconf.config.InvalidKeyError: 'key 1' contains symbols that are not allowed
+
+        By using `from_dict` with `key_mods`, invalid characters can be replaced.
+
+        >>> Configuration.from_dict(d, key_mods={" ": "_", "-": "0"})
+        Configuration(key_1='with space', key02='with hyphen')
+
+        Construction will still fail if not all characters are addressed!
+
+        >>> Configuration.from_dict(d, key_mods={" ": "_"})
+        Traceback (most recent call last):
+          ...
+        upsilonconf.config.InvalidKeyError: 'key-2' contains symbols that are not allowed
+        """
         if key_mods is None:
             key_mods = {}
 
-        return Configuration(**_replace_in_keys(d, key_mods))
+        return Configuration(**_replace_in_keys(mapping, key_mods))
 
-    def to_dict(self, key_mods: Mapping[str, str] = None) -> Mapping[str, Any]:
+    def to_dict(self, key_mods: Mapping[str, str] = None) -> Dict[str, Any]:
+        """
+        Convert this configuration to a dictionary.
+
+        This method implements the inverse of `from_dict`.
+        It is especially useful to create a mapping
+        without constraints on the format for keys.
+        Also, it ensures that sub-configs are transformed recursively.
+
+        Parameters
+        ----------
+        key_mods : Mapping[str, str], optional
+            A mapping from key patterns to their replacements.
+
+        Returns
+        -------
+        mapping : dict[str, Any]
+            A dictionary with the same
+            key-value pairs as this configuration.
+
+        See Also
+        --------
+        from_dict : convert dictionary to configuration
+
+        Examples
+        --------
+        In order to convert a nested configuration to a dictionary,
+        it does not suffice to call `dict`.
+
+        >>> conf = Configuration(sub=Configuration(a=1))
+        >>> dict(conf)
+        {'sub': Configuration(a=1)}
+
+        Using `to_dict` does work recursively.
+
+        >>> conf.to_dict()
+        {'sub': {'a': 1}}
+
+        Similar to `from_dict`, key-modifiers can be used to transform keys.
+
+        >>> conf = Configuration(key_1='with space', key02='with hyphen')
+        >>> conf.to_dict(key_mods={"_": " ", "0": "-"})
+        {'key 1': 'with space', 'key-2': 'with hyphen'}
+        """
         if key_mods is None:
             key_mods = {}
 
