@@ -8,7 +8,6 @@ from typing import (
     Union,
     Tuple,
     Mapping,
-    Callable,
     Dict,
 )
 
