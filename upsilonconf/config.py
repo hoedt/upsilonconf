@@ -7,7 +7,7 @@ from typing import (
     Union,
     Tuple,
     Mapping,
-    Callable,
+    Callable, Dict,
 )
 
 __all__ = ["Configuration", "InvalidKeyError"]
@@ -398,14 +398,14 @@ class Configuration(MutableMapping[str, Any]):
         if key_mods is None:
             key_mods = {}
 
-        return Configuration(**_modify_keys(mapping, key_mods))
+        return Configuration(**_replace_in_keys(mapping, key_mods))
 
-    def to_dict(self, key_mods: Mapping[str, str] = None) -> Mapping[str, Any]:
+    def to_dict(self, key_mods: Mapping[str, str] = None) -> Dict[str, Any]:
         """
-        Convert this configuration to a more general mapping object.
+        Convert this configuration to a dictionary.
 
         This method implements the inverse of `from_dict`.
-        It is especially useful to create a mapping object
+        It is especially useful to create a mapping
         without constraints on the format for keys.
         Also, it ensures that sub-configs are transformed recursively.
 
@@ -416,8 +416,8 @@ class Configuration(MutableMapping[str, Any]):
 
         Returns
         -------
-        mapping : Mapping[str, Any]
-            An unconstrained mapping with the same
+        mapping : dict[str, Any]
+            A dictionary with the same
             key-value pairs as this configuration.
 
         See Also
@@ -447,54 +447,73 @@ class Configuration(MutableMapping[str, Any]):
         if key_mods is None:
             key_mods = {}
 
-        return _modify_keys(self, key_mods)
+        return _replace_in_keys(self, key_mods)
 
 
 # utilities
 
 
-def _modify_keys(
-    m: Mapping[str, Any],
-    key_mods: Mapping[str, str],
-) -> Mapping[str, Any]:
+def __replace_in_keys(
+    mapping: Union[Mapping[str, Any], Any], s: str, r: str
+) -> Union[Mapping[str, Any], Any]:
     """
-    Modify keys in a mapping by replacing patterns.
+    Take a mapping object and replace all occurrencies of `s` with `r` in any
+    of its keys.
+
+    This function is called recursively.
+
+    Modelled after the Stack Overflow answer by Farhan Haider:
+    https://stackoverflow.com/questions/21650850/pyyaml-replace-dash-in-keys-with-underscore#answer-55986782
 
     Parameters
     ----------
-    m : Mapping[str, Any]
-        The mapping to be modified.
-    key_mods : Mapping[str, str]
-        Mapping from key patterns to their replacements.
+    mapping : Mapping
+        The mapping object to be modified.
+    s : str
+        The string to be replaced in the keys.
+    r : str
+        The replacement string.
 
     Returns
     -------
-    m : Mapping[str, Any]
-        The modified mapping.
+        The dictionary with all strings `s` replaced with `r` in the keys.
     """
-    _tmp, _guard = "\x1a", "\x1b"
-    if any(_tmp in k or _tmp in v for k, v in key_mods.items()):
-        raise ValueError(f"keys or values can not contain {_tmp!r}")
+    # Traverse all the keys and replace `s` with `r`
+    dictionary = {}
+    for key, value in mapping.items():
+        try:
+            # Call this method recursively
+            value = __replace_in_keys(value, s, r)
+        except AttributeError:
+            # `value` is not of the mapping type
+            pass
+        dictionary[key.replace(s, r)] = value
 
-    _mods = sorted(key_mods.items(), key=lambda kv: len(kv[0]), reverse=True)
-    _tmps = tuple(_guard + _tmp * (len(_mods) - i) + _guard for i in range(len(_mods)))
-
-    def _chain_replace(s: str):
-        """Independently replace multiple patterns in string."""
-        for (old, _), new in zip(_mods, _tmps):
-            s = s.replace(old, new)
-
-        for old, (_, new) in zip(_tmps, _mods):
-            s = s.replace(old, new)
-
-        return s
-
-    return _apply_to_keys(m, _chain_replace)
+    return dictionary
 
 
-def _apply_to_keys(m: Mapping[str, Any], f: Callable[[str], str]) -> Mapping[str, Any]:
-    """Apply function to all keys in a mapping (recursively)."""
-    return {
-        f(k): _apply_to_keys(v, f) if isinstance(v, Mapping) else v
-        for k, v in m.items()
-    }
+def _replace_in_keys(
+    config: Mapping[str, Any], key_modifiers: Mapping[str, str]
+) -> Mapping[str, Any]:
+    """
+    Replace strings in the keys of a mapping object.
+
+    Parameters
+    ----------
+    config : Mapping
+        The configuration object (or dictionary) to be modified.
+    key_modifiers : dict
+        The dictionary with the replacements.
+
+    Returns
+    -------
+    dict
+        A dictionary with the modified keys.
+
+    """
+    _config = config
+    # Replace longest strings first
+    # - `sorted(..., reverse=True)` takes care of that
+    for key in key_modifiers.keys():
+        _config = __replace_in_keys(_config, key, key_modifiers[key])
+    return dict(_config)
