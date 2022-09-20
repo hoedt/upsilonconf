@@ -7,7 +7,8 @@ from typing import (
     Union,
     Tuple,
     Mapping,
-    Callable, Dict,
+    Callable,
+    Dict,
 )
 
 __all__ = ["Configuration", "InvalidKeyError"]
@@ -398,7 +399,7 @@ class Configuration(MutableMapping[str, Any]):
         if key_mods is None:
             key_mods = {}
 
-        return Configuration(**_replace_in_keys(mapping, key_mods))
+        return Configuration(**_modify_keys(mapping, key_mods))
 
     def to_dict(self, key_mods: Mapping[str, str] = None) -> Dict[str, Any]:
         """
@@ -447,7 +448,7 @@ class Configuration(MutableMapping[str, Any]):
         if key_mods is None:
             key_mods = {}
 
-        return _replace_in_keys(self, key_mods)
+        return _modify_keys(self, key_mods)
 
 
 # utilities
@@ -492,24 +493,60 @@ def __replace_in_keys(
     return dictionary
 
 
-def _replace_in_keys(
-    config: Mapping[str, Any], key_modifiers: Mapping[str, str]
-) -> Mapping[str, Any]:
+def _modify_keys(
+    mapping: Mapping[str, Any], key_mods: Mapping[str, str]
+) -> Dict[str, Any]:
     """
     Replace strings in the keys of a mapping object.
 
+    The replacement is done recursively.
+
     Parameters
     ----------
-    config : Mapping
-        The configuration object (or dictionary) to be modified.
-    key_modifiers : dict
-        The dictionary with the replacements: All keys strings are replaced
-        with the corresponding values from the `key_modifiers` dictionary.
+    mapping : Mapping
+        The mapping object (`Configuration`, `dict`, ...) whose keys are to be
+        modified.
+    key_mods : dict
+        The dictionary with the replacements: All key strings are replaced
+        with the corresponding values from the this dictionary.
 
     Returns
     -------
     dict
         A dictionary with the modified keys.
+
+    """
+    # This fails with `AttributeError`, if `mapping` is not of a mapping type,
+    # thus breaking the recursive calls
+    keys_modified = {k: _modify_string(k, key_mods) for k in mapping.keys()}
+
+    dictionary = {}
+    for key, value in mapping.items():
+        try:
+            # Call this method recursively
+            value = _modify_keys(value, key_mods)
+        except AttributeError:
+            # `value` is not of the mapping type
+            pass
+        dictionary[keys_modified[key]] = value
+
+    return dictionary
+
+
+def _modify_string(s: str, mods: Mapping[str, str]) -> str:
+    """
+    Replace strings in one key.
+
+    All strings from the `mods` keys are replaced with their corresponding
+    values.
+
+    Parameters
+    ----------
+    s : str
+        The string to be modified.
+    mods : Mapping
+        The keys represent the strings to be replaced by the corresponding
+        values.
 
     Replacement strategy
     --------------------
@@ -520,39 +557,38 @@ def _replace_in_keys(
        `key_modifiers={' ': '-', '-': '_'}` should replace a hyphen with an
        underscore and a space with a hyphen (and not an underscore).
     """
-    if not key_modifiers:
-        return dict(config)
-
     # To achieve the replacement strategy, we need a two step process (or
     # regular expressions):
     #   1. Replace all occurrencies of the replacement keys with a special
     #      character (which must not occur in the keys of `config`).
     #   2. Replace all special characters with the final replacement values.
-    # Note:
-    #   This relies on ordered dictionaries, so Python>=3.6 is required!
 
-    # Make a list of special characters not occurring in `config.keys()`
-    keychars = set()
-    for key in config.keys():
-        keychars.update(key)
-    chars = []
-    i = 0   # Start with the first ascii character
-    while len(chars) < len(key_modifiers):
-        c = chr(i)
-        if c not in keychars:
-            chars.append(c)
+    # Find a guard character not occurring in `s`,
+    # starting with the first ascii character
+    i = 0
+    while chr(i) in s:
         i += 1
+    guard = chr(i)
 
-    _config = config
-    # Perform first replacement (sorting by length in descending order makes
-    # this zealous)
-    for key, char in sorted(
-        zip(key_modifiers.keys(), chars), key=lambda k: len(k[0]), reverse=True
-    ):
-        _config = __replace_in_keys(_config, key, char)
+    # Find a count character not occurring in `s`
+    i += 1
+    while chr(i) in s:
+        i += 1
+    count = chr(i)
 
-    # Perform second replacement
-    for char, value in zip(chars, key_modifiers.values()):
-        _config = __replace_in_keys(_config, char, value)
+    # Make a list with the 2-step replacements (sorting by length in descending
+    # order makes this zealous)
+    # Note, that we need at least one `count` character between the `guard`s
+    replacements = [
+        (k, f"{guard}{count * (i+1)}{guard}", mods[k])
+        for i, k in enumerate(sorted(mods, key=lambda k: len(k), reverse=True))
+    ]
 
-    return _config
+    # Perform first replacement
+    for k, value, _ in replacements:
+        s = s.replace(k, value)
+    # ... and second replacement
+    for _, k, value in replacements:
+        s = s.replace(k, value)
+
+    return s
