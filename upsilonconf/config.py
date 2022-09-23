@@ -476,11 +476,8 @@ def _modify_keys(
 
     """
     # Build and compile replacement pattern
-    pattern = re.compile(
-        "|".join(
-            [re.escape(k) for k in sorted(key_mods, key=lambda k: len(k), reverse=True)]
-        )
-    )
+    sorted_mod_keys = sorted(key_mods, key=lambda k: len(k), reverse=True)
+    pattern = re.compile("|".join([re.escape(k) for k in sorted_mod_keys]))
 
     return __modify_keys(mapping, key_mods, pattern)
 
