@@ -9,6 +9,7 @@ from typing import (
     Tuple,
     Mapping,
     Dict,
+    Pattern,
 )
 
 __all__ = ["Configuration", "InvalidKeyError"]
@@ -483,7 +484,7 @@ def _modify_keys(
 
 
 def __modify_keys(
-    mapping: Mapping[str, Any], key_mods: Mapping[str, str], pattern
+    mapping: Mapping[str, Any], key_mods: Mapping[str, str], pattern: Pattern
 ) -> Dict[str, Any]:
     """
     Replace strings in the keys of a mapping object.
