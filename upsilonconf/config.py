@@ -475,12 +475,11 @@ def _modify_keys(
     dict
         A dictionary with the modified keys.
 
-    Alternatives
-    ------------
-    See https://github.com/hoedt/upsilonconf/pull/6 for alternative
-    implementations (and a discussion about them) which do not use regular
-    expressions.
     """
+    # See https://github.com/hoedt/upsilonconf/pull/6 for alternative
+    # implementations (and a discussion about them) which do not use regular
+    # expressions.
+
     # Build and compile replacement pattern
     sorted_mod_keys = sorted(key_mods, key=lambda k: len(k), reverse=True)
     pattern = re.compile("|".join([re.escape(k) for k in sorted_mod_keys]))
