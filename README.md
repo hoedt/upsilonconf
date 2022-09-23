@@ -33,6 +33,8 @@ conf1 = upsilonconf.load("config.yaml")  # from config file
 conf2 = upsilonconf.Configuration(key1="value1", key2=2)  # direct
 dictionary = {"sub": conf2}  # sub-configs allowed!
 conf3 = upsilonconf.Configuration(**dictionary)  # from dict
+free_dict = {"a key": "with whitespace"}
+confX = upsilonconf.Configuration.from_dict(free_dict, key_mods={" ": "_"})
 conf = conf1 | conf2 | conf3  # from other configurations
 ```
 
@@ -84,6 +86,10 @@ except ValueError:
 # different file formats (with optional requirements)
 conf = upsilonconf.load("config.yaml")  # with patched float parsing
 upsilonconf.save(conf, "config.json")  # with indentation by default
+
+# fix invalid keys in files on-the-fly
+conf = upsilonconf.load("config.yaml", key_mods={" ": "_"})
+upsilonconf.save(conf, "config.json", key_mods={"_": " "})
 
 # organise hierarchical configs in directories
 upsilonconf.save({"key": "option1"}, "config_dir/config.json")
