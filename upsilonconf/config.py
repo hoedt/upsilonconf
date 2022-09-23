@@ -109,10 +109,10 @@ class Configuration(MutableMapping[str, Any]):
     def __setstate__(self, state: Mapping[str, Any]) -> None:
         self.__init__(**state)
 
-    def __copy__(self):
+    def __copy__(self) -> "Configuration":
         return Configuration(**self)
 
-    def __deepcopy__(self, memo: Mapping = None):
+    def __deepcopy__(self, memo: Dict = None) -> "Configuration":
         if memo is None:
             memo = {}
 
