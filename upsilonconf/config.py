@@ -1,4 +1,5 @@
 import copy
+import re
 from typing import (
     MutableMapping,
     Any,
@@ -7,7 +8,8 @@ from typing import (
     Union,
     Tuple,
     Mapping,
-    Callable, Dict,
+    Dict,
+    Pattern,
 )
 
 __all__ = ["Configuration", "InvalidKeyError"]
@@ -398,7 +400,7 @@ class Configuration(MutableMapping[str, Any]):
         if key_mods is None:
             key_mods = {}
 
-        return Configuration(**_replace_in_keys(mapping, key_mods))
+        return Configuration(**_modify_keys(mapping, key_mods))
 
     def to_dict(self, key_mods: Mapping[str, str] = None) -> Dict[str, Any]:
         """
@@ -447,63 +449,26 @@ class Configuration(MutableMapping[str, Any]):
         if key_mods is None:
             key_mods = {}
 
-        return _replace_in_keys(self, key_mods)
+        return _modify_keys(self, key_mods)
 
 
 # utilities
 
 
-def __replace_in_keys(
-    mapping: Union[Mapping[str, Any], Any], s: str, r: str
-) -> Union[Mapping[str, Any], Any]:
+def _modify_keys(
+    mapping: Mapping[str, Any], key_mods: Mapping[str, str]
+) -> Dict[str, Any]:
     """
-    Take a mapping object and replace all occurrencies of `s` with `r` in any
-    of its keys.
-
-    This function is called recursively.
-
-    Modelled after the Stack Overflow answer by Farhan Haider:
-    https://stackoverflow.com/questions/21650850/pyyaml-replace-dash-in-keys-with-underscore#answer-55986782
+    Replace strings in the keys of a mapping object recursively.
 
     Parameters
     ----------
     mapping : Mapping
-        The mapping object to be modified.
-    s : str
-        The string to be replaced in the keys.
-    r : str
-        The replacement string.
-
-    Returns
-    -------
-        The dictionary with all strings `s` replaced with `r` in the keys.
-    """
-    # Traverse all the keys and replace `s` with `r`
-    dictionary = {}
-    for key, value in mapping.items():
-        try:
-            # Call this method recursively
-            value = __replace_in_keys(value, s, r)
-        except AttributeError:
-            # `value` is not of the mapping type
-            pass
-        dictionary[key.replace(s, r)] = value
-
-    return dictionary
-
-
-def _replace_in_keys(
-    config: Mapping[str, Any], key_modifiers: Mapping[str, str]
-) -> Mapping[str, Any]:
-    """
-    Replace strings in the keys of a mapping object.
-
-    Parameters
-    ----------
-    config : Mapping
-        The configuration object (or dictionary) to be modified.
-    key_modifiers : dict
-        The dictionary with the replacements.
+        The mapping object (`Configuration`, `dict`, ...) whose keys are to be
+        modified.
+    key_mods : Mapping
+        The dictionary with the replacements: All key strings are replaced
+        with the corresponding values from the this dictionary.
 
     Returns
     -------
@@ -511,9 +476,60 @@ def _replace_in_keys(
         A dictionary with the modified keys.
 
     """
-    _config = config
-    # Replace longest strings first
-    # - `sorted(..., reverse=True)` takes care of that
-    for key in key_modifiers.keys():
-        _config = __replace_in_keys(_config, key, key_modifiers[key])
-    return dict(_config)
+    # See https://github.com/hoedt/upsilonconf/pull/6 for alternative
+    # implementations (and a discussion about them) which do not use regular
+    # expressions.
+
+    # Build and compile replacement pattern
+    sorted_mod_keys = sorted(key_mods, key=lambda k: len(k), reverse=True)
+    pattern = re.compile("|".join([re.escape(k) for k in sorted_mod_keys]))
+
+    return __modify_keys(mapping, key_mods, pattern)
+
+
+def __modify_keys(
+    mapping: Mapping[str, Any], key_mods: Mapping[str, str], pattern: Pattern
+) -> Dict[str, Any]:
+    """
+    Replace strings in the keys of a mapping object.
+
+    This is the working horse for `_modify_keys` to do the replacement
+    recursively.
+
+    Parameters
+    ----------
+    mapping : Mapping
+        The mapping object (`Configuration`, `dict`, ...) whose keys are to be
+        modified.
+    key_mods : Mapping
+        The dictionary with the replacements: All key strings are replaced
+        with the corresponding values from the this dictionary.
+    pattern : ???
+        The compiled replacement pattern.
+
+    Returns
+    -------
+    dict
+        A dictionary with the modified keys.
+
+    """
+    dictionary = {}
+
+    # `mapping.items()` fails with `AttributeError`, if `mapping` is not of a
+    # mapping type, thus breaking the recursive calls
+    for key, value in mapping.items():
+        try:
+            # Call this method recursively
+            value = __modify_keys(value, key_mods, pattern)
+        except AttributeError:
+            # `value` is not of the mapping type
+            pass
+
+        # Replace only, if there are replacements requested, otherwise just
+        # save the value
+        if key_mods:
+            dictionary[pattern.sub(lambda m: key_mods[m.group(0)], key)] = value
+        else:
+            dictionary[key] = value
+
+    return dictionary
