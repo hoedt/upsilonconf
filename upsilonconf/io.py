@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Union, Any, Mapping, Callable, overload
 
 from .config import Configuration
-from ._optional_dependency import optional_dependency_to
+from ._import_tricks import optional_dependency_to
 
 
 __all__ = ["load", "save"] + [
