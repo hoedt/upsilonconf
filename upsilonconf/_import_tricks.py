@@ -55,7 +55,9 @@ def optional_dependency_to(feature: str = None, package: str = None) -> callable
 optional_dependency = optional_dependency_to(None)
 
 
-def _lazy_imports(pkg_name: str, submodules: dict, base_dir: list, aliases: dict = None):
+def _lazy_imports(
+    pkg_name: str, submodules: dict, base_dir: list, aliases: dict = None
+):
     """
     Function for lazily importing submodules in a package.
 
@@ -80,6 +82,7 @@ def _lazy_imports(pkg_name: str, submodules: dict, base_dir: list, aliases: dict
     """
     # inspired by https://github.com/scientific-python/lazy_loader
     import importlib
+
     attr_to_module = {attr: m for m, attrs in submodules.items() for attr in attrs}
     if aliases is None:
         aliases = {}

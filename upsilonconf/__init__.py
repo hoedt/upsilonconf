@@ -15,5 +15,9 @@ __getattr__, __dir__ = _lazy_imports(
     __package__,
     {"io": ["load", "save"], "cli": ["from_cli"]},
     dir(),
-    aliases={"load_config": "load", "save_config": "save", "config_from_cli": "from_cli"}
+    aliases={
+        "load_config": "load",
+        "save_config": "save",
+        "config_from_cli": "from_cli",
+    },
 )
