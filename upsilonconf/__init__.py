@@ -1,7 +1,5 @@
 """ A simple configuration library. """
 
-from ._optional_dependency import OptionalDependencyError
-from .io import load, save, from_cli
 from .config import *
 
 __version__ = "0.4.2.dev1"
@@ -12,7 +10,24 @@ __all__ = config.__all__ + [
     "config_from_cli",
 ]
 
-# aliases
-load_config = load
-save_config = save
-config_from_cli = from_cli
+
+def __getattr__(name: str):
+    import importlib
+
+    if name == "load" or name == "load_config":
+        return importlib.import_module(".io", __package__).load
+    elif name == "save" or name == "save_config":
+        return importlib.import_module(".io", __package__).save
+    elif name == "from_cli" or name == "config_from_cli":
+        return importlib.import_module(".io", __package__).from_cli
+    elif name == "OptionalDependencyError":
+        return importlib.import_module(
+            "._optional_dependency", __package__
+        ).OptionalDependencyError
+
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
+
+
+def __dir__():
+    yield from __all__
+    yield from ("load", "save", "from_cli")
