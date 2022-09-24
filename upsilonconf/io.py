@@ -114,7 +114,7 @@ def load_dir(path: Path) -> Mapping[str, Any]:
     Read config from a directory.
 
     A config directory can hold any combination of the following three elements:
-     1. The base configuration file with the name `config` (e.g. `config.json`)
+     1. The base configuration file with the name ``config`` (e.g. ``config.json``)
      2. Config files/directories with sub-configs to be added to the base config.
         These sub-configs are directly added to the base config.
         The filename of this sub-config will be a new(!) key in the base config.
@@ -182,6 +182,13 @@ def save_dir(conf: Mapping[str, Any], path: Path, name: str = None) -> None:
     _save(conf, file_path)
 
 
+DEFAULT_IO_FUNCTIONS = {
+    "": (load_dir, save_dir),
+    ".json": (load_json, save_json),
+    ".yaml": (load_yaml, save_yaml),
+}
+
+
 @overload
 def _get_io_function(
     path: Path, write: bool = False
@@ -205,23 +212,21 @@ def _get_io_function(path: Path, write: bool = False):
     path: Path
         Path to deduct the correct IO functions from.
     write: bool, optional
-        Return function to write configs if `True`,
+        Return function to write configs if ``True``,
         otherwise a function for reading configs is returned.
 
     Returns
     -------
-    io_func : Path -> Mapping
-        Function for reading/writing config files from/to path.
+    io_func
+        Function for reading/writing config files from/to `path`.
     """
     ext = path.suffix.lower()
-    if ext == "":
-        return save_dir if write else load_dir
-    if ext == ".json":
-        return save_json if write else load_json
-    elif ext == ".yaml":
-        return save_yaml if write else load_yaml
+    try:
+        _load, _save = DEFAULT_IO_FUNCTIONS[ext]
+    except KeyError:
+        raise ValueError(f"unknown config file extension: '{ext}'") from None
 
-    raise ValueError(f"unknown config file extension: '{ext}'")
+    return _save if write else _load
 
 
 def load(
@@ -309,29 +314,30 @@ def from_cli(args: Sequence[str] = None, parser: ArgumentParser = None):
     """
     Construct a configuration from a Command Line Interface.
 
-    This function adds a `configuration` group to an argument parser
-    and adds two extra options to the parser: `overrides` and `--config`.
-    The `--config` flag allows to specify a config file to read a basic config from.
-    The `overrides` option allows to specify one or more key value pairs
+    This function adds a *configuration* group to an argument parser
+    and adds two extra options to the parser: *overrides* and *--config*.
+    The *--config* flag allows to specify a config file to read a basic config from.
+    The *overrides* option allows to specify one or more key value pairs
     that will overwrite any config values from the specified config file.
 
     Parameters
     ----------
     args : sequence of str, optional
         The list of arguments to parse.
-        If not specified, they are taken from `sys.argv`.
+        If not specified, they are taken from ``sys.argv``.
     parser : ArgumentParser, optional
         The CLI parser to use as a base for retrieving configuration options.
         The parser can not (already) expect a variable number of positional args.
-        Moreover, the parser should not already use the names `config` or `overrides`.
+        Moreover, the parser should not already use the names *config* or *overrides*.
         If not specified, an empty parser will be created.
 
     Returns
     -------
     config : Configuration
         The configuration as specified by the command line arguments.
-    ns : Namespace
+    ns : Namespace, optional
         The namespace with additional arguments from the command line arguments.
+        This is only returned if `parser` is not ``None``
     """
     _parser = ArgumentParser() if parser is None else parser
 

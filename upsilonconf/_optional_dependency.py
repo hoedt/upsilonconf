@@ -32,6 +32,11 @@ def optional_dependency_to(feature: str = None, package: str = None) -> callable
     _decorator : callable
         A decorator for wrapping functions with imports of optional dependencies.
         This wrapper will raise an `OptionalDependencyError` if the import fails.
+
+    Raises
+    ------
+    OptionalDependencyError
+        If the optional dependency is not satisfied.
     """
     if feature is None:
         feature = "make use of this feature"

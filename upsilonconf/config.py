@@ -182,7 +182,6 @@ class Configuration(MutableMapping[str, Any]):
 
     def __setattr__(self, name: str, value: Any) -> None:
         try:
-            self._validate_key(name)
             self.__setitem__(name, value)
         except InvalidKeyError:
             super().__setattr__(name, value)
@@ -234,7 +233,7 @@ class Configuration(MutableMapping[str, Any]):
         keys : str or iterable of str
             The key(s) to be resolved.
         create : bool, optional
-            If `True`, non-existent sub-configurations will be created.
+            If ``True``, non-existent sub-configurations will be created.
 
         Returns
         -------
@@ -284,7 +283,8 @@ class Configuration(MutableMapping[str, Any]):
         Returns
         -------
         old_value
-            The value that has been overwritten or `None` if no value was present.
+            The value that has been overwritten
+            or ``None`` if no value was present.
 
         See Also
         --------
@@ -322,7 +322,7 @@ class Configuration(MutableMapping[str, Any]):
         -------
         old_values : Mapping
             Mapping from keys to the values that have been overwritten.
-            If the key did not exist, the corresponding value is `None`.
+            If the key did not exist, the corresponding value is ``None``.
 
         See Also
         --------
@@ -429,7 +429,7 @@ class Configuration(MutableMapping[str, Any]):
         Examples
         --------
         In order to convert a nested configuration to a dictionary,
-        it does not suffice to call `dict`.
+        it does not suffice to call ``dict``.
 
         >>> conf = Configuration(sub=Configuration(a=1))
         >>> dict(conf)
@@ -464,11 +464,10 @@ def _modify_keys(
     Parameters
     ----------
     mapping : Mapping
-        The mapping object (`Configuration`, `dict`, ...) whose keys are to be
-        modified.
+        The mapping object whose keys are to be modified.
     key_mods : Mapping
         The dictionary with the replacements: All key strings are replaced
-        with the corresponding values from the this dictionary.
+        with the corresponding values from this dictionary.
 
     Returns
     -------
@@ -499,12 +498,11 @@ def __modify_keys(
     Parameters
     ----------
     mapping : Mapping
-        The mapping object (`Configuration`, `dict`, ...) whose keys are to be
-        modified.
+        The mapping object whose keys are to be modified.
     key_mods : Mapping
         The dictionary with the replacements: All key strings are replaced
-        with the corresponding values from the this dictionary.
-    pattern : ???
+        with the corresponding values from this dictionary.
+    pattern : Pattern
         The compiled replacement pattern.
 
     Returns
