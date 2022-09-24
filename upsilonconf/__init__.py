@@ -4,7 +4,7 @@ from ._optional_dependency import OptionalDependencyError
 from .io import load, save, from_cli
 from .config import *
 
-__version__ = "0.4.2.dev1"
+__version__ = "0.5.0.dev1"
 __all__ = config.__all__ + [
     "OptionalDependencyError",
     "load_config",
