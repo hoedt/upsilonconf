@@ -1,8 +1,7 @@
 """ A simple configuration library. """
 
-from ._optional_dependency import OptionalDependencyError
-from .io import load, save, from_cli
 from .config import *
+from .io import *
 
 __version__ = "0.5.0.dev1"
 __all__ = config.__all__ + [
@@ -13,6 +12,6 @@ __all__ = config.__all__ + [
 ]
 
 # aliases
-load_config = load
-save_config = save
+load = load_config
+save = save_config
 config_from_cli = from_cli

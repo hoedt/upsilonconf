@@ -8,7 +8,10 @@ from unittest import mock
 
 from upsilonconf.config import Configuration
 from upsilonconf.io import *
-from upsilonconf.io import DEFAULT_NAME
+
+DEFAULT_NAME = DirectoryIO.DEFAULT_NAME
+
+# TODO: adapt tests to new interface
 
 
 CONFIG = Configuration(foo=1, bar="baz", baz={"a": 0.1, "b": 0.2})
@@ -38,8 +41,8 @@ class TestFileOperations(TestCase):
         m_open = mock.mock_open()
         buffer = io.StringIO()
         m_open.return_value.__enter__.side_effect = [buffer]
-        with mock.patch("upsilonconf.io.open", m_open):
-            save(CONFIG, path)
+        with mock.patch("upsilonconf.io.json.open", m_open):
+            save_config(CONFIG, path)
 
         m_open.assert_called_once_with(path, "w")
         buffer.seek(0)
@@ -50,8 +53,8 @@ class TestFileOperations(TestCase):
         path = Path.home() / "hparam.json"
 
         m_open = mock.mock_open(read_data=os.linesep.join(CONFIG_JSON_LINES))
-        with mock.patch("upsilonconf.io.open", m_open):
-            c = load(path)
+        with mock.patch("upsilonconf.io.json.open", m_open):
+            c = load_config(path)
 
         self.assertEqual(CONFIG, c)
 
@@ -61,8 +64,8 @@ class TestFileOperations(TestCase):
         m_open = mock.mock_open()
         buffer = io.StringIO()
         m_open.return_value.__enter__.side_effect = [buffer]
-        with mock.patch("upsilonconf.io.open", m_open):
-            save(CONFIG, path)
+        with mock.patch("upsilonconf.io.yaml.open", m_open):
+            save_config(CONFIG, path)
 
         m_open.assert_called_once_with(path, "w")
         buffer.seek(0)
@@ -74,7 +77,7 @@ class TestFileOperations(TestCase):
 
         m_open = mock.mock_open(read_data=os.linesep.join(CONFIG_YAML_LINES))
         with mock.patch("upsilonconf.io.open", m_open):
-            c = load(path)
+            c = load_config(path)
 
         self.assertEqual(CONFIG, c)
 
@@ -83,8 +86,8 @@ class TestFileOperations(TestCase):
 
         for expression in ("1.3e-5", "1e5", ".5e3"):
             m_open = mock.mock_open(read_data="foo: " + expression)
-            with mock.patch("upsilonconf.io.open", m_open):
-                c = load_yaml(path)
+            with mock.patch("upsilonconf.io.yaml.open", m_open):
+                c = YAMLIO().read(path)
                 self.assertEqual(float(expression), c["foo"])
 
     def test_save_dir(self):
@@ -93,8 +96,8 @@ class TestFileOperations(TestCase):
         m_open = mock.mock_open()
         buffer = io.StringIO()
         m_open.return_value.__enter__.side_effect = [buffer]
-        with mock.patch("upsilonconf.io.open", m_open):
-            save(CONFIG, path)
+        with mock.patch("upsilonconf.io.json.open", m_open):
+            save_config(CONFIG, path)
 
         m_open.assert_called_once_with(path / DEFAULT_NAME, "w")
         buffer.seek(0)
@@ -106,12 +109,12 @@ class TestFileOperations(TestCase):
         filenames = (DEFAULT_NAME, "sub1.json", "sub2.json")
 
         m_open = mock.mock_open(read_data=os.linesep.join(CONFIG_JSON_LINES))
-        with mock.patch("upsilonconf.io.open", m_open), mock.patch(
+        with mock.patch("upsilonconf.io.json.open", m_open), mock.patch(
             "upsilonconf.io.Path.iterdir"
         ) as m_iterdir, mock.patch("upsilonconf.io.Path.glob") as m_glob:
             m_glob.return_value = (path / name for name in filenames)
             m_iterdir.return_value = (path / name for name in filenames)
-            c = load(path)
+            c = load_config(path)
 
         self.assertEqual(len(filenames), m_open.call_count)
         for name in filenames[::-1]:
@@ -124,12 +127,12 @@ class TestFileOperations(TestCase):
         filenames = ("config.yaml", "sub1.yaml", "sub2.yaml")
 
         m_open = mock.mock_open(read_data=os.linesep.join(CONFIG_YAML_LINES))
-        with mock.patch("upsilonconf.io.open", m_open), mock.patch(
+        with mock.patch("upsilonconf.io.yaml.open", m_open), mock.patch(
             "upsilonconf.io.Path.iterdir"
         ) as m_iterdir, mock.patch("upsilonconf.io.Path.glob") as m_glob:
             m_glob.return_value = (path / name for name in filenames)
             m_iterdir.return_value = (path / name for name in filenames)
-            c = load(path)
+            c = load_config(path)
 
         self.assertEqual(len(filenames), m_open.call_count)
         for name in filenames[::-1]:
@@ -142,12 +145,12 @@ class TestFileOperations(TestCase):
         filenames = ("sub1.json", "sub2.json")
 
         m_open = mock.mock_open(read_data=os.linesep.join(CONFIG_JSON_LINES))
-        with mock.patch("upsilonconf.io.open", m_open), mock.patch(
+        with mock.patch("upsilonconf.io.json.open", m_open), mock.patch(
             "upsilonconf.io.Path.iterdir"
         ) as m_iterdir, mock.patch("upsilonconf.io.Path.glob") as m_glob:
             m_glob.return_value = iter(())
             m_iterdir.return_value = (path / name for name in filenames)
-            c = load(path)
+            c = load_config(path)
 
         self.assertEqual(len(filenames), m_open.call_count)
         for name in filenames[::-1]:
@@ -160,12 +163,12 @@ class TestFileOperations(TestCase):
         filenames = ("config.yaml", "bar.yaml")
 
         m_open = mock.mock_open(read_data=os.linesep.join(CONFIG_YAML_LINES))
-        with mock.patch("upsilonconf.io.open", m_open), mock.patch(
+        with mock.patch("upsilonconf.io.yaml.open", m_open), mock.patch(
             "upsilonconf.io.Path.iterdir"
         ) as m_iterdir, mock.patch("upsilonconf.io.Path.glob") as m_glob:
             m_glob.return_value = (path / name for name in filenames)
             m_iterdir.return_value = (path / name for name in filenames)
-            c = load(path)
+            c = load_config(path)
 
         self.assertEqual(len(filenames), m_open.call_count)
         for name in filenames[::-1]:
@@ -178,13 +181,13 @@ class TestFileOperations(TestCase):
         filenames = ("config.yaml", "foo.yaml")
 
         m_open = mock.mock_open(read_data=os.linesep.join(CONFIG_YAML_LINES))
-        with mock.patch("upsilonconf.io.open", m_open), mock.patch(
+        with mock.patch("upsilonconf.io.yaml.open", m_open), mock.patch(
             "upsilonconf.io.Path.iterdir"
         ) as m_iterdir, mock.patch("upsilonconf.io.Path.glob") as m_glob:
             m_glob.return_value = (path / name for name in filenames)
             m_iterdir.return_value = (path / name for name in filenames)
             with self.assertRaisesRegex(ValueError, filenames[-1]):
-                load(path)
+                load_config(path)
 
         self.assertEqual(len(filenames), m_open.call_count)
         for name in filenames[::-1]:
@@ -193,12 +196,12 @@ class TestFileOperations(TestCase):
     def test_save_bad_extension(self):
         path = Path.home() / "hparam.invalid"
         with self.assertRaisesRegex(ValueError, "extension"):
-            save(CONFIG, path)
+            save_config(CONFIG, path)
 
     def test_load_bad_extension(self):
         path = Path.home() / "hparam.invalid"
         with self.assertRaisesRegex(ValueError, "extension"):
-            load(path)
+            load_config(path)
 
 
 class TestCLI(TestCase):
@@ -221,7 +224,7 @@ class TestCLI(TestCase):
         path = Path.home() / "hparam.json"
 
         m_open = mock.mock_open(read_data=os.linesep.join(CONFIG_JSON_LINES))
-        with mock.patch("upsilonconf.io.open", m_open):
+        with mock.patch("upsilonconf.io.json.open", m_open):
             c = from_cli(["--config", str(path)])
 
         m_open.assert_called_once_with(path, "r")
@@ -235,7 +238,7 @@ class TestCLI(TestCase):
         expected.overwrite(_k, v)
 
         m_open = mock.mock_open(read_data=os.linesep.join(CONFIG_JSON_LINES))
-        with mock.patch("upsilonconf.io.open", m_open):
+        with mock.patch("upsilonconf.io.json.open", m_open):
             c = from_cli(["--config", str(path), "=".join([_k, v])])
 
         self.assertDictEqual(dict(expected), dict(c))
@@ -248,7 +251,7 @@ class TestCLI(TestCase):
         expected.overwrite(_k, v)
 
         m_open = mock.mock_open(read_data=os.linesep.join(CONFIG_JSON_LINES))
-        with mock.patch("upsilonconf.io.open", m_open):
+        with mock.patch("upsilonconf.io.json.open", m_open):
             c = from_cli(
                 ["--config", str(path), "=".join([_k, v[::-1]]), "=".join([_k, v])]
             )

@@ -1,7 +1,7 @@
 from unittest import TestCase
 
-from upsilonconf._optional_dependency import OptionalDependencyError
-from upsilonconf._optional_dependency import optional_dependency_to
+from upsilonconf.io._optional_dependencies import OptionalDependencyError
+from upsilonconf.io._optional_dependencies import optional_dependency_to
 
 
 IMPORT_KEY = "import"
@@ -21,7 +21,7 @@ def import_invalid(*args, **kwargs):
     return args, kwargs
 
 
-class Test(TestCase):
+class TestOptionalDependencyDecorators(TestCase):
     def test_optional_dependency_to(self):
         wrapper = optional_dependency_to()
         _import_valid = wrapper(import_valid)
