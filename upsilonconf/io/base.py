@@ -58,7 +58,7 @@ class ConfigIO(ABC):
         config : Configuration
             A configuration object with the values as provided in the file.
         """
-        path = Path(path).expanduser().resolve()
+        path = (Path.cwd() / Path(path).expanduser()).resolve()
         m = self.read(path)
         return Configuration.from_dict(m, key_mods)
 
@@ -100,7 +100,7 @@ class ConfigIO(ABC):
             modified, by replacing the string from the key_modifiers key with its
             value.
         """
-        path = Path(path).expanduser().resolve()
+        path = (Path.cwd() / Path(path).expanduser()).resolve()
         m = config.to_dict(key_mods)
         return self.write(m, path)
 

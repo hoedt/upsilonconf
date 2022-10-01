@@ -35,7 +35,7 @@ class Utils:
         @classmethod
         def setUpClass(cls):
             cls.file_path = Path.home() / "config.test"
-            cls.file_contents = os.linesep.join(cls.generate_file_content())
+            cls.file_contents = "\n".join(cls.generate_file_content())
 
         def setUp(self) -> None:
             self.io = self.default_io()
@@ -107,6 +107,26 @@ class Utils:
             self.assertIsInstance(config, Configuration)
             self.assertEqual(Utils.CONFIG, config)
 
+        def test_load_config_relative_path(self):
+            filename = self.file_path.name
+            m_open = mock.mock_open(read_data=self.file_contents)
+            with mock.patch("upsilonconf.io.base.open", m_open):
+                config = self.io.load_config(filename)
+
+            m_open.assert_called_once_with(Path.cwd() / filename, "r")
+            self.assertIsInstance(config, Configuration)
+            self.assertEqual(Utils.CONFIG, config)
+
+        def test_load_config_user_path(self):
+            filename = self.file_path.name
+            m_open = mock.mock_open(read_data=self.file_contents)
+            with mock.patch("upsilonconf.io.base.open", m_open):
+                config = self.io.load_config(Path("~") / filename)
+
+            m_open.assert_called_once_with(Path.home() / filename, "r")
+            self.assertIsInstance(config, Configuration)
+            self.assertEqual(Utils.CONFIG, config)
+
         def test_load_config_whitespace_key(self):
             file_contents = self.file_contents.replace("foo", "space foo")
             m_open = mock.mock_open(read_data=file_contents)
@@ -137,6 +157,32 @@ class Utils:
                 self.io.save_config(Utils.CONFIG, self.file_path)
 
             m_open.assert_called_once_with(self.file_path, "w")
+            buffer.seek(0)
+            for expected in self.generate_file_content():
+                self.assertEqual(expected, next(buffer).rstrip())
+
+        def test_save_config_relative_path(self):
+            filename = self.file_path.name
+            m_open = mock.mock_open()
+            buffer = StringIO()
+            m_open.return_value.__enter__.side_effect = [buffer]
+            with mock.patch("upsilonconf.io.base.open", m_open):
+                self.io.save_config(Utils.CONFIG, filename)
+
+            m_open.assert_called_once_with(Path.cwd() / filename, "w")
+            buffer.seek(0)
+            for expected in self.generate_file_content():
+                self.assertEqual(expected, next(buffer).rstrip())
+
+        def test_save_config_user_path(self):
+            filename = self.file_path.name
+            m_open = mock.mock_open()
+            buffer = StringIO()
+            m_open.return_value.__enter__.side_effect = [buffer]
+            with mock.patch("upsilonconf.io.base.open", m_open):
+                self.io.save_config(Utils.CONFIG, Path("~") / filename)
+
+            m_open.assert_called_once_with(Path.home() / filename, "w")
             buffer.seek(0)
             for expected in self.generate_file_content():
                 self.assertEqual(expected, next(buffer).rstrip())
