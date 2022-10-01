@@ -30,6 +30,7 @@ class TestJSONIO(Utils.TestConfigIO):
 
     def test_write_sort_keys(self):
         d = dict(Utils.CONFIG["baz"])
+        keys = list(d)
         sorted_lines = sorted(
             [
                 line[2:]
@@ -42,13 +43,13 @@ class TestJSONIO(Utils.TestConfigIO):
 
         sorted_io = JSONIO(sort_keys=True)
         buffer = StringIO()
-        sorted_io.write_to(buffer, d)
+        sorted_io.write_to(buffer, {k: d[k] for k in keys})
         buffer.seek(0)
         for expected in sorted_lines:
             self.assertEqual(expected, next(buffer).rstrip())
 
         buffer = StringIO()
-        sorted_io.write_to(buffer, {k: d[k] for k in reversed(d)})
+        sorted_io.write_to(buffer, {k: d[k] for k in reversed(keys)})
         buffer.seek(0)
         for expected in sorted_lines:
             self.assertEqual(expected, next(buffer).rstrip())
