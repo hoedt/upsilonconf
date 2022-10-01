@@ -19,14 +19,16 @@ class JSONIO(ConfigIO):
             "sort_keys": sort_keys,
         }
 
-    def read(self, path):
-        import json
+    @property
+    def default_ext(self) -> str:
+        return ".json"
 
-        with open(path, "r") as fp:
-            return json.load(fp)
+    def read_from(self, stream):
+        from json import load
 
-    def write(self, conf, path):
-        import json
+        return load(stream)
 
-        with open(path, "w") as fp:
-            json.dump(conf, fp, **self.kwargs)
+    def write_to(self, stream, conf):
+        from json import dump
+
+        return dump(conf, stream, **self.kwargs)

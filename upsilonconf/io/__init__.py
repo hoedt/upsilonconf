@@ -39,8 +39,7 @@ def get_default_io() -> ConfigIO:
     yaml_io = YAMLIO()
     _default_io = FlexibleIO(
         {
-            ".*": json_io,  # default format
-            ".json": json_io,
+            ".json": json_io,  # default format
             ".yaml": yaml_io,
             ".yml": yaml_io,
         }

@@ -16,6 +16,7 @@ class ConfigParser:
     The ``--config`` option takes a filename as argument
     from which a base configuration can be loaded.
     """
+
     @staticmethod
     def _assignment_expr(s: str) -> Tuple[str, Any]:
         """Parse assignment expression argument."""
@@ -79,6 +80,11 @@ class ConfigParser:
                 dest="config",
             )
 
+    @property
+    def parser(self) -> ArgumentParser:
+        """Wrapped `ArgumentParser` instance."""
+        return self._parser
+
     def parse_config(self, args: Sequence[str] = None):
         """
         Parse a configuration from command line arguments.
@@ -100,13 +106,15 @@ class ConfigParser:
         ns = self._parser.parse_args(args)
         config = (
             Configuration()
-            if ns.config is None
+            if self._config_io is None or ns.config is None
             else self._config_io.load_config(ns.config)
         )
         config.overwrite_all(ns.overrides)
         if not self.return_ns:
             return config
 
-        del ns.config
         del ns.overrides
+        if self._config_io is not None:
+            del ns.config
+
         return config, ns

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Mapping, Any, Union
+from typing import Mapping, Any, Union, TextIO
 
 from ..config import Configuration
 
@@ -8,7 +8,24 @@ from ..config import Configuration
 class ConfigIO(ABC):
     """Interface for reading/writing configurations to/from files."""
 
+    @property
     @abstractmethod
+    def default_ext(self) -> str:
+        """Default extension for this IO."""
+        ...
+
+    @abstractmethod
+    def read_from(self, stream: TextIO) -> Mapping[str, Any]:
+        """
+        Read from a configuration file-like object.
+
+        Parameters
+        ----------
+        stream : TextIO
+            Readable file-like object.
+        """
+        ...
+
     def read(self, path: Path) -> Mapping[str, Any]:
         """
         Read from a configuration file.
@@ -18,21 +35,8 @@ class ConfigIO(ABC):
         path : Path
             Path to a readable configuration file.
         """
-        ...
-
-    @abstractmethod
-    def write(self, conf: Mapping[str, Any], path: Path) -> None:
-        """
-        Write to a configuration file.
-
-        Parameters
-        ----------
-        conf : Mapping
-            The key-value pairs to save.
-        path : Path
-            Path to a writeable configuration file.
-        """
-        ...
+        with open(path, "r") as fp:
+            return self.read_from(fp)
 
     def load_config(
         self, path: Union[Path, str], key_mods: Mapping[str, str] = None
@@ -57,6 +61,24 @@ class ConfigIO(ABC):
         path = Path(path).expanduser().resolve()
         m = self.read(path)
         return Configuration.from_dict(m, key_mods)
+
+    @abstractmethod
+    def write_to(self, stream: TextIO, conf: Mapping[str, Any]) -> None:
+        ...
+
+    def write(self, conf: Mapping[str, Any], path: Path) -> None:
+        """
+        Write to a configuration file.
+
+        Parameters
+        ----------
+        conf : Mapping
+            The key-value pairs to save.
+        path : Path
+            Path to a writeable configuration file.
+        """
+        with open(path, "w") as fp:
+            self.write_to(fp, conf)
 
     def save_config(
         self,
@@ -92,38 +114,70 @@ class FlexibleIO(ConfigIO):
     to retrieve the correct IO and forward the read/write operation.
     """
 
-    def __init__(self, ext_io_map: Mapping[str, ConfigIO]):
+    def __init__(self, ext_io_map: Mapping[str, ConfigIO], default_ext: str = None):
         """
         Parameters
         ----------
         ext_io_map : Mapping[str, ConfigIO]
             A ``dict``-like object mapping extensions to the corresponding IO.
             The file extension should include the starting period (``.``).
+        default_ext : str, optional
+            The extension (and corresponding IO) to use
+            when no information on the file-extension is available.
+            If not specified, the first key in `ext_io_map` is used.
         """
+        if len(ext_io_map) == 0:
+            raise ValueError("at least one extension-IO pair is required")
+        if default_ext is None:
+            default_ext = next(iter(ext_io_map.keys()))
+
+        self._default_ext = None
         self._ext_io_map = {}
         for ext, io in ext_io_map.items():
             self.update(ext, io)
 
-    def _retrieve_io(self, path: Path) -> ConfigIO:
+        self.default_ext = default_ext
+
+    def _retrieve_io(self, path: Path = None) -> ConfigIO:
         """
         Retrieve IO to read/write config files given a path.
 
         Parameters
         ----------
-        path: Path
+        path: Path, optional
             Path to infer the file format from.
+            If not specified, the IO corresponding to
+            the default extension is returned.
 
         Returns
         -------
         config_io : ConfigIO
             Object for reading/writing config files from/to `path`.
         """
-        ext = path.suffix.lower()
+        ext = self._default_ext if path is None else path.suffix.lower()
         try:
             config_io = self._ext_io_map[ext]
             return config_io
         except KeyError:
             raise ValueError(f"unknown config file extension: '{ext}'") from None
+
+    @property
+    def default_ext(self):
+        return self._default_ext
+
+    @default_ext.setter
+    def default_ext(self, value: str):
+        value = value.lower()
+        if len(value) > 0 and not value.startswith("."):
+            raise ValueError(f"extension '{value}' does not start with a period")
+        elif value not in self._ext_io_map:
+            raise ValueError(f"no IO registered for extension '{value}'")
+
+        self._default_ext = value
+
+    @property
+    def default_io(self) -> ConfigIO:
+        return self._retrieve_io()
 
     def update(self, ext: str, config_io: ConfigIO) -> None:
         """
@@ -143,12 +197,18 @@ class FlexibleIO(ConfigIO):
             If `ext` does not start with a period (``.``).
         """
         if len(ext) > 0 and not ext.startswith("."):
-            raise ValueError(f"'{ext}' does not start with a period")
+            raise ValueError(f"extension '{ext}' does not start with a period")
 
         self._ext_io_map[ext.lower()] = config_io
 
+    def read_from(self, stream):
+        return self.default_io.read_from(stream)
+
     def read(self, path):
         return self._retrieve_io(path).read(path)
+
+    def write_to(self, stream, config):
+        self.default_io.write_to(stream, config)
 
     def write(self, config, path):
         return self._retrieve_io(path).write(config, path)

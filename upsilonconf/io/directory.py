@@ -45,25 +45,28 @@ class DirectoryIO(ConfigIO):
     ... Configuration(foo=1, baz=Configuration(a=0.1, b=0.2), bar='hparam')
     """
 
-    DEFAULT_NAME = "config.*"
+    DEFAULT_NAME = "config"
 
     def __init__(self, config_io: ConfigIO, name: str = None):
         if name is None:
             name = self.DEFAULT_NAME
-        elif len(name.rsplit(".", maxsplit=1)) < 2:
-            name += ".*"
+        if len(name.rsplit(".", maxsplit=1)) < 2:
+            name += config_io.default_ext
 
         self.name = name
         self.config_io = config_io
+
+    @property
+    def default_ext(self):
+        return self.config_io.default_ext
+
+    def read_from(self, stream):
+        raise TypeError("directory IO does not support streams")
 
     def read(self, path):
         try:
             base_path = next(path.glob(self.name))
             base_conf = self.config_io.read(base_path)
-
-            # remember extension for future writes
-            if self.name.endswith(".*"):
-                self.name.replace(".*", base_path.suffix)
         except StopIteration:
             base_path = None
             base_conf = Configuration()
@@ -91,3 +94,6 @@ class DirectoryIO(ConfigIO):
         file_path = path / self.name
         path.mkdir(exist_ok=True)
         self.config_io.write(conf, file_path)
+
+    def write_to(self, stream, config):
+        raise TypeError("directory IO does not support streams")

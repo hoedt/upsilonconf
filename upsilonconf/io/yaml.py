@@ -55,16 +55,18 @@ class YAMLIO(ConfigIO):
         self._dumper = yaml.SafeDumper
         return self._dumper
 
-    @optional_dependency_to("read YAML files", package="pyyaml")
-    def read(self, path):
-        import yaml
+    @property
+    def default_ext(self) -> str:
+        return ".yaml"
 
-        with open(path, "r") as fp:
-            return yaml.load(fp, Loader=self._yaml_loader)
+    @optional_dependency_to("read YAML files", package="pyyaml")
+    def read_from(self, stream):
+        from yaml import load
+
+        return load(stream, Loader=self._yaml_loader)
 
     @optional_dependency_to("write YAML files", package="pyyaml")
-    def write(self, conf, path):
-        import yaml
+    def write_to(self, stream, conf):
+        from yaml import dump
 
-        with open(path, "w") as fp:
-            yaml.dump(conf, fp, Dumper=self._yaml_dumper, **self.kwargs)
+        return dump(conf, stream, Dumper=self._yaml_dumper, **self.kwargs)
