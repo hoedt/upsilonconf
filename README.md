@@ -10,7 +10,7 @@ In the meantime, there is also the [ml_collections](https://github.com/google/ml
 Nevertheless, I decided to release upsilonconf because there might be a few features that people might find interesting/useful:
  - dict-like configuration object with attribute access (cf. `attrdict`)
  - hierarchical indexing by means of tuples or *dot-strings* (cf. `omegaconf`)
- - overwriting protection to prevent accidents
+ - overwriting protection to prevent unexplainable bugs
  - read from/write to various file formats
  - use hierarchical configs with options (cf. config groups in `hydra`)
  - retrieve and manipulate config using CLI (cf. `omegaconf`)
@@ -19,6 +19,21 @@ Nevertheless, I decided to release upsilonconf because there might be a few feat
 The name is inspired by OmegaConf.
 I decided to go for the Greek letter [Upsilon](https://en.wikipedia.org/wiki/Upsilon) because it is the first letter of [ὑπέρ (hupér)](https://en.wiktionary.org/wiki/ὑπέρ).
 This again comes from the fact that this library should mainly help me with managing _hyper_-parameters in neural networks.
+
+### How to install
+
+Using `pip` to install from [PyPI](https://pypi.org/project/upsilonconf/):
+
+```shell
+python -m pip install upsilonconf
+```
+
+Using `conda` to install from [Anaconda](https://anaconda.org/hoedt/upsilonconf):
+
+```shell
+conda install hoedt::upsilonconf
+```
+
 
 ### How to Use
 
@@ -86,27 +101,37 @@ except ValueError:
 # different file formats (with optional requirements)
 conf = upsilonconf.load("config.yaml")  # with patched float parsing
 upsilonconf.save(conf, "config.json")  # with indentation by default
+```
 
+```python
 # fix invalid keys in files on-the-fly
 conf = upsilonconf.load("config.yaml", key_mods={" ": "_"})
 upsilonconf.save(conf, "config.json", key_mods={"_": " "})
+```
 
+```python
 # organise hierarchical configs in directories
 upsilonconf.save({"key": "option1"}, "config_dir/config.json")
 upsilonconf.save({"foo": 1, "bar": 2}, "config_dir/key/option1.json")
 upsilonconf.save({"foo": 2, "baz": 3}, "config_dir/key/option2.json")
+```
 
+```python
 # load arbitrary parts of hierarchy
 conf = upsilonconf.load("config_dir/key")
 conf == upsilonconf.Configuration(
     option1={"foo": 1, "bar": 2}, 
     option2={"foo": 2, "baz": 3}
 )
+```
 
+```python
 # hierarchies enable option feature
 conf = upsilonconf.load("config_dir")
 conf == upsilonconf.Configuration(key={"foo": 1, "bar": 2})
+```
 
+```python
 # store hierarchy to default file in specified directory
 upsilonconf.save(conf, "backup")
 ```
@@ -119,14 +144,18 @@ conf = upsilonconf.from_cli()
 
 # parse arbitrary arguments to construct config
 conf = upsilonconf.from_cli(["key=1", "sub.test=2"])
-conf == Configuration(key=1, sub={"test": 2})
+conf == upsilonconf.Configuration(key=1, sub={"test": 2})
+```
 
+```python
 # use file as base config
 conf = upsilonconf.from_cli(["--config", "config.yaml", "key=1", "sub.test=2"])
 result = upsilonconf.load("config.yaml")
 result.overwrite_all(key=1, sub={"test": 2})
 conf == result
+```
 
+```python
 # enhance existing argparser
 from argparse import ArgumentParser
 parser = ArgumentParser()

@@ -3,7 +3,7 @@
 from .config import *
 from .io import *
 
-__version__ = "0.5.0.dev1"
+__version__ = "0.5.0"
 __all__ = config.__all__ + [
     "OptionalDependencyError",
     "load_config",
