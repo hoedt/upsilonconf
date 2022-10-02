@@ -65,7 +65,8 @@ class DirectoryIO(ConfigIO):
 
     def read(self, path):
         try:
-            base_path = next(path.glob(self.name))
+            name, _ = self.name.rsplit(".", maxsplit=1)
+            base_path = next(path.glob(f"{name}.*"))
             base_conf = self.config_io.read(base_path)
         except StopIteration:
             base_path = None

@@ -5,22 +5,36 @@ from unittest import TestCase, mock
 
 from upsilonconf.io.directory import *
 from upsilonconf.io.json import JSONIO
+from upsilonconf.io.yaml import YAMLIO
+from upsilonconf.io.base import FlexibleIO
 from .test_base import Utils
 
 
-def fake_directory_structure(root, paths, glob_pattern: str = DirectoryIO.DEFAULT_NAME):
+def fake_directory_structure(root, paths):
     root = Path(root)
 
+    class _MockedScandirIterator:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            pass
+
+        def __iter__(self):
+            yield from (Configuration(name=sub) for sub in paths)
+
     def decorator(func):
+        @mock.patch("upsilonconf.io.base.Path.exists")
+        @mock.patch("upsilonconf.io.base.Path.is_dir")
+        @mock.patch("upsilonconf.io.base.Path.iterdir")
         def wrapper(*args, **kwargs):
-            with mock.patch(
-                "upsilonconf.io.base.Path.iterdir"
-            ) as m_iterdir, mock.patch("upsilonconf.io.base.Path.glob") as m_glob:
-                m_glob.return_value = (
-                    root / sub for sub in paths if glob_pattern in sub
-                )
+            *og_args, m_iterdir, m_is_dir, m_exists = args
+            with mock.patch("pathlib._normal_accessor.scandir") as m_scandir:
+                m_is_dir.side_effect = lambda p: p == root
+                m_exists.side_effect = lambda p: p.file_name in paths
+                m_scandir.return_value = _MockedScandirIterator()
                 m_iterdir.return_value = (root / sub for sub in paths)
-                func(*args, **kwargs)
+                func(*og_args, **kwargs)
 
         return wrapper
 
@@ -61,6 +75,18 @@ class TestDirectoryIO(TestCase):
             data = self.io.read(self.path)
 
         m_open.assert_called_once_with(self.path / "config.json", "r")
+        self.assertDictEqual(dict(Utils.CONFIG), dict(data))
+
+    @fake_directory_structure(path, ["config.yaml"])
+    def test_read_non_default(self):
+        io = DirectoryIO(FlexibleIO({".json": JSONIO(), ".yaml": YAMLIO()}))
+        assert io.default_ext == ".json", "invalid test setup"
+
+        m_open = mock.mock_open(read_data=self.file_contents)
+        with mock.patch("upsilonconf.io.base.open", m_open):
+            data = io.read(self.path)
+
+        m_open.assert_called_once_with(self.path / "config.yaml", "r")
         self.assertDictEqual(dict(Utils.CONFIG), dict(data))
 
     @fake_directory_structure(path, ["config.json", "sub1.json", "sub2.json"])
