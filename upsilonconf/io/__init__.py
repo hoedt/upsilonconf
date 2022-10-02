@@ -24,12 +24,27 @@ __all__ = [
 _default_io = None
 
 
-def get_default_io() -> ConfigIO:
+def get_default_io(default_ext: str = None) -> ConfigIO:
     """
+    Parameters
+    ----------
+    default_ext : str, optional
+        The extension to use as the default for reading/writing config files.
+        If not specified, the default is chosen for you.
+
     Returns
     -------
     default_io : ConfigIO
         The default IO for reading and writing configuration files.
+
+    Raises
+    ------
+    ValueError
+        If there is no (known) IO for the value passed for `default_ext`.
+
+    See Also
+    --------
+    FlexibleIO : IO to map extensions to other IOs.
     """
     global _default_io
     if _default_io is not None:
@@ -42,7 +57,8 @@ def get_default_io() -> ConfigIO:
             ".json": json_io,  # default format
             ".yaml": yaml_io,
             ".yml": yaml_io,
-        }
+        },
+        default_ext=default_ext,
     )
     _default_io.update("", DirectoryIO(_default_io))
     return _default_io
