@@ -64,6 +64,9 @@ class TestDirectoryIO(TestCase):
     def setUp(self):
         self.io = DirectoryIO(JSONIO())
 
+    def test_extensions(self):
+        self.assertIn("", self.io.extensions)
+
     def test_read_from(self):
         with self.assertRaises(TypeError):
             self.io.read_from(StringIO())
@@ -80,7 +83,7 @@ class TestDirectoryIO(TestCase):
     @fake_directory_structure(path, ["config.yaml"])
     def test_read_non_default(self):
         io = DirectoryIO(FlexibleIO({".json": JSONIO(), ".yaml": YAMLIO()}))
-        assert io.default_ext == ".json", "invalid test setup"
+        assert io.config_io.default_ext == ".json", "invalid test setup"
 
         m_open = mock.mock_open(read_data=self.file_contents)
         with mock.patch("upsilonconf.io.base.open", m_open):
@@ -251,5 +254,3 @@ class TestDirectoryIO(TestCase):
         buffer.seek(0)
         for expected in self.main_file_content():
             self.assertEqual(expected.replace(good, bad), next(buffer).rstrip())
-
-    # TODO: hierarchy tests!!!

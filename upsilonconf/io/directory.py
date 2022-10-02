@@ -47,27 +47,37 @@ class DirectoryIO(ConfigIO):
 
     DEFAULT_NAME = "config"
 
-    def __init__(self, config_io: ConfigIO, name: str = None):
-        if name is None:
-            name = self.DEFAULT_NAME
-        if len(name.rsplit(".", maxsplit=1)) < 2:
-            name += config_io.default_ext
+    def __init__(self, config_io: ConfigIO, main_file: str = None):
+        if main_file is None:
+            main_file = self.DEFAULT_NAME
 
-        self.name = name
+        parts = main_file.rsplit(".", maxsplit=1)
+        name, ext = (main_file, None) if len(parts) < 2 else parts
+        if ext is not None and ext not in config_io.extensions:
+            raise ValueError("unsupported extension for given IO")
+
+        self._file_name = name
+        self._file_ext = ext
         self.config_io = config_io
 
     @property
-    def default_ext(self):
-        return self.config_io.default_ext
+    def extensions(self):
+        return [""]
+
+    @property
+    def file_name(self) -> str:
+        ext = self.config_io.default_ext if self._file_ext is None else self._file_ext
+        return self._file_name + ext
 
     def read_from(self, stream):
         raise TypeError("directory IO does not support streams")
 
     def read(self, path):
         try:
-            name, _ = self.name.rsplit(".", maxsplit=1)
-            base_path = next(path.glob(f"{name}.*"))
+            base_path = next(path.glob(f"{self._file_name}.*"))
             base_conf = self.config_io.read(base_path)
+            if self._file_ext is None:
+                self._file_ext = base_path.suffix
         except StopIteration:
             base_path = None
             base_conf = Configuration()
@@ -92,7 +102,7 @@ class DirectoryIO(ConfigIO):
         return base_conf
 
     def write(self, conf, path):
-        file_path = path / self.name
+        file_path = path / self.file_name
         path.mkdir(exist_ok=True)
         self.config_io.write(conf, file_path)
 

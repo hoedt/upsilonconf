@@ -20,8 +20,8 @@ class JSONIO(ConfigIO):
         }
 
     @property
-    def default_ext(self) -> str:
-        return ".json"
+    def extensions(self):
+        return [".json"]
 
     def read_from(self, stream):
         from json import load

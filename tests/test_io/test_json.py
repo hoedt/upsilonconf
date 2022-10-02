@@ -20,6 +20,9 @@ class TestJSONIO(Utils.TestConfigIO):
     def default_io():
         return JSONIO()
 
+    def test_extensions(self):
+        self.assertIn(".json", self.io.extensions)
+
     def test_write_indent(self):
         indent_io = JSONIO(indent=4)
         buffer = StringIO()

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Mapping, Any, Union, TextIO
+from typing import Mapping, Any, Union, TextIO, Sequence
 
 from ..config import Configuration
 
@@ -10,9 +10,17 @@ class ConfigIO(ABC):
 
     @property
     @abstractmethod
+    def extensions(self) -> Sequence[str]:
+        """
+        Collection of extensions that are supported by this IO.
+        First entry corresponds to the default extension.
+        """
+        ...
+
+    @property
     def default_ext(self) -> str:
         """Default extension for this IO."""
-        ...
+        return self.extensions[0]
 
     @abstractmethod
     def read_from(self, stream: TextIO) -> Mapping[str, Any]:
@@ -128,15 +136,20 @@ class FlexibleIO(ConfigIO):
         """
         if len(ext_io_map) == 0:
             raise ValueError("at least one extension-IO pair is required")
-        if default_ext is None:
-            default_ext = next(iter(ext_io_map.keys()))
 
-        self._default_ext = None
         self._ext_io_map = {}
+        ext_io_map = dict(ext_io_map)
+
+        try:
+            if default_ext is not None:
+                self.update(default_ext, ext_io_map.pop(default_ext))
+        except KeyError:
+            raise ValueError(
+                f"no IO registered for extension '{default_ext}'"
+            ) from None
+
         for ext, io in ext_io_map.items():
             self.update(ext, io)
-
-        self.default_ext = default_ext
 
     def _retrieve_io(self, path: Path = None) -> ConfigIO:
         """
@@ -154,7 +167,7 @@ class FlexibleIO(ConfigIO):
         config_io : ConfigIO
             Object for reading/writing config files from/to `path`.
         """
-        ext = self._default_ext if path is None else path.suffix.lower()
+        ext = self.default_ext if path is None else path.suffix.lower()
         try:
             config_io = self._ext_io_map[ext]
             return config_io
@@ -162,21 +175,12 @@ class FlexibleIO(ConfigIO):
             raise ValueError(f"unknown config file extension: '{ext}'") from None
 
     @property
-    def default_ext(self):
-        return self._default_ext
-
-    @default_ext.setter
-    def default_ext(self, value: str):
-        value = value.lower()
-        if len(value) > 0 and not value.startswith("."):
-            raise ValueError(f"extension '{value}' does not start with a period")
-        elif value not in self._ext_io_map:
-            raise ValueError(f"no IO registered for extension '{value}'")
-
-        self._default_ext = value
+    def extensions(self):
+        return tuple(self._ext_io_map.keys())
 
     @property
     def default_io(self) -> ConfigIO:
+        """IO corresponding to the default extension."""
         return self._retrieve_io()
 
     def update(self, ext: str, config_io: ConfigIO) -> None:

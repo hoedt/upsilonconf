@@ -40,6 +40,9 @@ class Utils:
         def setUp(self) -> None:
             self.io = self.default_io()
 
+        def test_default_ext(self):
+            self.assertEqual(self.io.default_ext, self.io.extensions[0])
+
         def test_read_from(self):
             buffer = StringIO(self.file_contents)
             data = self.io.read_from(buffer)
@@ -232,11 +235,15 @@ class TestFlexibleIO(Utils.TestConfigIO):
         default_io = JSONIO()
         io = FlexibleIO({".json": default_io, ".jason": JSONIO()})
         self.assertIs(default_io, io.default_io)
+        self.assertIn(".json", io.extensions)
+        self.assertIn(".jason", io.extensions)
 
     def test_constructor_default_ext(self):
         default_io = JSONIO()
         io = FlexibleIO({".json": JSONIO(), ".jason": default_io}, default_ext=".jason")
         self.assertIs(default_io, io.default_io)
+        self.assertIn(".json", io.extensions)
+        self.assertIn(".jason", io.extensions)
 
     def test_constructor_empty(self):
         with self.assertRaises(ValueError):
@@ -247,7 +254,7 @@ class TestFlexibleIO(Utils.TestConfigIO):
             FlexibleIO({"json": JSONIO()})
 
     def test_constructor_default_ext_without_period(self):
-        with self.assertRaisesRegex(ValueError, "extension .* period"):
+        with self.assertRaisesRegex(ValueError, "no IO"):
             FlexibleIO({".json": JSONIO()}, default_ext="json")
 
     def test_constructor_default_ext_not_registered(self):

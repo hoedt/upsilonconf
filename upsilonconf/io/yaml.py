@@ -56,8 +56,8 @@ class YAMLIO(ConfigIO):
         return self._dumper
 
     @property
-    def default_ext(self) -> str:
-        return ".yaml"
+    def extensions(self):
+        return [".yaml", ".yml"]
 
     @optional_dependency_to("read YAML files", package="pyyaml")
     def read_from(self, stream):

@@ -17,6 +17,10 @@ class TestYAMLIO(Utils.TestConfigIO):
     def default_io():
         return YAMLIO()
 
+    def test_extensions(self):
+        self.assertIn(".yaml", self.io.extensions)
+        self.assertIn(".yml", self.io.extensions)
+
     def test_write_indent(self):
         indent_io = YAMLIO(indent=4)
         buffer = StringIO()
