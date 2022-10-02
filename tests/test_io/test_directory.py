@@ -67,6 +67,22 @@ class TestDirectoryIO(TestCase):
     def test_extensions(self):
         self.assertIn("", self.io.extensions)
 
+    def test_constructor(self):
+        io = DirectoryIO(JSONIO())
+        self.assertEqual(DirectoryIO.DEFAULT_NAME + ".json", io.file_name)
+
+    def test_constructor_main_file(self):
+        io = DirectoryIO(JSONIO(), main_file="test.json")
+        self.assertEqual("test.json", io.file_name)
+
+    def test_constructor_main_file_no_extension(self):
+        io = DirectoryIO(JSONIO(), main_file="test")
+        self.assertEqual("test.json", io.file_name)
+
+    def test_constructor_main_file_unsupported_extension(self):
+        with self.assertRaises(ValueError):
+            DirectoryIO(JSONIO(), main_file="config.yaml")
+
     def test_read_from(self):
         with self.assertRaises(TypeError):
             self.io.read_from(StringIO())

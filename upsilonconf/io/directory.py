@@ -48,11 +48,20 @@ class DirectoryIO(ConfigIO):
     DEFAULT_NAME = "config"
 
     def __init__(self, config_io: ConfigIO, main_file: str = None):
+        """
+        Parameters
+        ----------
+        config_io : ConfigIO
+            The io to use to read/write files in each directory.
+        main_file : str, optional
+            The filename that specifies the main config file when reading
+            or the filename for the file that is created when writing.
+        """
         if main_file is None:
             main_file = self.DEFAULT_NAME
 
         parts = main_file.rsplit(".", maxsplit=1)
-        name, ext = (main_file, None) if len(parts) < 2 else parts
+        name, ext = parts[0], (None if len(parts) < 2 else f".{parts[1]}")
         if ext is not None and ext not in config_io.extensions:
             raise ValueError("unsupported extension for given IO")
 
