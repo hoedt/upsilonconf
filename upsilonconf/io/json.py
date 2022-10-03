@@ -13,11 +13,30 @@ class JSONIO(ConfigIO):
         sort_keys : bool, optional
             Whether keys should be sorted before writing to the output file.
         """
-        self.kwargs = {
-            "default": lambda o: o.__getstate__(),
+        self._encoder = None
+        self._encode_kwargs = {
             "indent": indent,
             "sort_keys": sort_keys,
         }
+
+    @property
+    def _json_encoder(self):
+        if self._encoder is not None:
+            return self._encoder
+
+        from json import JSONEncoder
+
+        class PatchedJSONEncoder(JSONEncoder):
+            def default(self, o):
+                try:
+                    return dict(**o)
+                except TypeError:
+                    pass
+
+                return JSONEncoder.default(self, o)
+
+        self._encoder = PatchedJSONEncoder(**self._encode_kwargs)
+        return self._encoder
 
     @property
     def extensions(self):
@@ -29,6 +48,4 @@ class JSONIO(ConfigIO):
         return load(stream)
 
     def write_to(self, stream, conf):
-        from json import dump
-
-        return dump(conf, stream, **self.kwargs)
+        stream.writelines(self._json_encoder.iterencode(conf))
