@@ -3,7 +3,7 @@ from io import StringIO
 from typing import Iterable
 from unittest import TestCase, mock
 
-from upsilonconf.config import InvalidKeyError
+from upsilonconf.base import InvalidKeyError
 from upsilonconf.io.base import *
 from upsilonconf.io.json import JSONIO
 from upsilonconf.io.yaml import YAMLIO
