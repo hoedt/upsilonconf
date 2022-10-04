@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Mapping
+from typing import Mapping, Union
 
 from ..config import Configuration
 from ._optional_dependencies import OptionalDependencyError
@@ -65,7 +65,9 @@ def get_default_io(default_ext: str = None) -> ConfigIO:
 
 
 def load_config(
-    path: Path, key_mods: Mapping[str, str] = None, config_io: ConfigIO = None
+    path: Union[Path, str],
+    key_mods: Mapping[str, str] = None,
+    config_io: ConfigIO = None,
 ) -> Configuration:
     """
     Read configuration from disk.
@@ -94,7 +96,7 @@ def load_config(
 
 def save_config(
     config: Configuration,
-    path: Path,
+    path: Union[Path, str],
     key_mods: Mapping[str, str] = None,
     config_io: ConfigIO = None,
 ) -> None:
