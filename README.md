@@ -28,12 +28,21 @@ Using `pip` to install from [PyPI](https://pypi.org/project/upsilonconf/):
 python -m pip install upsilonconf
 ```
 
+or, to install the (optional) dependencies (`pyyaml`) for YAML IO
+
+```shell
+python -m pip install upsilonconf[YAML]
+```
+
 Using `conda` to install from [Anaconda](https://anaconda.org/hoedt/upsilonconf):
 
 ```shell
 conda install hoedt::upsilonconf
 ```
 
+Optional dependencies (e.g. `pyyaml`) have to be installed separately.
+
+---
 
 ### How to Use
 
