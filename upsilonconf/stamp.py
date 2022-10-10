@@ -30,5 +30,11 @@ class ConfigurationStamp(ConfigurationBase, Hashable):
         return self
 
     def __hash__(self) -> int:
-        # TODO: implement hash function
-        pass
+        # inspired by https://stackoverflow.com/questions/20832279
+        h = len(self)
+        for k, v in self.items():
+            hx = hash((hash(k), hash(v)))
+            h ^= (hx ^ 0x055b_4db3 ^ (hx << 16)) * 4_155_791_671
+            h &= 0xffff_ffff_ffff_ffff
+
+        return h
