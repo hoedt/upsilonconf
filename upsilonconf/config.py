@@ -25,6 +25,18 @@ class InvalidKeyError(ValueError):
     pass
 
 
+class _ConfigurationMeta(type):
+
+    def __new__(cls, name, bases, ns):
+        # TODO: how to properly incorporate annotations
+        # TODO: this might not even be really necessary (see below)
+        tp_config = type.__new__(cls, name, bases, ns)
+        annotations = ns.get("__annotations__")
+        tp_config.__annotations__ = annotations
+        tp_config.__init__.__annotations__ = annotations
+        return tp_config
+
+
 class Configuration(MutableMapping[str, Any]):
     """
     Configuration mapping (variable) names to their corresponding values.
@@ -91,8 +103,24 @@ class Configuration(MutableMapping[str, Any]):
     'will work'
     """
 
+    __annotations__ = {}
+
+    # def __new__(cls, *args, **kwargs):
+    #     kwargs.update(test=1)
+    #     return super().__new__(cls)
+    #     config._content = {}
+    #     for name in cls.__annotations__:
+    #         def __init__(self, **kwargs):
+    #             kwargs.setdefault()
+    #         # TODO: use annotations to set defaults in __init__?
+    #         config._content[name] = getattr(cls, name, None)
+    #     return config
+
     def __init__(self, **kwargs):
         self._content: MutableMapping[str, Any] = {}
+        for name in self.__class__.__annotations__:
+            # TODO: `None` vs custom `Missing` object?
+            kwargs.setdefault(name, getattr(self.__class__, name, None))
 
         for k, v in kwargs.items():
             self.__setitem__(k, v)
