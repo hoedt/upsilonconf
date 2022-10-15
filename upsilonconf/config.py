@@ -1,5 +1,6 @@
 import copy
 import re
+from collections.abc import ItemsView
 from typing import (
     MutableMapping,
     Any,
@@ -10,6 +11,7 @@ from typing import (
     Mapping,
     Dict,
     Pattern,
+    MappingView,
 )
 
 __all__ = ["Configuration", "InvalidKeyError"]
@@ -202,7 +204,29 @@ class Configuration(MutableMapping[str, Any]):
         yield from super().__dir__()
         yield from self._content
 
-    # # # Other Stuff # # #
+    # # # Key Magic # # #
+
+    def _flat_items(self) -> Iterable[Tuple[str, Any]]:
+        """
+        Iterate over key-value pairs of flat config.
+
+        The flattened config uses dot-separated strings
+        to represent values in sub-configs.
+
+        Yields
+        ------
+        key : str
+            A dot-separated key.
+        value
+            The value corresponding to that key.
+        """
+        # TODO: create proper ItemsView?
+        # TODO: add other flat iterators?
+        for k, v in self.items():
+            if isinstance(v, Configuration):
+                yield from ((f"{k}.{_k}", _v) for _k, _v in v._flat_items())
+            else:
+                yield k, v
 
     def _validate_key(self, key: str) -> True:
         """
@@ -268,6 +292,8 @@ class Configuration(MutableMapping[str, Any]):
                     raise KeyError(k)
 
         return root, final
+
+    # # # Overwriting # # #
 
     def overwrite(self, key: Union[str, Iterable[str]], value: Any) -> Any:
         """
@@ -400,9 +426,11 @@ class Configuration(MutableMapping[str, Any]):
         if key_mods is None:
             key_mods = {}
 
-        return Configuration(**_modify_keys(mapping, key_mods))
+        return Configuration(**_modify_keys(mapping.items(), key_mods))
 
-    def to_dict(self, key_mods: Mapping[str, str] = None) -> Dict[str, Any]:
+    def to_dict(
+        self, key_mods: Mapping[str, str] = None, flat: bool = False
+    ) -> Dict[str, Any]:
         """
         Convert this configuration to a dictionary.
 
@@ -415,6 +443,10 @@ class Configuration(MutableMapping[str, Any]):
         ----------
         key_mods : Mapping[str, str], optional
             A mapping from key patterns to their replacements.
+        flat : bool, optional
+            If `True`, the result will have no dictionaries as values.
+            Instead, sub-configs are represented by means of dot-string keys.
+            The default is `False`.
 
         Returns
         -------
@@ -440,6 +472,11 @@ class Configuration(MutableMapping[str, Any]):
         >>> conf.to_dict()
         {'sub': {'a': 1}}
 
+        If a flat dict is required, you can use `flat=True`.
+
+        >>> conf.to_dict(flat=True)
+        {'sub.a': 1}
+
         Similar to `from_dict`, key-modifiers can be used to transform keys.
 
         >>> conf = Configuration(key_1='with space', key02='with hyphen')
@@ -449,21 +486,22 @@ class Configuration(MutableMapping[str, Any]):
         if key_mods is None:
             key_mods = {}
 
-        return _modify_keys(self, key_mods)
+        items = self._flat_items() if flat else self.items()
+        return _modify_keys(items, key_mods)
 
 
 # utilities
 
 
 def _modify_keys(
-    mapping: Mapping[str, Any], key_mods: Mapping[str, str]
+    key_value_pairs: Iterable[Tuple[str, Any]], key_mods: Mapping[str, str]
 ) -> Dict[str, Any]:
     """
     Replace strings in the keys of a mapping object recursively.
 
     Parameters
     ----------
-    mapping : Mapping
+    key_value_pairs : Mapping
         The mapping object whose keys are to be modified.
     key_mods : Mapping
         The dictionary with the replacements: All key strings are replaced
@@ -483,11 +521,13 @@ def _modify_keys(
     sorted_mod_keys = sorted(key_mods, key=lambda k: len(k), reverse=True)
     pattern = re.compile("|".join([re.escape(k) for k in sorted_mod_keys]))
 
-    return __modify_keys(mapping, key_mods, pattern)
+    return __modify_keys(key_value_pairs, key_mods, pattern)
 
 
 def __modify_keys(
-    mapping: Mapping[str, Any], key_mods: Mapping[str, str], pattern: Pattern
+    key_value_pairs: Iterable[Tuple[str, Any]],
+    key_mods: Mapping[str, str],
+    pattern: Pattern,
 ) -> Dict[str, Any]:
     """
     Replace strings in the keys of a mapping object.
@@ -497,7 +537,7 @@ def __modify_keys(
 
     Parameters
     ----------
-    mapping : Mapping
+    key_value_pairs : Mapping
         The mapping object whose keys are to be modified.
     key_mods : Mapping
         The dictionary with the replacements: All key strings are replaced
@@ -515,10 +555,10 @@ def __modify_keys(
 
     # `mapping.items()` fails with `AttributeError`, if `mapping` is not of a
     # mapping type, thus breaking the recursive calls
-    for key, value in mapping.items():
+    for key, value in key_value_pairs:
         try:
             # Call this method recursively
-            value = __modify_keys(value, key_mods, pattern)
+            value = __modify_keys(value.items(), key_mods, pattern)
         except AttributeError:
             # `value` is not of the mapping type
             pass

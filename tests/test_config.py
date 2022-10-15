@@ -782,6 +782,13 @@ class TestConfiguration(TestCase):
         self.assertDictEqual(d_ref["sub"], d["sub"])
         self.assertDictEqual(d_ref, d)
 
+    def test_to_dict_flat(self):
+        d = self.complex_config.to_dict(flat=True)
+        d_ref = dict(self.complex_config)
+        for k, v in d_ref.pop("sub").items():
+            d_ref[f"sub.{k}"] = v
+        self.assertDictEqual(d_ref, d)
+
     def test_to_dict_key_modifiers(self):
         conf = Configuration(key_1="with space", key02="with hyphen")
         d = conf.to_dict({"_": " ", "0": "-"})
