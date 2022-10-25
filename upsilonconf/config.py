@@ -561,8 +561,8 @@ def __modify_keys(
         # Replace only, if there are replacements requested, otherwise just
         # save the value
         if key_mods:
-            dictionary[pattern.sub(lambda m: key_mods[m.group(0)], key)] = value
-        else:
-            dictionary[key] = value
+            key = pattern.sub(lambda m: key_mods[m.group(0)], key)
+
+        dictionary[key] = value
 
     return dictionary
