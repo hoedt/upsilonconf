@@ -1,10 +1,15 @@
+from typing import Callable
+
+
 class OptionalDependencyError(ImportError):
     """Raised when an attempt is made to import an optional dependency."""
 
     pass
 
 
-def optional_dependency_to(feature: str = None, package: str = None) -> callable:
+def optional_dependency_to(
+    feature: str = None, package: str = None
+) -> Callable[[Callable], Callable]:
     """
     Decorator factory for functions that provide optional features.
 
@@ -41,7 +46,7 @@ def optional_dependency_to(feature: str = None, package: str = None) -> callable
     if feature is None:
         feature = "make use of this feature"
 
-    def _decorator(func: callable):
+    def _decorator(func: Callable) -> Callable:
         def _wrapper(*args, **kwargs):
             try:
                 return func(*args, **kwargs)

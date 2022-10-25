@@ -1,6 +1,5 @@
 import copy
 import re
-from collections.abc import ItemsView
 from typing import (
     MutableMapping,
     Any,
@@ -11,7 +10,6 @@ from typing import (
     Mapping,
     Dict,
     Pattern,
-    MappingView,
 )
 
 __all__ = ["Configuration", "InvalidKeyError"]
@@ -93,9 +91,7 @@ class Configuration(MutableMapping[str, Any]):
 
     def __init__(self, **kwargs):
         self._content: MutableMapping[str, Any] = {}
-
-        for k, v in kwargs.items():
-            self.__setitem__(k, v)
+        self.update(**kwargs)
 
     def __repr__(self) -> str:
         kwargs = ["=".join([k, "{!r}".format(v)]) for k, v in self.items()]
@@ -109,7 +105,7 @@ class Configuration(MutableMapping[str, Any]):
         return {k: v for k, v in self.items()}
 
     def __setstate__(self, state: Mapping[str, Any]) -> None:
-        self.__init__(**state)
+        self._content = dict(state)
 
     def __copy__(self) -> "Configuration":
         return Configuration(**self)
@@ -228,7 +224,7 @@ class Configuration(MutableMapping[str, Any]):
             else:
                 yield k, v
 
-    def _validate_key(self, key: str) -> True:
+    def _validate_key(self, key: str) -> bool:
         """
         Check if a key respects a set of simple rules.
 
@@ -272,10 +268,10 @@ class Configuration(MutableMapping[str, Any]):
             If any of the sub-keys (apart from the final key)
             point to a value that is not a configuration.
         """
-        try:
-            *parents, final = keys.split(".")
-        except AttributeError:
-            *parents, final = keys
+        if isinstance(keys, str):
+            keys = keys.split(".")
+
+        *parents, final = keys
 
         root = self
         for k in parents:
@@ -295,13 +291,13 @@ class Configuration(MutableMapping[str, Any]):
 
     # # # Overwriting # # #
 
-    def overwrite(self, key: Union[str, Iterable[str]], value: Any) -> Any:
+    def overwrite(self, key: str, value: Any) -> Any:
         """
         Overwrite a possibly existing parameter value in the configuration.
 
         Parameters
         ----------
-        key : str or iterable of str
+        key : str
             The parameter name to overwrite the value for.
         value
             The new value for the parameter.
@@ -357,12 +353,11 @@ class Configuration(MutableMapping[str, Any]):
         """
         old_values = {}
 
-        try:
-            for k in other.keys():
-                old_values[k] = self.overwrite(k, other[k])
-        except AttributeError:
-            for k, v in other:
-                old_values[k] = self.overwrite(k, v)
+        if isinstance(other, Mapping):
+            other = other.items()
+
+        for k, v in other:
+            old_values[k] = self.overwrite(k, v)
 
         for k, v in kwargs.items():
             old_values[k] = self.overwrite(k, v)

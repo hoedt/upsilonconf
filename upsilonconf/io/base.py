@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Mapping, Any, Union, TextIO, Sequence
+from typing import Mapping, Any, Union, TextIO, Sequence, Dict
 
 from ..config import Configuration
 
@@ -137,7 +137,7 @@ class FlexibleIO(ConfigIO):
         if len(ext_io_map) == 0:
             raise ValueError("at least one extension-IO pair is required")
 
-        self._ext_io_map = {}
+        self._ext_io_map: Dict[str, ConfigIO] = {}
         ext_io_map = dict(ext_io_map)
 
         try:
