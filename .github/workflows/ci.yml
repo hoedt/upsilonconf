@@ -18,12 +18,12 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       
       - name: set up python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
-          python-version: 3.10
+          python-version: '3.10'
       
       - name: install
         run: python -m pip install black
@@ -32,6 +32,8 @@ jobs:
         run: black --diff --check upsilonconf tests
 
   typecheck:
+    name: check py${{ matrix.python-version }} types on ${{ matrix.platform }}
+    needs: lint
     strategy:
       matrix:
         platform: [linux, darwin, win32]
@@ -39,12 +41,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: set up python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
-          python-version: 3.10
+          python-version: '3.10'
 
       - name: install
         run: python -m pip install mypy types-pyyaml
@@ -54,16 +56,17 @@ jobs:
 
   test:
     name: test py${{ matrix.python-version }} on ${{ matrix.os }}
+    needs: typecheck
     strategy:
       matrix:
         os: [ubuntu, macos, windows]
-        python-version: ['3.6', '3.7', '3.8', '3.9', '3.10', '3.11']
+        python-version: ['3.6', '3.7', '3.8', '3.9', '3.10']
     runs-on: ${{ format('{0}-latest', matrix.os) }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       
       - name: set up python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
       
