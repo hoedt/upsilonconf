@@ -93,7 +93,7 @@ class TestDirectoryIO(TestCase):
         with mock.patch("upsilonconf.io.base.open", m_open):
             data = self.io.read(self.path)
 
-        m_open.assert_called_once_with(self.path / "config.json", "r")
+        m_open.assert_called_once_with(self.path / "config.json", "r", encoding="utf-8")
         self.assertDictEqual(dict(Utils.CONFIG), dict(data))
 
     @fake_directory_structure(path, ["config.yaml"])
@@ -105,7 +105,7 @@ class TestDirectoryIO(TestCase):
         with mock.patch("upsilonconf.io.base.open", m_open):
             data = io.read(self.path)
 
-        m_open.assert_called_once_with(self.path / "config.yaml", "r")
+        m_open.assert_called_once_with(self.path / "config.yaml", "r", encoding="utf-8")
         self.assertDictEqual(dict(Utils.CONFIG), dict(data))
 
     @fake_directory_structure(path, ["config.json", "sub1.json", "sub2.json"])
@@ -116,9 +116,9 @@ class TestDirectoryIO(TestCase):
 
         m_open.assert_has_calls(
             [
-                mock.call(self.path / "config.json", "r"),
-                mock.call(self.path / "sub1.json", "r"),
-                mock.call(self.path / "sub2.json", "r"),
+                mock.call(self.path / "config.json", "r", encoding="utf-8"),
+                mock.call(self.path / "sub1.json", "r", encoding="utf-8"),
+                mock.call(self.path / "sub2.json", "r", encoding="utf-8"),
             ],
             any_order=True,
         )
@@ -134,8 +134,8 @@ class TestDirectoryIO(TestCase):
 
         m_open.assert_has_calls(
             [
-                mock.call(self.path / "sub1.json", "r"),
-                mock.call(self.path / "sub2.json", "r"),
+                mock.call(self.path / "sub1.json", "r", encoding="utf-8"),
+                mock.call(self.path / "sub2.json", "r", encoding="utf-8"),
             ],
             any_order=True,
         )
@@ -152,8 +152,8 @@ class TestDirectoryIO(TestCase):
 
         m_open.assert_has_calls(
             [
-                mock.call(self.path / "config.json", "r"),
-                mock.call(self.path / "foo.json", "r"),
+                mock.call(self.path / "config.json", "r", encoding="utf-8"),
+                mock.call(self.path / "foo.json", "r", encoding="utf-8"),
             ],
             any_order=True,
         )
@@ -177,9 +177,9 @@ class TestDirectoryIO(TestCase):
 
         m_open.assert_has_calls(
             [
-                mock.call(self.path / "config.json", "r"),
-                mock.call(self.path / "sub1.json", "r"),
-                mock.call(self.path / "sub2.json", "r"),
+                mock.call(self.path / "config.json", "r", encoding="utf-8"),
+                mock.call(self.path / "sub1.json", "r", encoding="utf-8"),
+                mock.call(self.path / "sub2.json", "r", encoding="utf-8"),
             ],
             any_order=True,
         )
@@ -202,9 +202,9 @@ class TestDirectoryIO(TestCase):
 
         m_open.assert_has_calls(
             [
-                mock.call(self.path / "config.json", "r"),
-                mock.call(self.path / "sub1.json", "r"),
-                mock.call(self.path / "sub2.json", "r"),
+                mock.call(self.path / "config.json", "r", encoding="utf-8"),
+                mock.call(self.path / "sub1.json", "r", encoding="utf-8"),
+                mock.call(self.path / "sub2.json", "r", encoding="utf-8"),
             ],
             any_order=True,
         )
@@ -224,7 +224,7 @@ class TestDirectoryIO(TestCase):
         with mock.patch("upsilonconf.io.base.open", m_open):
             self.io.write(dict(Utils.CONFIG), self.path)
 
-        m_open.assert_called_once_with(self.path / "config.json", "w")
+        m_open.assert_called_once_with(self.path / "config.json", "w", encoding="utf-8")
         buffer.seek(0)
         for expected in self.main_file_content():
             self.assertEqual(expected, next(buffer).rstrip())
@@ -236,7 +236,7 @@ class TestDirectoryIO(TestCase):
         with mock.patch(f"upsilonconf.io.base.open", m_open):
             self.io.write(Utils.CONFIG, self.path)
 
-        m_open.assert_called_once_with(self.path / "config.json", "w")
+        m_open.assert_called_once_with(self.path / "config.json", "w", encoding="utf-8")
         buffer.seek(0)
         for expected in self.main_file_content():
             self.assertEqual(expected, next(buffer).rstrip())
@@ -248,7 +248,7 @@ class TestDirectoryIO(TestCase):
         with mock.patch(f"upsilonconf.io.base.open", m_open):
             self.io.save_config(Utils.CONFIG, self.path)
 
-        m_open.assert_called_once_with(self.path / "config.json", "w")
+        m_open.assert_called_once_with(self.path / "config.json", "w", encoding="utf-8")
         buffer.seek(0)
         for expected in self.main_file_content():
             self.assertEqual(expected, next(buffer).rstrip())
@@ -266,7 +266,7 @@ class TestDirectoryIO(TestCase):
         with mock.patch(f"upsilonconf.io.base.open", m_open):
             self.io.save_config(Utils.CONFIG, self.path, key_mods={good: bad})
 
-        m_open.assert_called_once_with(self.path / "config.json", "w")
+        m_open.assert_called_once_with(self.path / "config.json", "w", encoding="utf-8")
         buffer.seek(0)
         for expected in self.main_file_content():
             self.assertEqual(expected.replace(good, bad), next(buffer).rstrip())

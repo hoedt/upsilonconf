@@ -43,7 +43,7 @@ class ConfigIO(ABC):
         path : Path
             Path to a readable configuration file.
         """
-        with open(path, "r") as fp:
+        with open(path, "r", encoding="utf-8") as fp:
             return self.read_from(fp)
 
     def load_config(
@@ -85,7 +85,7 @@ class ConfigIO(ABC):
         path : Path
             Path to a writeable configuration file.
         """
-        with open(path, "w") as fp:
+        with open(path, "w", encoding="utf-8") as fp:
             self.write_to(fp, conf)
 
     def save_config(

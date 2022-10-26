@@ -72,7 +72,9 @@ class TestConfigParser(TestCase):
         with mock.patch("upsilonconf.io.base.open", m_open):
             config = cli.parse_config(["--config", "hparam.json"])
 
-        m_open.assert_called_once_with(Path.cwd() / "hparam.json", "r")
+        m_open.assert_called_once_with(
+            Path.cwd() / "hparam.json", "r", encoding="utf-8"
+        )
         self.assertEqual(Utils.CONFIG, config)
 
     def test_parse_config_override(self):
@@ -86,7 +88,9 @@ class TestConfigParser(TestCase):
         with mock.patch("upsilonconf.io.base.open", m_open):
             config = cli.parse_config(["--config", "hparam.json", "=".join([_k, v])])
 
-        m_open.assert_called_once_with(Path.cwd() / "hparam.json", "r")
+        m_open.assert_called_once_with(
+            Path.cwd() / "hparam.json", "r", encoding="utf-8"
+        )
         self.assertEqual(expected, config)
 
     def test_parse_config_override_twice(self):
@@ -102,7 +106,9 @@ class TestConfigParser(TestCase):
                 ["--config", "hparam.json", "=".join([_k, v[::-1]]), "=".join([_k, v])]
             )
 
-        m_open.assert_called_once_with(Path.cwd() / "hparam.json", "r")
+        m_open.assert_called_once_with(
+            Path.cwd() / "hparam.json", "r", encoding="utf-8"
+        )
         self.assertEqual(expected, config)
 
     def test_from_cli_parser_options(self):

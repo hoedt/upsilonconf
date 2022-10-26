@@ -61,7 +61,7 @@ class Utils:
             with mock.patch("upsilonconf.io.base.open", m_open):
                 data = self.io.read(self.file_path)
 
-            m_open.assert_called_once_with(self.file_path, "r")
+            m_open.assert_called_once_with(self.file_path, "r", encoding="utf-8")
             self.assertDictEqual(dict(Utils.CONFIG), dict(data))
 
         def test_write_to(self):
@@ -96,7 +96,7 @@ class Utils:
             with mock.patch("upsilonconf.io.base.open", m_open):
                 self.io.write(dict(Utils.CONFIG), self.file_path)
 
-            m_open.assert_called_once_with(self.file_path, "w")
+            m_open.assert_called_once_with(self.file_path, "w", encoding="utf-8")
             buffer.seek(0)
             for expected in self.generate_file_content():
                 self.assertEqual(expected, next(buffer).rstrip())
@@ -106,7 +106,7 @@ class Utils:
             with mock.patch("upsilonconf.io.base.open", m_open):
                 config = self.io.load_config(self.file_path)
 
-            m_open.assert_called_once_with(self.file_path, "r")
+            m_open.assert_called_once_with(self.file_path, "r", encoding="utf-8")
             self.assertIsInstance(config, Configuration)
             self.assertEqual(Utils.CONFIG, config)
 
@@ -116,7 +116,7 @@ class Utils:
             with mock.patch("upsilonconf.io.base.open", m_open):
                 config = self.io.load_config(filename)
 
-            m_open.assert_called_once_with(Path.cwd() / filename, "r")
+            m_open.assert_called_once_with(Path.cwd() / filename, "r", encoding="utf-8")
             self.assertIsInstance(config, Configuration)
             self.assertEqual(Utils.CONFIG, config)
 
@@ -126,7 +126,9 @@ class Utils:
             with mock.patch("upsilonconf.io.base.open", m_open):
                 config = self.io.load_config(Path("~") / filename)
 
-            m_open.assert_called_once_with(Path.home() / filename, "r")
+            m_open.assert_called_once_with(
+                Path.home() / filename, "r", encoding="utf-8"
+            )
             self.assertIsInstance(config, Configuration)
             self.assertEqual(Utils.CONFIG, config)
 
@@ -148,7 +150,7 @@ class Utils:
             with mock.patch("upsilonconf.io.base.open", m_open):
                 config = self.io.load_config(self.file_path, key_mods={bad: good})
 
-            m_open.assert_called_once_with(self.file_path, "r")
+            m_open.assert_called_once_with(self.file_path, "r", encoding="utf-8")
             self.assertIsInstance(config, Configuration)
             self.assertEqual(Utils.CONFIG, config)
 
@@ -159,7 +161,7 @@ class Utils:
             with mock.patch("upsilonconf.io.base.open", m_open):
                 self.io.save_config(Utils.CONFIG, self.file_path)
 
-            m_open.assert_called_once_with(self.file_path, "w")
+            m_open.assert_called_once_with(self.file_path, "w", encoding="utf-8")
             buffer.seek(0)
             for expected in self.generate_file_content():
                 self.assertEqual(expected, next(buffer).rstrip())
@@ -172,7 +174,7 @@ class Utils:
             with mock.patch("upsilonconf.io.base.open", m_open):
                 self.io.save_config(Utils.CONFIG, filename)
 
-            m_open.assert_called_once_with(Path.cwd() / filename, "w")
+            m_open.assert_called_once_with(Path.cwd() / filename, "w", encoding="utf-8")
             buffer.seek(0)
             for expected in self.generate_file_content():
                 self.assertEqual(expected, next(buffer).rstrip())
@@ -185,7 +187,9 @@ class Utils:
             with mock.patch("upsilonconf.io.base.open", m_open):
                 self.io.save_config(Utils.CONFIG, Path("~") / filename)
 
-            m_open.assert_called_once_with(Path.home() / filename, "w")
+            m_open.assert_called_once_with(
+                Path.home() / filename, "w", encoding="utf-8"
+            )
             buffer.seek(0)
             for expected in self.generate_file_content():
                 self.assertEqual(expected, next(buffer).rstrip())
@@ -203,7 +207,7 @@ class Utils:
             with mock.patch("upsilonconf.io.base.open", m_open):
                 self.io.save_config(Utils.CONFIG, self.file_path, key_mods={good: bad})
 
-            m_open.assert_called_once_with(self.file_path, "w")
+            m_open.assert_called_once_with(self.file_path, "w", encoding="utf-8")
             buffer.seek(0)
             for expected in self.generate_file_content():
                 self.assertEqual(expected.replace(good, bad), next(buffer).rstrip())
@@ -297,7 +301,9 @@ class TestFlexibleIO(Utils.TestConfigIO):
         with mock.patch(f"upsilonconf.io.base.open", m_open):
             data = self.io.read(self.file_path.with_suffix(".other"))
 
-        m_open.assert_called_once_with(self.file_path.with_suffix(".other"), "r")
+        m_open.assert_called_once_with(
+            self.file_path.with_suffix(".other"), "r", encoding="utf-8"
+        )
         self.assertDictEqual(dict(Utils.CONFIG), dict(data))
 
     def test_write_other_ext(self):
@@ -308,7 +314,7 @@ class TestFlexibleIO(Utils.TestConfigIO):
         with mock.patch(f"upsilonconf.io.base.open", m_open):
             self.io.write(dict(Utils.CONFIG), file_path)
 
-        m_open.assert_called_once_with(file_path, "w")
+        m_open.assert_called_once_with(file_path, "w", encoding="utf-8")
         buffer.seek(0)
         for expected in self.generate_other_content():
             self.assertEqual(expected, next(buffer).rstrip())
@@ -319,7 +325,9 @@ class TestFlexibleIO(Utils.TestConfigIO):
         with mock.patch(f"upsilonconf.io.base.open", m_open):
             config = self.io.load_config(self.file_path.with_suffix(".other"))
 
-        m_open.assert_called_once_with(self.file_path.with_suffix(".other"), "r")
+        m_open.assert_called_once_with(
+            self.file_path.with_suffix(".other"), "r", encoding="utf-8"
+        )
         self.assertIsInstance(config, Configuration)
         self.assertEqual(Utils.CONFIG, config)
 
@@ -331,7 +339,7 @@ class TestFlexibleIO(Utils.TestConfigIO):
         with mock.patch(f"upsilonconf.io.base.open", m_open):
             self.io.save_config(Utils.CONFIG, file_path)
 
-        m_open.assert_called_once_with(file_path, "w")
+        m_open.assert_called_once_with(file_path, "w", encoding="utf-8")
         buffer.seek(0)
         for expected in self.generate_other_content():
             self.assertEqual(expected, next(buffer).rstrip())
