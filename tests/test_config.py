@@ -555,6 +555,15 @@ class TestConfiguration(TestCase):
         self.assertIsNone(old_val)
         self.assertEqual(self.empty_config["sub", new_key], new_val)
 
+    def test_overwrite_order(self):
+        new_val = "bla"
+        key_order = tuple(self.simple_config.keys())
+        for k, v in self.simple_config.items():
+            old_val = self.simple_config.overwrite(k, new_val)
+            self.assertEqual(v, old_val)
+            self.assertEqual(self.simple_config[k], new_val)
+            self.assertTupleEqual(key_order, tuple(self.simple_config.keys()))
+
     def test_overwrite_all(self):
         base_config = self.complex_config
         expected = dict(base_config)

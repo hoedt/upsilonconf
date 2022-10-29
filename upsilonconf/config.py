@@ -312,7 +312,12 @@ class Configuration(MutableMapping[str, Any]):
         --------
         overwrite_all : overwrite multiple values in one go.
         """
-        old_value = self.pop(key, None)
+        # TODO: this is practically a copy of __setitem__ now
+        conf, key = self._resolve_key(key, create=True)
+        old_value = conf.get(key, None)
+        if old_value is None:
+            conf._validate_key(key)
+
         try:
             sub_conf = Configuration(**old_value)
             old_value = sub_conf.overwrite_all(value)
@@ -320,7 +325,7 @@ class Configuration(MutableMapping[str, Any]):
         except TypeError:
             pass
 
-        self.__setitem__(key, value)
+        conf._content.__setitem__(key, value)
         return old_value
 
     def overwrite_all(self, other: _MappingLike = (), **kwargs) -> Mapping[str, Any]:
