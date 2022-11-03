@@ -90,7 +90,6 @@ class Configuration(MutableMapping[str, Any]):
     """
 
     def __init__(self, **kwargs):
-        self._content: MutableMapping[str, Any] = {}
         self.update(**kwargs)
 
     def __repr__(self) -> str:
@@ -100,12 +99,6 @@ class Configuration(MutableMapping[str, Any]):
     def __str__(self) -> str:
         kwargs = [": ".join([k, "{!s}".format(v)]) for k, v in self.items()]
         return f"{{{', '.join(kwargs)}}}"
-
-    def __getstate__(self) -> Mapping[str, Any]:
-        return {k: v for k, v in self.items()}
-
-    def __setstate__(self, state: Mapping[str, Any]) -> None:
-        self._content = dict(state)
 
     def __copy__(self) -> "Configuration":
         return Configuration(**self)
@@ -124,12 +117,15 @@ class Configuration(MutableMapping[str, Any]):
 
     def __getitem__(self, key: Union[str, Iterable[str]]) -> Any:
         conf, key = self._resolve_key(key)
-        return conf._content.__getitem__(key)
+        try:
+            return conf.__getattr__(key)
+        except AttributeError:
+            raise KeyError(key) from None
 
     def __setitem__(self, key: Union[str, Iterable[str]], value: Any) -> None:
         conf, key = self._resolve_key(key, create=True)
         conf._validate_key(key)
-        if key in conf._content:
+        if key in conf.__dict__:
             msg = f"key '{key}' already defined, use 'overwrite' methods instead"
             raise ValueError(msg)
 
@@ -138,17 +134,20 @@ class Configuration(MutableMapping[str, Any]):
         except TypeError:
             pass
 
-        return conf._content.__setitem__(key, value)
+        return conf.__dict__.__setitem__(key, value)
 
     def __delitem__(self, key: Union[str, Iterable[str]]) -> None:
         conf, key = self._resolve_key(key)
-        return conf._content.__delitem__(key)
+        try:
+            conf.__delattr__(key)
+        except AttributeError:
+            raise KeyError(key)
 
     def __len__(self) -> int:
-        return self._content.__len__()
+        return self.__dict__.__len__()
 
     def __iter__(self) -> Iterator[Any]:
-        return self._content.__iter__()
+        return filter(self._validate_key, self.__dict__.__iter__())
 
     # # # Merging # # #
 
@@ -171,7 +170,7 @@ class Configuration(MutableMapping[str, Any]):
     def __getattr__(self, name: str) -> Any:
         try:
             self._validate_key(name)
-            return self.__getitem__(name)
+            return self.__dict__[name]
         except InvalidKeyError:
             msg = f"'{self.__class__.__name__}' object has no attribute '{name}'"
             raise AttributeError(msg) from None
@@ -189,16 +188,12 @@ class Configuration(MutableMapping[str, Any]):
     def __delattr__(self, name: str) -> None:
         try:
             self._validate_key(name)
-            self.__delitem__(name)
+            super().__delattr__(name)
         except InvalidKeyError:
             msg = f"'{self.__class__.__name__}' object has no attribute '{name}'"
             raise AttributeError(msg) from None
-        except KeyError:
+        except AttributeError:
             raise AttributeError(f"no config entry with key '{name}'") from None
-
-    def __dir__(self) -> Iterable[str]:
-        yield from super().__dir__()
-        yield from self._content
 
     # # # Key Magic # # #
 
@@ -237,7 +232,7 @@ class Configuration(MutableMapping[str, Any]):
             raise InvalidKeyError(f"'{key}' does not start with a letter")
         if not key.isidentifier():
             raise InvalidKeyError(f"'{key}' contains symbols that are not allowed")
-        if key in super().__dir__():
+        if key in dir(self.__class__):
             raise InvalidKeyError(f"'{key}' is not allowed as key, it is special")
 
         return True
@@ -325,7 +320,7 @@ class Configuration(MutableMapping[str, Any]):
         except TypeError:
             pass
 
-        conf._content.__setitem__(key, value)
+        conf.__dict__.__setitem__(key, value)
         return old_value
 
     def overwrite_all(self, other: _MappingLike = (), **kwargs) -> Mapping[str, Any]:
