@@ -93,11 +93,11 @@ class Configuration(MutableMapping[str, Any]):
         self.update(**kwargs)
 
     def __repr__(self) -> str:
-        kwargs = ["=".join([k, "{!r}".format(v)]) for k, v in self.items()]
+        kwargs = ["=".join([k, f"{v!r}"]) for k, v in self.items()]
         return f"{self.__class__.__name__}({', '.join(kwargs)})"
 
     def __str__(self) -> str:
-        kwargs = [": ".join([k, "{!s}".format(v)]) for k, v in self.items()]
+        kwargs = [": ".join([k, f"{v!s}"]) for k, v in self.items()]
         return f"{{{', '.join(kwargs)}}}"
 
     def __copy__(self) -> "Configuration":
@@ -117,10 +117,7 @@ class Configuration(MutableMapping[str, Any]):
 
     def __getitem__(self, key: Union[str, Iterable[str]]) -> Any:
         conf, key = self._resolve_key(key)
-        try:
-            return conf.__getattr__(key)
-        except AttributeError:
-            raise KeyError(key) from None
+        return conf.__dict__[key]
 
     def __setitem__(self, key: Union[str, Iterable[str]], value: Any) -> None:
         conf, key = self._resolve_key(key, create=True)
@@ -134,14 +131,11 @@ class Configuration(MutableMapping[str, Any]):
         except TypeError:
             pass
 
-        return conf.__dict__.__setitem__(key, value)
+        conf.__dict__[key] = value
 
     def __delitem__(self, key: Union[str, Iterable[str]]) -> None:
         conf, key = self._resolve_key(key)
-        try:
-            conf.__delattr__(key)
-        except AttributeError:
-            raise KeyError(key)
+        del conf.__dict__[key]
 
     def __len__(self) -> int:
         return self.__dict__.__len__()
@@ -167,33 +161,13 @@ class Configuration(MutableMapping[str, Any]):
 
     # # # Attribute Access # # #
 
-    def __getattr__(self, name: str) -> Any:
-        try:
-            self._validate_key(name)
-            return self.__dict__[name]
-        except InvalidKeyError:
-            msg = f"'{self.__class__.__name__}' object has no attribute '{name}'"
-            raise AttributeError(msg) from None
-        except KeyError:
-            raise AttributeError(f"no config entry with key '{name}'") from None
-
     def __setattr__(self, name: str, value: Any) -> None:
         try:
             self.__setitem__(name, value)
         except InvalidKeyError:
-            super().__setattr__(name, value)
+            raise AttributeError(f"can't set attribute '{name}'") from None
         except ValueError as e:
-            raise AttributeError(f"config entry with key " + str(e)) from None
-
-    def __delattr__(self, name: str) -> None:
-        try:
-            self._validate_key(name)
-            super().__delattr__(name)
-        except InvalidKeyError:
-            msg = f"'{self.__class__.__name__}' object has no attribute '{name}'"
-            raise AttributeError(msg) from None
-        except AttributeError:
-            raise AttributeError(f"no config entry with key '{name}'") from None
+            raise AttributeError(str(e)) from None
 
     # # # Key Magic # # #
 

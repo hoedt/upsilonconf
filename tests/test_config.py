@@ -463,13 +463,13 @@ class TestConfiguration(TestCase):
             self.assertEqual(v, getattr(self.complex_config.sub, k))
 
     def test_getattr_invalid(self):
-        with self.assertRaisesRegex(AttributeError, "config"):
+        with self.assertRaisesRegex(AttributeError, "object has no attribute"):
             _ = self.empty_config.ridiculous
 
-        with self.assertRaisesRegex(AttributeError, "no attribute"):
+        with self.assertRaisesRegex(AttributeError, "object has no attribute"):
             _ = self.empty_config._ridiculous
 
-        with self.assertRaisesRegex(AttributeError, "no attribute"):
+        with self.assertRaisesRegex(AttributeError, "object has no attribute"):
             _ = getattr(self.empty_config, "1234")
 
     def test_setattr(self):
@@ -477,12 +477,6 @@ class TestConfiguration(TestCase):
         setattr(self.empty_config, k, v)
         self.assertIn(k, self.empty_config.keys())
         self.assertEqual(v, self.empty_config[k])
-
-    def test_setattr_invalid_key(self):
-        k, v = "_ridiculous", 69
-        setattr(self.empty_config, k, v)
-        self.assertNotIn(k, self.empty_config.keys())
-        self.assertEqual(v, getattr(self.empty_config, k))
 
     def test_setattr_overwrite(self):
         k = next(iter(self.simple_config.keys()))
@@ -499,13 +493,13 @@ class TestConfiguration(TestCase):
             self.assertIsNone(getattr(self.simple_config, k, None))
 
     def test_delattr_invalid(self):
-        with self.assertRaisesRegex(AttributeError, "config"):
+        with self.assertRaisesRegex(AttributeError, "ridiculous"):
             del self.empty_config.ridiculous
 
-        with self.assertRaisesRegex(AttributeError, "no attribute"):
+        with self.assertRaisesRegex(AttributeError, "_ridiculous"):
             del self.empty_config._ridiculous
 
-        with self.assertRaisesRegex(AttributeError, "no attribute"):
+        with self.assertRaisesRegex(AttributeError, "1234"):
             delattr(self.empty_config, "1234")
 
     def test_dir(self):
