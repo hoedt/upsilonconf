@@ -145,20 +145,23 @@ class TestConfiguration(TestCase):
         self.assertEqual(v, self.simple_config[k])
 
     def test_setitem_invalid_key(self):
-        with self.assertRaisesRegex(InvalidKeyError, "letter"):
+        with self.assertWarns(UserWarning) as cm:
             self.empty_config[""] = None
+        self.assertEqual(1, len(cm.warnings))
 
         with self.assertRaisesRegex(InvalidKeyError, "letter"):
             self.empty_config["_bla"] = None
 
-        with self.assertRaisesRegex(InvalidKeyError, "symbol"):
+        with self.assertWarns(UserWarning) as cm:
             self.empty_config["bla*x"] = None
+        self.assertEqual(1, len(cm.warnings))
 
-        with self.assertRaisesRegex(InvalidKeyError, "special"):
+        with self.assertRaisesRegex(InvalidKeyError, "interface"):
             self.empty_config["overwrite"] = None
 
-        with self.assertRaisesRegex(InvalidKeyError, "special"):
+        with self.assertWarns(UserWarning) as cm:
             self.empty_config["def"] = None
+        self.assertEqual(1, len(cm.warnings))
 
     def test_setitem_invalid_key_type(self):
         with self.assertRaises(TypeError):
@@ -719,8 +722,10 @@ class TestConfiguration(TestCase):
 
     def test_from_dict_key_modifiers_missing(self):
         d = {"key 1": "with space", "key-2": "with hyphen"}
-        with self.assertRaises(InvalidKeyError):
+        with self.assertWarns(UserWarning) as cm:
             Configuration.from_dict(d)
+
+        self.assertEqual(2, len(cm.warnings))
 
     def test_from_dict_key_modifiers_combination(self):
         d = {"keyX1": "with X", "keyO2": "with O"}

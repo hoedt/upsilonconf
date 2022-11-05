@@ -1,6 +1,7 @@
 import copy
 import keyword
 import re
+import warnings
 from typing import (
     MutableMapping,
     Any,
@@ -203,12 +204,14 @@ class Configuration(MutableMapping[str, Any]):
         InvalidKeyError
             If the key does not respect the rules.
         """
-        if len(key) == 0 or not key[0].isalpha():
-            raise InvalidKeyError(f"'{key}' does not start with a letter")
-        if not key.isidentifier():
-            raise InvalidKeyError(f"'{key}' contains symbols that are not allowed")
-        if keyword.iskeyword(key) or key in dir(self.__class__):
-            raise InvalidKeyError(f"'{key}' is not allowed as key, it is special")
+        if not key.isidentifier() or keyword.iskeyword(key):
+            warnings.warn(f"key {key!r} will not be accessible using attribute syntax")
+        if len(key) > 0 and not key[0].isalpha():
+            # TODO: should hidden attributes be allowed (as keys)?
+            raise InvalidKeyError(f"{key!r} does not start with a letter")
+        if key in dir(self.__class__):
+            msg = f"using key {key!r} would break the interface of this object"
+            raise InvalidKeyError(msg)
 
         return True
 
@@ -373,25 +376,28 @@ class Configuration(MutableMapping[str, Any]):
 
         Examples
         --------
-        Invalid characters in keys of a dictionary might lead to problems.
+        To take full advantage of the attribute syntax this config provides,
+        the keys should be valid python identifiers.
+        Therefore, warnings are issues if keys are not valid python identifiers.
 
+        >>> warnings.simplefilter("error")
         >>> d = {"key 1": "with space", "key-2": "with hyphen"}
         >>> Configuration(**d)
         Traceback (most recent call last):
           ...
-        upsilonconf.config.InvalidKeyError: 'key 1' contains symbols that are not allowed
+        UserWarning: key 'key 1' will not be accessible using attribute syntax
 
         By using `from_dict` with `key_mods`, invalid characters can be replaced.
 
         >>> Configuration.from_dict(d, key_mods={" ": "_", "-": "0"})
         Configuration(key_1='with space', key02='with hyphen')
 
-        Construction will still fail if not all characters are addressed!
+        It is also possible to only resolve part of the issues!
 
         >>> Configuration.from_dict(d, key_mods={" ": "_"})
         Traceback (most recent call last):
           ...
-        upsilonconf.config.InvalidKeyError: 'key-2' contains symbols that are not allowed
+        UserWarning: key 'key-2' will not be accessible using attribute syntax
         """
         if key_mods is None:
             key_mods = {}

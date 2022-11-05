@@ -26,7 +26,7 @@ class TestTOMLIO(Utils.TestConfigIO):
     def test_load_config_whitespace_key(self):
         file_contents = self.file_contents.replace("foo", "'space foo'")
         m_open = mock.mock_open(read_data=file_contents)
-        with self.assertRaises(InvalidKeyError):
+        with self.assertWarns(UserWarning):
             with mock.patch("upsilonconf.io.base.open", m_open):
                 self.io.load_config(self.file_path)
 
