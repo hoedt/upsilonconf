@@ -157,6 +157,9 @@ class TestConfiguration(TestCase):
         with self.assertRaisesRegex(InvalidKeyError, "special"):
             self.empty_config["overwrite"] = None
 
+        with self.assertRaisesRegex(InvalidKeyError, "special"):
+            self.empty_config["def"] = None
+
     def test_setitem_invalid_key_type(self):
         with self.assertRaises(TypeError):
             self.simple_config[1] = None

@@ -1,4 +1,5 @@
 import copy
+import keyword
 import re
 from typing import (
     MutableMapping,
@@ -206,7 +207,7 @@ class Configuration(MutableMapping[str, Any]):
             raise InvalidKeyError(f"'{key}' does not start with a letter")
         if not key.isidentifier():
             raise InvalidKeyError(f"'{key}' contains symbols that are not allowed")
-        if key in dir(self.__class__):
+        if keyword.iskeyword(key) or key in dir(self.__class__):
             raise InvalidKeyError(f"'{key}' is not allowed as key, it is special")
 
         return True
