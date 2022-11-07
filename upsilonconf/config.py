@@ -102,19 +102,6 @@ class Configuration(MutableMapping[str, Any]):
         kwargs = [": ".join([k, f"{v!s}"]) for k, v in self.items()]
         return f"{{{', '.join(kwargs)}}}"
 
-    def __copy__(self) -> "Configuration":
-        return Configuration(**self)
-
-    def __deepcopy__(self, memo: Dict = None) -> "Configuration":
-        if memo is None:
-            memo = {}
-
-        result = Configuration()
-        for k, v in self.items():
-            result[k] = copy.deepcopy(v, memo=memo)
-
-        return result
-
     # # # Mapping Interface # # #
 
     def __getitem__(self, key: Union[str, Iterable[str]]) -> Any:
