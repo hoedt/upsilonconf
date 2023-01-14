@@ -1,8 +1,8 @@
-import copy
 import keyword
 import re
 import warnings
 from typing import (
+    TypeVar,
     MutableMapping,
     Any,
     Iterator,
@@ -12,10 +12,14 @@ from typing import (
     Mapping,
     Dict,
     Pattern,
+    overload,
+    Type,
 )
 
-__all__ = ["Configuration", "InvalidKeyError"]
+__all__ = ["PlainConfiguration", "Configuration", "InvalidKeyError"]
 
+T = TypeVar("T")
+Self = TypeVar("Self", bound="PlainConfiguration")
 _MappingLike = Union[Mapping[str, Any], Iterable[Tuple[str, Any]]]
 
 
@@ -25,7 +29,233 @@ class InvalidKeyError(ValueError):
     pass
 
 
-class Configuration(MutableMapping[str, Any]):
+class PlainConfiguration(MutableMapping[str, Any]):
+    """
+    Configuration that maps variable names to their corresponding values.
+
+    A `PlainConfiguration` object can be used to collect values for various values.
+    It can be interpreted in two ways:
+
+    - a dictionary (or more generally, a mapping) with attribute syntax, or
+    - a python object with indexing syntax.
+
+    On top of the combined feature set of dictionaries and attributes,
+    this class introduces advanced indexing, convenient merging and `dict` conversions.
+    ``dict``-like values are automatically converted to `PlainConfiguration` objects,
+    giving rise to hierarchical configuration objects.
+
+    Examples
+    --------
+    Configurations are typically constructed from keyword arguments.
+
+    >>> conf = PlainConfiguration(foo=0, bar="bar", baz={'a': 1, 'b': 2})
+    >>> print(conf)
+    {foo: 0, bar: bar, baz: {a: 1, b: 2}}
+
+    A configuration is both ``object`` and ``Mapping`` at the same time.
+
+    >>> conf['bar'] == conf.bar
+    True
+    >>> conf['baz']['a'] == conf.baz.a
+    True
+
+    Advanced indexing for convenient access to subconfigs.
+
+    >>> conf['baz', 'a']  # tuple index
+    1
+    >>> conf['baz.a']  # dot-string index
+    1
+
+    Configurations can conveniently be merged with other ``Mapping`` objects.
+
+    >>> print(conf | {"xtra": None})
+    {foo: 0, bar: bar, baz: {a: 1, b: 2}, xtra: None}
+    >>> print(conf | {"baz": {"c": 3}})
+    {foo: 0, bar: bar, baz: {a: 1, b: 2, c: 3}}
+    """
+
+    def __init__(self, **kwargs):
+        self.update(**kwargs)
+
+    def __repr__(self) -> str:
+        kwargs = ["=".join([k, f"{v!r}"]) for k, v in self.items()]
+        return f"{self.__class__.__name__}({', '.join(kwargs)})"
+
+    def __str__(self) -> str:
+        kwargs = [": ".join([k, f"{v!s}"]) for k, v in self.items()]
+        return f"{{{', '.join(kwargs)}}}"
+
+    # # # Mapping Interface # # #
+
+    def __getitem__(self, key: Union[str, Tuple[str, ...]]) -> Any:
+        conf, key = self._resolve_key(key)
+        return conf.__dict__[key]
+
+    def __setitem__(self, key: Union[str, Tuple[str, ...]], value: Any) -> None:
+        conf, key = self._resolve_key(key, create=True)
+        old_val = conf.__dict__.get(key, None)
+        conf.__dict__[key] = self._fix_value(value, old_val)
+
+    def __delitem__(self, key: Union[str, Tuple[str, ...]]) -> None:
+        conf, key = self._resolve_key(key)
+        del conf.__dict__[key]
+
+    def __len__(self) -> int:
+        return self.__dict__.__len__()
+
+    def __iter__(self) -> Iterator[Any]:
+        return iter(self.__dict__)
+
+    # # # Merging # # #
+
+    def __or__(self: Self, other: Mapping[str, Any]) -> Self:
+        result = self.__class__(**self)
+        result.update(other)
+        return result
+
+    def __ror__(self: Self, other: Mapping[str, Any]) -> Self:
+        result = self.__class__(**other)
+        result.update(self)
+        return result
+
+    def __ior__(self: Self, other: Mapping[str, Any]) -> Self:
+        self.update(other)
+        return self
+
+    # # # Attribute Access # # #
+
+    def __getattribute__(self, name: str) -> Any:
+        if "." in name:
+            msg = f"dot-strings only work for indexing, try `config[{name}]` instead"
+            raise AttributeError(msg)
+
+        return super().__getattribute__(name)
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        if "." in name:
+            msg = f"dot-strings only work for indexing, try `config[{name}]` instead"
+            raise AttributeError(msg)
+
+        fixed_value = self._fix_value(value, old_val=self.get(name, None))
+        super().__setattr__(name, fixed_value)
+
+    def __delattr__(self, name: str) -> Any:
+        if "." in name:
+            msg = f"dot-strings only work for indexing, try `config[{name}]` instead"
+            raise AttributeError(msg)
+
+        return super().__delattr__(name)
+
+    # # # Key Magic # # #
+
+    def _resolve_key(
+        self: Self, keys: Union[str, Tuple[str, ...]], create: bool = False
+    ) -> Tuple[Self, str]:
+        """
+        Resolve dot-string and iterable keys
+
+        Parameters
+        ----------
+        keys : str or iterable of str
+            The key(s) to be resolved.
+        create : bool, optional
+            If ``True``, non-existent sub-configurations will be created.
+
+        Returns
+        -------
+        config: PlainConfiguration
+            The sub-configuration that should host the final key (and value).
+        key : str
+            The final key that should correspond to the actual value.
+
+        Raises
+        ------
+        KeyError
+            If any of the sub-keys (apart from the final key)
+            point to a value that is not a configuration.
+        """
+        if isinstance(keys, str):
+            keys = keys.split(".")
+        elif not isinstance(keys, tuple):
+            msg = f"index must be string or a tuple of strings, but got '{type(keys)}'"
+            raise TypeError(msg)
+
+        *parents, final = keys
+
+        root = self
+        for k in parents:
+            try:
+                root = root[k]
+            except KeyError:
+                if not create:
+                    raise
+
+                root[k] = {}
+                root = root[k]
+            else:
+                if not isinstance(root, self.__class__):
+                    raise KeyError(k)
+
+        return root, final
+
+    @overload
+    def _fix_value(self: Self, value: Mapping[str, Any], old_val: Any) -> Self:
+        ...
+
+    @overload
+    def _fix_value(self, value: T, old_val: Any) -> T:
+        ...
+
+    def _fix_value(self, value: Any, old_val: Any = None):
+        """
+        Prepare value for storage in this configuration.
+
+        This method assures that the value satisfies the invariants
+        and does not unnecessarily destroy the old value.
+
+        Parameters
+        ----------
+        value
+            The new value before storing.
+        old_val (optional)
+            The value that is going to be replaced by this value.
+
+        Returns
+        -------
+        new_value
+            The value that is ready to be stored.
+        """
+        try:
+            value = self.__class__(**value)
+            old_val |= value
+            return old_val
+        except TypeError:
+            return value
+
+    # # # Dict Conversion # # #
+
+    @classmethod
+    def from_dict(
+        cls: Type[Self],
+        mapping: Mapping[str, Any],
+        key_mods: Mapping[str, str] = None,
+    ) -> Self:
+        if key_mods is None:
+            key_mods = {}
+
+        return cls(**_modify_keys(mapping.items(), key_mods))
+
+    def to_dict(
+        self, key_mods: Mapping[str, str] = None, flat: bool = False
+    ) -> Dict[str, Any]:
+        if key_mods is None:
+            key_mods = {}
+
+        items = self._flat_items() if flat else self.items()
+        return _modify_keys(items, key_mods)
+
+
+class Configuration(PlainConfiguration):
     """
     Configuration mapping (variable) names to their corresponding values.
 
@@ -91,68 +321,25 @@ class Configuration(MutableMapping[str, Any]):
     'will work'
     """
 
-    def __init__(self, **kwargs):
-        self.update(**kwargs)
+    def _resolve_key(
+        self, keys: Union[str, Iterable[str]], create: bool = False
+    ) -> Tuple["Configuration", str]:
+        if not isinstance(keys, str):
+            keys = tuple(keys)
 
-    def __repr__(self) -> str:
-        kwargs = ["=".join([k, f"{v!r}"]) for k, v in self.items()]
-        return f"{self.__class__.__name__}({', '.join(kwargs)})"
-
-    def __str__(self) -> str:
-        kwargs = [": ".join([k, f"{v!s}"]) for k, v in self.items()]
-        return f"{{{', '.join(kwargs)}}}"
-
-    # # # Mapping Interface # # #
-
-    def __getitem__(self, key: Union[str, Iterable[str]]) -> Any:
-        conf, key = self._resolve_key(key)
-        return conf.__dict__[key]
-
-    def __setitem__(self, key: Union[str, Iterable[str]], value: Any) -> None:
-        conf, key = self._resolve_key(key, create=True)
-        conf._validate_key(key)
-        if key in conf.__dict__:
+        root, key = super()._resolve_key(keys, create)
+        root._validate_key(key)
+        if create and key in root.__dict__:
             msg = f"key '{key}' already defined, use 'overwrite' methods instead"
             raise ValueError(msg)
 
-        try:
-            value = Configuration(**value)
-        except TypeError:
-            pass
-
-        conf.__dict__[key] = value
-
-    def __delitem__(self, key: Union[str, Iterable[str]]) -> None:
-        conf, key = self._resolve_key(key)
-        del conf.__dict__[key]
-
-    def __len__(self) -> int:
-        return self.__dict__.__len__()
-
-    def __iter__(self) -> Iterator[Any]:
-        return filter(self._validate_key, self.__dict__.__iter__())
-
-    # # # Merging # # #
-
-    def __or__(self, other: Mapping[str, Any]):
-        result = Configuration(**self)
-        result.update(other)
-        return result
-
-    def __ror__(self, other: Mapping[str, Any]):
-        result = Configuration(**other)
-        result.update(self)
-        return result
-
-    def __ior__(self, other: Mapping[str, Any]):
-        self.update(**other)
-        return self
+        return root, key
 
     # # # Attribute Access # # #
 
     def __setattr__(self, name: str, value: Any) -> None:
         try:
-            self.__setitem__(name, value)
+            self[name] = value
         except InvalidKeyError:
             raise AttributeError(f"can't set attribute '{name}'") from None
         except ValueError as e:
@@ -177,7 +364,7 @@ class Configuration(MutableMapping[str, Any]):
         # TODO: create proper ItemsView?
         # TODO: add other flat iterators?
         for k, v in self.items():
-            if isinstance(v, Configuration):
+            if isinstance(v, self.__class__):
                 yield from ((f"{k}.{_k}", _v) for _k, _v in v._flat_items())
             else:
                 yield k, v
@@ -201,53 +388,6 @@ class Configuration(MutableMapping[str, Any]):
             raise InvalidKeyError(msg)
 
         return True
-
-    def _resolve_key(
-        self, keys: Union[str, Iterable[str]], create: bool = False
-    ) -> Tuple["Configuration", str]:
-        """
-        Resolve dot-string and iterable keys
-
-        Parameters
-        ----------
-        keys : str or iterable of str
-            The key(s) to be resolved.
-        create : bool, optional
-            If ``True``, non-existent sub-configurations will be created.
-
-        Returns
-        -------
-        config: Configuration
-            The sub-configuration that should host the final key (and value).
-        key : str
-            The final key that should correspond to the actual value.
-
-        Raises
-        ------
-        KeyError
-            If any of the sub-keys (apart from the final key)
-            point to a value that is not a configuration.
-        """
-        if isinstance(keys, str):
-            keys = keys.split(".")
-
-        *parents, final = keys
-
-        root = self
-        for k in parents:
-            try:
-                root = root[k]
-            except KeyError:
-                if not create:
-                    raise
-
-                root[k] = {}
-                root = root[k]
-            else:
-                if not isinstance(root, Configuration):
-                    raise KeyError(k)
-
-        return root, final
 
     # # # Overwriting # # #
 
@@ -273,13 +413,15 @@ class Configuration(MutableMapping[str, Any]):
         overwrite_all : overwrite multiple values in one go.
         """
         # TODO: this is practically a copy of __setitem__ now
-        conf, key = self._resolve_key(key, create=True)
+        if not isinstance(key, str):
+            key = tuple(key)
+        conf, key = super()._resolve_key(key, create=True)
         old_value = conf.get(key, None)
         if old_value is None:
             conf._validate_key(key)
 
         try:
-            sub_conf = Configuration(**old_value)
+            sub_conf = self.__class__(**old_value)
             old_value = sub_conf.overwrite_all(value)
             value = sub_conf
         except TypeError:
@@ -328,129 +470,6 @@ class Configuration(MutableMapping[str, Any]):
             old_values[k] = self.overwrite(k, v)
 
         return old_values
-
-    # # # Dict Conversion # # #
-
-    @staticmethod
-    def from_dict(
-        mapping: Mapping[str, Any],
-        key_mods: Mapping[str, str] = None,
-    ) -> "Configuration":
-        """
-        Create a configuration object from a given mapping.
-
-        This method is especially useful to create a config from
-        a mapping that contains keys with invalid characters.
-        By means of `key_mods`, invalid characters can be
-        replaced to create keys that would be accepted by `__init__`.
-
-        Parameters
-        ----------
-        mapping : Mapping[str, Any]
-            The mapping to be converted into a configuration.
-        key_mods : Mapping[str, str], optional
-            A mapping from key patterns to their replacements.
-
-        Returns
-        -------
-        config : Configuration
-            A configuration object representing the original mapping.
-
-        See Also
-        --------
-        __init__ : regular configuration construction
-        to_dict : convert configuration to dictionary
-
-        Examples
-        --------
-        To take full advantage of the attribute syntax this config provides,
-        the keys should be valid python identifiers.
-        Therefore, warnings are issues if keys are not valid python identifiers.
-
-        >>> warnings.simplefilter("error")
-        >>> d = {"key 1": "with space", "key-2": "with hyphen"}
-        >>> Configuration(**d)
-        Traceback (most recent call last):
-          ...
-        UserWarning: key 'key 1' will not be accessible using attribute syntax
-
-        By using `from_dict` with `key_mods`, invalid characters can be replaced.
-
-        >>> Configuration.from_dict(d, key_mods={" ": "_", "-": "0"})
-        Configuration(key_1='with space', key02='with hyphen')
-
-        It is also possible to only resolve part of the issues!
-
-        >>> Configuration.from_dict(d, key_mods={" ": "_"})
-        Traceback (most recent call last):
-          ...
-        UserWarning: key 'key-2' will not be accessible using attribute syntax
-        """
-        if key_mods is None:
-            key_mods = {}
-
-        return Configuration(**_modify_keys(mapping.items(), key_mods))
-
-    def to_dict(
-        self, key_mods: Mapping[str, str] = None, flat: bool = False
-    ) -> Dict[str, Any]:
-        """
-        Convert this configuration to a dictionary.
-
-        This method implements the inverse of `from_dict`.
-        It is especially useful to create a mapping
-        without constraints on the format for keys.
-        Also, it ensures that sub-configs are transformed recursively.
-
-        Parameters
-        ----------
-        key_mods : Mapping[str, str], optional
-            A mapping from key patterns to their replacements.
-        flat : bool, optional
-            If `True`, the result will have no dictionaries as values.
-            Instead, sub-configs are represented by means of dot-string keys.
-            The default is `False`.
-
-        Returns
-        -------
-        mapping : dict[str, Any]
-            A dictionary with the same
-            key-value pairs as this configuration.
-
-        See Also
-        --------
-        from_dict : convert dictionary to configuration
-
-        Examples
-        --------
-        In order to convert a nested configuration to a dictionary,
-        it does not suffice to call ``dict``.
-
-        >>> conf = Configuration(sub=Configuration(a=1))
-        >>> dict(conf)
-        {'sub': Configuration(a=1)}
-
-        Using `to_dict` does work recursively.
-
-        >>> conf.to_dict()
-        {'sub': {'a': 1}}
-
-        If a flat dict is required, you can use `flat=True`.
-
-        >>> conf.to_dict(flat=True)
-        {'sub.a': 1}
-
-        Similar to `from_dict`, key-modifiers can be used to transform keys.
-
-        >>> conf = Configuration(key_1='with space', key02='with hyphen')
-        >>> conf.to_dict(key_mods={"_": " ", "0": "-"})
-        {'key 1': 'with space', 'key-2': 'with hyphen'}
-        """
-        if key_mods is None:
-            key_mods = {}
-
-        items = self._flat_items() if flat else self.items()
-        return _modify_keys(items, key_mods)
 
 
 # utilities
