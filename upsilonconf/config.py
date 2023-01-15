@@ -93,8 +93,7 @@ class PlainConfiguration(MutableMapping[str, Any]):
 
     def __setitem__(self, key: Union[str, Tuple[str, ...]], value: Any) -> None:
         conf, key = self._resolve_key(key, create=True)
-        old_val = conf.__dict__.get(key, None)
-        conf.__dict__[key] = self._fix_value(value, old_val)
+        conf.__dict__[key] = self._fix_value(value)
 
     def __delitem__(self, key: Union[str, Tuple[str, ...]]) -> None:
         conf, key = self._resolve_key(key)
@@ -110,34 +109,34 @@ class PlainConfiguration(MutableMapping[str, Any]):
 
     def __or__(self: Self, other: Mapping[str, Any]) -> Self:
         result = self.__class__(**self)
-        result.update(other)
+        result |= other
         return result
 
     def __ror__(self: Self, other: Mapping[str, Any]) -> Self:
         result = self.__class__(**other)
-        result.update(self)
+        result |= self
         return result
 
     def __ior__(self: Self, other: Mapping[str, Any]) -> Self:
-        self.update(other)
+        for k, v in other.items():
+            self[k] = self._fix_value(v, self.get(k, None))
         return self
 
     # # # Attribute Access # # #
 
-    def __getattribute__(self, name: str) -> Any:
+    def __getattr__(self, name: str) -> Any:
+        msg = f"'{self.__class__.__name__}' object has no attribute '{name}'"
         if "." in name:
             msg = f"dot-strings only work for indexing, try `config[{name}]` instead"
-            raise AttributeError(msg)
 
-        return super().__getattribute__(name)
+        raise AttributeError(msg)
 
     def __setattr__(self, name: str, value: Any) -> None:
         if "." in name:
             msg = f"dot-strings only work for indexing, try `config[{name}]` instead"
             raise AttributeError(msg)
 
-        fixed_value = self._fix_value(value, old_val=self.get(name, None))
-        super().__setattr__(name, fixed_value)
+        super().__setattr__(name, self._fix_value(value))
 
     def __delattr__(self, name: str) -> Any:
         if "." in name:
@@ -175,7 +174,7 @@ class PlainConfiguration(MutableMapping[str, Any]):
             point to a value that is not a configuration.
         """
         if isinstance(keys, str):
-            keys = keys.split(".")
+            keys = tuple(keys.split("."))
         elif not isinstance(keys, tuple):
             msg = f"index must be string or a tuple of strings, but got '{type(keys)}'"
             raise TypeError(msg)
@@ -198,15 +197,20 @@ class PlainConfiguration(MutableMapping[str, Any]):
 
         return root, final
 
+    @classmethod
     @overload
-    def _fix_value(self: Self, value: Mapping[str, Any], old_val: Any) -> Self:
+    def _fix_value(
+        cls: Type[Self], value: Mapping[str, Any], old_val: Any = None
+    ) -> Self:
         ...
 
+    @classmethod
     @overload
-    def _fix_value(self, value: T, old_val: Any) -> T:
+    def _fix_value(cls, value: T, old_val: Any = None) -> T:
         ...
 
-    def _fix_value(self, value: Any, old_val: Any = None):
+    @classmethod
+    def _fix_value(cls, value, old_val=None):
         """
         Prepare value for storage in this configuration.
 
@@ -226,7 +230,7 @@ class PlainConfiguration(MutableMapping[str, Any]):
             The value that is ready to be stored.
         """
         try:
-            value = self.__class__(**value)
+            value = cls(**value)
             old_val |= value
             return old_val
         except TypeError:

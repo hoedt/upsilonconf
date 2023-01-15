@@ -1028,10 +1028,22 @@ class TestPlainConfiguration(TestCase):
         conf["b"] = "foo"
         self.assertDictEqual({"a": 123, "b": "foo"}, conf.__dict__)
 
+    def test_setitem_overwrite(self):
+        conf = PlainConfiguration(a=123, b="foo")
+        conf["a"] = 234
+        conf["b"] = "bar"
+        self.assertDictEqual({"a": 234, "b": "bar"}, conf.__dict__)
+
     def test_setitem_dict(self):
         conf = PlainConfiguration()
         conf["sub"] = {"a": 123}
         self.assertDictEqual({"sub": PlainConfiguration(a=123)}, conf.__dict__)
+        self.assertIsInstance(conf["sub"], PlainConfiguration)
+
+    def test_setitem_dict_overwrite(self):
+        conf = PlainConfiguration(sub=Configuration(a=123))
+        conf["sub"] = {"b": "foo"}
+        self.assertDictEqual({"sub": PlainConfiguration(b="foo")}, conf.__dict__)
         self.assertIsInstance(conf["sub"], PlainConfiguration)
 
     def test_setitem_invalid_key_type(self):
@@ -1070,6 +1082,11 @@ class TestPlainConfiguration(TestCase):
         conf["sub.a"] = 123
         self.assertDictEqual({"a": 123}, conf["sub"].__dict__)
 
+    def test_setitem_dotted_overwrite(self):
+        conf = PlainConfiguration(sub=PlainConfiguration(a=123))
+        conf["sub.a"] = 234
+        self.assertDictEqual({"a": 234}, conf["sub"].__dict__)
+
     def test_setitem_dotted_create_subconfig(self):
         conf = PlainConfiguration()
         conf["sub.a"] = 123
@@ -1080,6 +1097,11 @@ class TestPlainConfiguration(TestCase):
         conf = PlainConfiguration(sub=PlainConfiguration())
         conf["sub", "a"] = 123
         self.assertDictEqual({"a": 123}, conf["sub"].__dict__)
+
+    def test_setitem_tuple_overwrite(self):
+        conf = PlainConfiguration(sub=PlainConfiguration(a=123))
+        conf["sub", "a"] = 234
+        self.assertDictEqual({"a": 234}, conf["sub"].__dict__)
 
     def test_setitem_tuple_create_subconfig(self):
         conf = PlainConfiguration()
@@ -1163,6 +1185,11 @@ class TestPlainConfiguration(TestCase):
         self.assertEqual(
             2, len(PlainConfiguration(a=123, sub=PlainConfiguration(b="foo", c=None)))
         )
+
+    def test_update_subconfig(self):
+        conf = PlainConfiguration(sub=PlainConfiguration(a=123))
+        conf.update(sub=PlainConfiguration(b="foo"))
+        self.assertEqual(PlainConfiguration(sub=PlainConfiguration(b="foo")), conf)
 
     # # # Attribute Interface # # #
 
