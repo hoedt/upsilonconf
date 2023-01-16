@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Optional, Callable
 
 
 class OptionalDependencyError(ImportError):
@@ -8,7 +8,7 @@ class OptionalDependencyError(ImportError):
 
 
 def optional_dependency_to(
-    feature: str = None, package: str = None
+    feature: Optional[str] = None, package: Optional[str] = None
 ) -> Callable[[Callable], Callable]:
     """
     Decorator factory for functions that provide optional features.

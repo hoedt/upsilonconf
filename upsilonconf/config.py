@@ -14,6 +14,7 @@ from typing import (
     Pattern,
     overload,
     Type,
+    Optional,
 )
 
 __all__ = ["PlainConfiguration", "Configuration", "InvalidKeyError"]
@@ -242,7 +243,7 @@ class PlainConfiguration(MutableMapping[str, Any]):
     def from_dict(
         cls: Type[Self],
         mapping: Mapping[str, Any],
-        key_mods: Mapping[str, str] = None,
+        key_mods: Optional[Mapping[str, str]] = None,
     ) -> Self:
         if key_mods is None:
             key_mods = {}
@@ -250,7 +251,7 @@ class PlainConfiguration(MutableMapping[str, Any]):
         return cls(**_modify_keys(mapping.items(), key_mods))
 
     def to_dict(
-        self, key_mods: Mapping[str, str] = None, flat: bool = False
+        self, key_mods: Optional[Mapping[str, str]] = None, flat: bool = False
     ) -> Dict[str, Any]:
         if key_mods is None:
             key_mods = {}

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Mapping, Any, Union, TextIO, Sequence, Dict
+from typing import Mapping, Any, Union, TextIO, Sequence, Dict, Optional
 
 from ..config import Configuration
 
@@ -47,7 +47,7 @@ class ConfigIO(ABC):
             return self.read_from(fp)
 
     def load_config(
-        self, path: Union[Path, str], key_mods: Mapping[str, str] = None
+        self, path: Union[Path, str], key_mods: Optional[Mapping[str, str]] = None
     ) -> Configuration:
         """
         Load configuration from disk.
@@ -92,7 +92,7 @@ class ConfigIO(ABC):
         self,
         config: Configuration,
         path: Union[Path, str],
-        key_mods: Mapping[str, str] = None,
+        key_mods: Optional[Mapping[str, str]] = None,
     ) -> None:
         """
         Save configuration to disk.
@@ -122,7 +122,9 @@ class FlexibleIO(ConfigIO):
     to retrieve the correct IO and forward the read/write operation.
     """
 
-    def __init__(self, ext_io_map: Mapping[str, ConfigIO], default_ext: str = None):
+    def __init__(
+        self, ext_io_map: Mapping[str, ConfigIO], default_ext: Optional[str] = None
+    ):
         """
         Parameters
         ----------
@@ -151,7 +153,7 @@ class FlexibleIO(ConfigIO):
         for ext, io in ext_io_map.items():
             self.update(ext, io)
 
-    def _retrieve_io(self, path: Path = None) -> ConfigIO:
+    def _retrieve_io(self, path: Optional[Path] = None) -> ConfigIO:
         """
         Retrieve IO to read/write config files given a path.
 

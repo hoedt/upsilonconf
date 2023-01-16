@@ -1,6 +1,6 @@
 from argparse import ArgumentParser
 from pathlib import Path
-from typing import Tuple, Any, Sequence
+from typing import Tuple, Any, Sequence, Optional
 
 from .base import ConfigIO
 from ..config import Configuration
@@ -32,9 +32,9 @@ class ConfigParser:
 
     def __init__(
         self,
-        parser: ArgumentParser = None,
-        config_io: ConfigIO = None,
-        return_ns: bool = None,
+        parser: Optional[ArgumentParser] = None,
+        config_io: Optional[ConfigIO] = None,
+        return_ns: Optional[bool] = None,
     ):
         """
         Parameters
@@ -60,7 +60,7 @@ class ConfigParser:
 
         self._modify_parser()
 
-    def _modify_parser(self):
+    def _modify_parser(self) -> None:
         """Add the configuration group to the parser."""
         group = self._parser.add_argument_group("configuration")
         group.add_argument(
@@ -85,7 +85,7 @@ class ConfigParser:
         """Wrapped `ArgumentParser` instance."""
         return self._parser
 
-    def parse_config(self, args: Sequence[str] = None):
+    def parse_config(self, args: Optional[Sequence[str]] = None):
         """
         Parse a configuration from command line arguments.
 

@@ -1,3 +1,5 @@
+from typing import Optional
+
 from .base import ConfigIO
 from ..config import Configuration
 
@@ -47,7 +49,7 @@ class DirectoryIO(ConfigIO):
 
     DEFAULT_NAME = "config"
 
-    def __init__(self, config_io: ConfigIO, main_file: str = None):
+    def __init__(self, config_io: ConfigIO, main_file: Optional[str] = None):
         """
         Parameters
         ----------
