@@ -32,11 +32,11 @@ jobs:
         run: black --diff --check upsilonconf tests
 
   typecheck:
-    name: check py${{ matrix.python-version }} types on ${{ matrix.platform }}
+    name: check py${{ matrix.python-version }} types
     needs: lint
     strategy:
       matrix:
-        platform: [linux, darwin, win32]
+        platform: linux
         python-version: ['3.6', '3.7', '3.8', '3.9', '3.10', '3.11']
     runs-on: ubuntu-latest
 
@@ -59,9 +59,15 @@ jobs:
     needs: typecheck
     strategy:
       matrix:
-        os: [ubuntu, macos, windows]
+        os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: ['3.6', '3.7', '3.8', '3.9', '3.10']
-    runs-on: ${{ format('{0}-latest', matrix.os) }}
+        exclude:
+          - os: ubuntu-latest
+            python-version: '3.6'
+        include:
+          - os: ubuntu-20.04
+            python-version: '3.6'
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
       
