@@ -2,7 +2,6 @@ import keyword
 import re
 import warnings
 from abc import abstractmethod
-from collections.abc import Collection
 from typing import (
     TypeVar,
     MutableMapping,
@@ -20,6 +19,7 @@ from typing import (
     ItemsView,
     KeysView,
     ValuesView,
+    Collection,
 )
 
 __all__ = ["PlainConfiguration", "Configuration", "InvalidKeyError"]
