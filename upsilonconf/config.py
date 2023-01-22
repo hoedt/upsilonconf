@@ -80,6 +80,7 @@ class PlainConfiguration(MutableMapping[str, Any]):
     {foo: 0, bar: bar, baz: {a: 1, b: 2, c: 3}}
     """
 
+    # TODO: drop py3.6 support for proper generics?
     class FlatConfigView(Collection):
         """Flat view of configuration object."""
 
