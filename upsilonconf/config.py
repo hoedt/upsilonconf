@@ -104,6 +104,19 @@ class PlainConfiguration(MutableMapping[str, Any]):
             raise NotImplementedError("subclass must implement this method")
 
         def _flat_iter(self) -> Iterator[Tuple[str, Any]]:
+            """
+            Iterate over key-value pairs of flat config.
+
+            The flattened config uses dot-separated strings
+            to represent values in sub-configs.
+
+            Yields
+            ------
+            key : str
+                A dot-separated key.
+            value
+                The value corresponding to that key.
+            """
             for key, value in self._config.__dict__.items():
                 if isinstance(value, self._config.__class__):
                     yield from (
@@ -456,8 +469,7 @@ class PlainConfiguration(MutableMapping[str, Any]):
         if key_mods is None:
             key_mods = {}
 
-        items = self._flat_items() if flat else self.items()
-        return _modify_keys(items, key_mods)
+        return _modify_keys(self.items(flat=flat), key_mods)
 
 
 class Configuration(PlainConfiguration):
@@ -551,28 +563,6 @@ class Configuration(PlainConfiguration):
             raise AttributeError(str(e)) from None
 
     # # # Key Magic # # #
-
-    def _flat_items(self) -> Iterable[Tuple[str, Any]]:
-        """
-        Iterate over key-value pairs of flat config.
-
-        The flattened config uses dot-separated strings
-        to represent values in sub-configs.
-
-        Yields
-        ------
-        key : str
-            A dot-separated key.
-        value
-            The value corresponding to that key.
-        """
-        # TODO: create proper ItemsView?
-        # TODO: add other flat iterators?
-        for k, v in self.items():
-            if isinstance(v, self.__class__):
-                yield from ((f"{k}.{_k}", _v) for _k, _v in v._flat_items())
-            else:
-                yield k, v
 
     def _validate_key(self, key: str) -> bool:
         """
