@@ -25,7 +25,6 @@ from typing import (
 __all__ = ["PlainConfiguration", "Configuration", "InvalidKeyError"]
 
 T = TypeVar("T")
-E = TypeVar("E", covariant=True)
 Self = TypeVar("Self", bound="PlainConfiguration")
 _MappingLike = Union[Mapping[str, Any], Iterable[Tuple[str, Any]]]
 
@@ -81,7 +80,7 @@ class PlainConfiguration(MutableMapping[str, Any]):
     {foo: 0, bar: bar, baz: {a: 1, b: 2, c: 3}}
     """
 
-    class FlatConfigView(Collection[E]):
+    class FlatConfigView(Collection):
         """Flat view of configuration object."""
 
         __slots__ = "_config"
@@ -100,7 +99,7 @@ class PlainConfiguration(MutableMapping[str, Any]):
             raise NotImplementedError("subclass must implement this method")
 
         @abstractmethod
-        def __iter__(self) -> Iterator[E]:
+        def __iter__(self):
             raise NotImplementedError("subclass must implement this method")
 
         def _flat_iter(self) -> Iterator[Tuple[str, Any]]:
@@ -126,7 +125,7 @@ class PlainConfiguration(MutableMapping[str, Any]):
                 else:
                     yield key, value
 
-    class FlatItemsView(FlatConfigView[Tuple[str, Any]]):
+    class FlatItemsView(FlatConfigView):
         """Flat view of key-value pairs in configuration."""
 
         def __contains__(self, item):
@@ -143,7 +142,7 @@ class PlainConfiguration(MutableMapping[str, Any]):
         def __iter__(self):
             yield from self._flat_iter()
 
-    class FlatKeysView(FlatConfigView[str]):
+    class FlatKeysView(FlatConfigView):
         """Flat view of keys in configuration."""
 
         def __contains__(self, key):
@@ -157,7 +156,7 @@ class PlainConfiguration(MutableMapping[str, Any]):
         def __iter__(self):
             yield from (k for k, _ in self._flat_iter())
 
-    class FlatValuesView(FlatConfigView[Any]):
+    class FlatValuesView(FlatConfigView):
         """Flat view of values in configuration."""
 
         def __contains__(self, value):
