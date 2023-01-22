@@ -1,6 +1,8 @@
 import keyword
 import re
 import warnings
+from abc import abstractmethod
+from collections.abc import Collection
 from typing import (
     TypeVar,
     MutableMapping,
@@ -15,11 +17,15 @@ from typing import (
     overload,
     Type,
     Optional,
+    ItemsView,
+    KeysView,
+    ValuesView,
 )
 
 __all__ = ["PlainConfiguration", "Configuration", "InvalidKeyError"]
 
 T = TypeVar("T")
+E = TypeVar("E", covariant=True)
 Self = TypeVar("Self", bound="PlainConfiguration")
 _MappingLike = Union[Mapping[str, Any], Iterable[Tuple[str, Any]]]
 
@@ -75,6 +81,78 @@ class PlainConfiguration(MutableMapping[str, Any]):
     {foo: 0, bar: bar, baz: {a: 1, b: 2, c: 3}}
     """
 
+    class FlatConfigView(Collection[E]):
+        """Flat view of configuration object."""
+
+        __slots__ = "_config"
+
+        def __init__(self, config: "PlainConfiguration"):
+            self._config = config
+
+        def __repr__(self) -> str:
+            return f"{self.__class__.__name__}({self._config!r})"
+
+        def __len__(self) -> int:
+            return sum(1 for _ in self.__iter__())
+
+        @abstractmethod
+        def __contains__(self, item: Any) -> bool:
+            raise NotImplementedError("subclass must implement this method")
+
+        @abstractmethod
+        def __iter__(self) -> Iterator[E]:
+            raise NotImplementedError("subclass must implement this method")
+
+        def _flat_iter(self) -> Iterator[Tuple[str, Any]]:
+            for key, value in self._config.__dict__.items():
+                if isinstance(value, self._config.__class__):
+                    yield from (
+                        (".".join([key, sub_key]), v)
+                        for sub_key, v in PlainConfiguration.FlatItemsView(value)
+                    )
+                else:
+                    yield key, value
+
+    class FlatItemsView(FlatConfigView[Tuple[str, Any]]):
+        """Flat view of key-value pairs in configuration."""
+
+        def __contains__(self, item):
+            k, v = item
+            try:
+                value = self._config[k]
+            except KeyError:
+                return False
+            else:
+                return not isinstance(v, self._config.__class__) and (
+                    v is value or v == value
+                )
+
+        def __iter__(self):
+            yield from self._flat_iter()
+
+    class FlatKeysView(FlatConfigView[str]):
+        """Flat view of keys in configuration."""
+
+        def __contains__(self, key):
+            try:
+                val = self._config[key]
+            except KeyError:
+                return False
+            else:
+                return not isinstance(val, self._config.__class__)
+
+        def __iter__(self):
+            yield from (k for k, _ in self._flat_iter())
+
+    class FlatValuesView(FlatConfigView[Any]):
+        """Flat view of values in configuration."""
+
+        def __contains__(self, value):
+            return any(v is value or v == value for k, v in self._flat_iter())
+
+        def __iter__(self):
+            yield from (v for _, v in self._flat_iter())
+
     def __init__(self, **kwargs):
         self.update(**kwargs)
 
@@ -105,6 +183,128 @@ class PlainConfiguration(MutableMapping[str, Any]):
 
     def __iter__(self) -> Iterator[Any]:
         return iter(self.__dict__)
+
+    # # # Flat Iterators # # #
+
+    @overload
+    def keys(self) -> KeysView:
+        ...
+
+    @overload
+    def keys(self, flat: bool = ...) -> Union[KeysView, FlatKeysView]:
+        ...
+
+    def keys(self, flat=False):
+        """
+        Get a view of this configuration's keys.
+
+        Parameters
+        ----------
+        flat : bool, optional
+            If ``True``, the view will ignore the hierarchy of this config.
+            This means that instead of returning subconfigs,
+            the subconfigs are recursively included in the view.
+            Keys of subconfigs are combined with the keys in the subconfig
+            with a ``.`` so that they are valid indices for this configuration.
+            If ``False`` (Default), a regular ``dict``-like view will be returned.
+
+        Returns
+        -------
+        keys_view : KeysView or FlatKeysView
+            The new view on the keys in this config.
+
+        Examples
+        --------
+        >>> conf = PlainConfiguration(a=123, sub=PlainConfiguration(b="foo", c=None))
+        >>> list(conf.keys())
+        ['a', 'sub']
+        >>> list(conf.keys(flat=True))
+        ['a', 'sub.b', 'sub.c']
+        """
+        if not flat:
+            return self.__dict__.keys()
+
+        return self.__class__.FlatKeysView(self)
+
+    @overload
+    def items(self) -> ItemsView:
+        ...
+
+    @overload
+    def items(self, flat: bool = ...) -> Union[ItemsView, FlatItemsView]:
+        ...
+
+    def items(self, flat=False):
+        """
+        Get a view of this configuration's `(key, value)` pairs.
+
+        Parameters
+        ----------
+        flat : bool, optional
+            If ``True``, the view will ignore the hierarchy of this config.
+            This means that instead of returning subconfigs,
+            the subconfigs are recursively included in the view.
+            Keys of subconfigs are combined with the keys in the subconfig
+            with a ``.`` so that they are valid indices for this configuration.
+            If ``False`` (Default), a regular ``dict``-like view will be returned.
+
+        Returns
+        -------
+        keys_view : ItemsView or FlatItemsView
+            The new view on the `(key, value)` pairs in this config.
+
+        Examples
+        --------
+        >>> conf = PlainConfiguration(a=123, sub=PlainConfiguration(b="foo", c=None))
+        >>> list(conf.items())
+        [('a', 123), ('sub', PlainConfiguration(b='foo', c=None))]
+        >>> list(conf.items(flat=True))
+        [('a', 123), ('sub.b', 'foo'), ('sub.c', None)]
+        """
+        if not flat:
+            return self.__dict__.items()
+
+        return self.__class__.FlatItemsView(self)
+
+    @overload
+    def values(self) -> ValuesView:
+        ...
+
+    @overload
+    def values(self, flat: bool = ...) -> Union[ValuesView, FlatValuesView]:
+        ...
+
+    def values(self, flat=False):
+        """
+        Get a view of this configuration's values.
+
+        Parameters
+        ----------
+        flat : bool, optional
+            If ``True``, the view will ignore the hierarchy of this config.
+            This means that instead of returning subconfigs,
+            the subconfigs are recursively included in the view.
+            Keys of subconfigs are combined with the keys in the subconfig
+            with a ``.`` so that they are valid indices for this configuration.
+            If ``False`` (Default), a regular ``dict``-like view will be returned.
+
+        Returns
+        -------
+        keys_view : ValuesView or FlatValuesView
+            The new view on the values in this config.
+
+        Examples
+        --------
+        >>> conf = PlainConfiguration(a=123, sub=PlainConfiguration(b="foo", c=None))
+        >>> list(conf.values())
+        [123, PlainConfiguration(b='foo', c=None)]
+        >>> list(conf.values(flat=True))
+        [123, 'foo', None]
+        """
+        if not flat:
+            return self.__dict__.values()
+
+        return self.__class__.FlatValuesView(self)
 
     # # # Merging # # #
 
