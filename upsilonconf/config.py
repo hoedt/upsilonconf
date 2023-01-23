@@ -30,54 +30,11 @@ __all__ = [
 ]
 
 T = TypeVar("T")
-Self = TypeVar("Self", bound="PlainConfiguration")
+Self = TypeVar("Self", bound="ConfigurationBase")
 _MappingLike = Union[Mapping[str, Any], Iterable[Tuple[str, Any]]]
 
 
-class PlainConfiguration(MutableMapping[str, Any]):
-    """
-    Configuration that maps variable names to their corresponding values.
-
-    A `PlainConfiguration` object can be used to collect values for various values.
-    It can be interpreted in two ways:
-
-    - a dictionary (or more generally, a mapping) with attribute syntax, or
-    - a python object with indexing syntax.
-
-    On top of the combined feature set of dictionaries and attributes,
-    this class introduces advanced indexing, convenient merging and `dict` conversions.
-    ``dict``-like values are automatically converted to `PlainConfiguration` objects,
-    giving rise to hierarchical configuration objects.
-
-    Examples
-    --------
-    Configurations are typically constructed from keyword arguments.
-
-    >>> conf = PlainConfiguration(foo=0, bar="bar", baz={'a': 1, 'b': 2})
-    >>> print(conf)
-    {foo: 0, bar: bar, baz: {a: 1, b: 2}}
-
-    A configuration is both ``object`` and ``Mapping`` at the same time.
-
-    >>> conf['bar'] == conf.bar
-    True
-    >>> conf['baz']['a'] == conf.baz.a
-    True
-
-    Advanced indexing for convenient access to subconfigs.
-
-    >>> conf['baz', 'a']  # tuple index
-    1
-    >>> conf['baz.a']  # dot-string index
-    1
-
-    Configurations can conveniently be merged with other ``Mapping`` objects.
-
-    >>> print(conf | {"xtra": None})
-    {foo: 0, bar: bar, baz: {a: 1, b: 2}, xtra: None}
-    >>> print(conf | {"baz": {"c": 3}})
-    {foo: 0, bar: bar, baz: {a: 1, b: 2, c: 3}}
-    """
+class ConfigurationBase(Mapping[str, Any]):
 
     # TODO: drop py3.6 support for proper generics?
     class FlatConfigView(Collection):
@@ -85,7 +42,7 @@ class PlainConfiguration(MutableMapping[str, Any]):
 
         __slots__ = "_config"
 
-        def __init__(self, config: "PlainConfiguration"):
+        def __init__(self, config: "ConfigurationBase"):
             self._config = config
 
         def __repr__(self) -> str:
@@ -165,9 +122,6 @@ class PlainConfiguration(MutableMapping[str, Any]):
         def __iter__(self):
             yield from (v for _, v in self._flat_iter())
 
-    def __init__(self, **kwargs):
-        self.update(**kwargs)
-
     def __repr__(self) -> str:
         kwargs = ["=".join([k, f"{v!r}"]) for k, v in self.items()]
         return f"{self.__class__.__name__}({', '.join(kwargs)})"
@@ -176,19 +130,20 @@ class PlainConfiguration(MutableMapping[str, Any]):
         kwargs = [": ".join([k, f"{v!s}"]) for k, v in self.items()]
         return f"{{{', '.join(kwargs)}}}"
 
+    # # # Attribute Access # # #
+
+    def __getattr__(self, name: str) -> Any:
+        msg = f"'{self.__class__.__name__}' object has no attribute '{name}'"
+        if "." in name:
+            msg = f"dot-strings only work for indexing, try `config[{name}]` instead"
+
+        raise AttributeError(msg)
+
     # # # Mapping Interface # # #
 
     def __getitem__(self, key: Union[str, Tuple[str, ...]]) -> Any:
         conf, key = self._resolve_key(key)
         return conf.__dict__[key]
-
-    def __setitem__(self, key: Union[str, Tuple[str, ...]], value: Any) -> None:
-        conf, key = self._resolve_key(key, create=True)
-        conf.__dict__[key] = self._fix_value(value)
-
-    def __delitem__(self, key: Union[str, Tuple[str, ...]]) -> None:
-        conf, key = self._resolve_key(key)
-        del conf.__dict__[key]
 
     def __len__(self) -> int:
         return self.__dict__.__len__()
@@ -318,46 +273,6 @@ class PlainConfiguration(MutableMapping[str, Any]):
 
         return self.__class__.FlatValuesView(self)
 
-    # # # Merging # # #
-
-    def __or__(self: Self, other: Mapping[str, Any]) -> Self:
-        result = self.__class__(**self)
-        result |= other
-        return result
-
-    def __ror__(self: Self, other: Mapping[str, Any]) -> Self:
-        result = self.__class__(**other)
-        result |= self
-        return result
-
-    def __ior__(self: Self, other: Mapping[str, Any]) -> Self:
-        for k, v in other.items():
-            self[k] = self._fix_value(v, self.get(k, None))
-        return self
-
-    # # # Attribute Access # # #
-
-    def __getattr__(self, name: str) -> Any:
-        msg = f"'{self.__class__.__name__}' object has no attribute '{name}'"
-        if "." in name:
-            msg = f"dot-strings only work for indexing, try `config[{name}]` instead"
-
-        raise AttributeError(msg)
-
-    def __setattr__(self, name: str, value: Any) -> None:
-        if "." in name:
-            msg = f"dot-strings only work for indexing, try `config[{name}]` instead"
-            raise AttributeError(msg)
-
-        super().__setattr__(name, self._fix_value(value))
-
-    def __delattr__(self, name: str) -> Any:
-        if "." in name:
-            msg = f"dot-strings only work for indexing, try `config[{name}]` instead"
-            raise AttributeError(msg)
-
-        return super().__delattr__(name)
-
     # # # Key Magic # # #
 
     def _resolve_key(
@@ -471,97 +386,104 @@ class PlainConfiguration(MutableMapping[str, Any]):
         return _modify_keys(self.items(flat=flat), key_mods)
 
 
-SelfFrozen = TypeVar("SelfFrozen", bound="FrozenConfiguration")
+# TODO: find better solution for merging
+SelfPlain = TypeVar("SelfPlain", bound="PlainConfiguration")
 
 
-class FrozenConfiguration(Mapping[str, Any]):
+class PlainConfiguration(ConfigurationBase, MutableMapping[str, Any]):
+    """
+    Configuration that maps variable names to their corresponding values.
+
+    A `PlainConfiguration` object can be used to collect values for various values.
+    It can be interpreted in two ways:
+
+    - a dictionary (or more generally, a mapping) with attribute syntax, or
+    - a python object with indexing syntax.
+
+    On top of the combined feature set of dictionaries and attributes,
+    this class introduces advanced indexing, convenient merging and `dict` conversions.
+    ``dict``-like values are automatically converted to `PlainConfiguration` objects,
+    giving rise to hierarchical configuration objects.
+
+    Examples
+    --------
+    Configurations are typically constructed from keyword arguments.
+
+    >>> conf = PlainConfiguration(foo=0, bar="bar", baz={'a': 1, 'b': 2})
+    >>> print(conf)
+    {foo: 0, bar: bar, baz: {a: 1, b: 2}}
+
+    A configuration is both ``object`` and ``Mapping`` at the same time.
+
+    >>> conf['bar'] == conf.bar
+    True
+    >>> conf['baz']['a'] == conf.baz.a
+    True
+
+    Advanced indexing for convenient access to subconfigs.
+
+    >>> conf['baz', 'a']  # tuple index
+    1
+    >>> conf['baz.a']  # dot-string index
+    1
+
+    Configurations can conveniently be merged with other ``Mapping`` objects.
+
+    >>> print(conf | {"xtra": None})
+    {foo: 0, bar: bar, baz: {a: 1, b: 2}, xtra: None}
+    >>> print(conf | {"baz": {"c": 3}})
+    {foo: 0, bar: bar, baz: {a: 1, b: 2, c: 3}}
+    """
+
+    def __init__(self, **kwargs):
+        self.update(**kwargs)
+
+    # # # Attribute Access # # #
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        if "." in name:
+            msg = f"dot-strings only work for indexing, try `config[{name}]` instead"
+            raise AttributeError(msg)
+
+        super().__setattr__(name, self._fix_value(value))
+
+    def __delattr__(self, name: str) -> Any:
+        if "." in name:
+            msg = f"dot-strings only work for indexing, try `config[{name}]` instead"
+            raise AttributeError(msg)
+
+        return super().__delattr__(name)
+
+    # # # Mapping Interface # # #
+
+    def __setitem__(self, key: Union[str, Tuple[str, ...]], value: Any) -> None:
+        conf, key = self._resolve_key(key, create=True)
+        conf.__dict__[key] = self._fix_value(value)
+
+    def __delitem__(self, key: Union[str, Tuple[str, ...]]) -> None:
+        conf, key = self._resolve_key(key)
+        del conf.__dict__[key]
+
+    # # # Merging # # #
+
+    def __or__(self: SelfPlain, other: Mapping[str, Any]) -> SelfPlain:
+        result = self.__class__(**self)
+        result |= other
+        return result
+
+    def __ror__(self: SelfPlain, other: Mapping[str, Any]) -> SelfPlain:
+        result = self.__class__(**other)
+        result |= self
+        return result
+
+    def __ior__(self: SelfPlain, other: Mapping[str, Any]) -> SelfPlain:
+        for k, v in other.items():
+            self[k] = self._fix_value(v, self.get(k, None))
+        return self
+
+
+class FrozenConfiguration(ConfigurationBase):
     """"""
-
-    # TODO: drop py3.6 support for proper generics?
-    class FlatConfigView(Collection):
-        """Flat view of configuration object."""
-
-        __slots__ = "_config"
-
-        def __init__(self, config: "FrozenConfiguration"):
-            self._config = config
-
-        def __repr__(self) -> str:
-            return f"{self.__class__.__name__}({self._config!r})"
-
-        def __len__(self) -> int:
-            return sum(1 for _ in self.__iter__())
-
-        @abstractmethod
-        def __contains__(self, item: Any) -> bool:
-            raise NotImplementedError("subclass must implement this method")
-
-        @abstractmethod
-        def __iter__(self):
-            raise NotImplementedError("subclass must implement this method")
-
-        def _flat_iter(self) -> Iterator[Tuple[str, Any]]:
-            """
-            Iterate over key-value pairs of flat config.
-
-            The flattened config uses dot-separated strings
-            to represent values in sub-configs.
-
-            Yields
-            ------
-            key : str
-                A dot-separated key.
-            value
-                The value corresponding to that key.
-            """
-            for key, value in self._config.__dict__.items():
-                if isinstance(value, self._config.__class__):
-                    yield from (
-                        (".".join([key, sub_key]), v)
-                        for sub_key, v in FrozenConfiguration.FlatItemsView(value)
-                    )
-                else:
-                    yield key, value
-
-    class FlatItemsView(FlatConfigView):
-        """Flat view of key-value pairs in configuration."""
-
-        def __contains__(self, item):
-            k, v = item
-            try:
-                value = self._config[k]
-            except KeyError:
-                return False
-            else:
-                return not isinstance(v, self._config.__class__) and (
-                    v is value or v == value
-                )
-
-        def __iter__(self):
-            yield from self._flat_iter()
-
-    class FlatKeysView(FlatConfigView):
-        """Flat view of keys in configuration."""
-
-        def __contains__(self, key):
-            try:
-                val = self._config[key]
-            except KeyError:
-                return False
-            else:
-                return not isinstance(val, self._config.__class__)
-
-        def __iter__(self):
-            yield from (k for k, _ in self._flat_iter())
-
-    class FlatValuesView(FlatConfigView):
-        """Flat view of values in configuration."""
-
-        def __contains__(self, value):
-            return any(v is value or v == value for k, v in self._flat_iter())
-
-        def __iter__(self):
-            yield from (v for _, v in self._flat_iter())
 
     def __init__(self, **kwargs):
         for k, v in kwargs.items():
@@ -569,168 +491,7 @@ class FrozenConfiguration(Mapping[str, Any]):
             conf, k = self._resolve_key(k, create=True)
             conf.__dict__[k] = v
 
-    def __repr__(self) -> str:
-        kwargs = ["=".join([k, f"{v!r}"]) for k, v in self.items()]
-        return f"{self.__class__.__name__}({', '.join(kwargs)})"
-
-    def __str__(self) -> str:
-        kwargs = [": ".join([k, f"{v!s}"]) for k, v in self.items()]
-        return f"{{{', '.join(kwargs)}}}"
-
-    # # # Mapping Interface # # #
-
-    def __getitem__(self, key: Union[str, Tuple[str, ...]]) -> Any:
-        conf, key = self._resolve_key(key)
-        return conf.__dict__[key]
-
-    def __len__(self) -> int:
-        return self.__dict__.__len__()
-
-    def __iter__(self) -> Iterator[Any]:
-        return iter(self.__dict__)
-
-    # # # Flat Iterators # # #
-
-    @overload
-    def keys(self) -> KeysView:
-        ...
-
-    @overload
-    def keys(
-        self, flat: bool = ...
-    ) -> Union[KeysView, PlainConfiguration.FlatKeysView]:
-        ...
-
-    def keys(self, flat=False):
-        """
-        Get a view of this configuration's keys.
-
-        Parameters
-        ----------
-        flat : bool, optional
-            If ``True``, the view will ignore the hierarchy of this config.
-            This means that instead of returning subconfigs,
-            the subconfigs are recursively included in the view.
-            Keys of subconfigs are combined with the keys in the subconfig
-            with a ``.`` so that they are valid indices for this configuration.
-            If ``False`` (Default), a regular ``dict``-like view will be returned.
-
-        Returns
-        -------
-        keys_view : KeysView or FlatKeysView
-            The new view on the keys in this config.
-
-        Examples
-        --------
-        >>> conf = PlainConfiguration(a=123, sub=PlainConfiguration(b="foo", c=None))
-        >>> list(conf.keys())
-        ['a', 'sub']
-        >>> list(conf.keys(flat=True))
-        ['a', 'sub.b', 'sub.c']
-        """
-        if not flat:
-            return self.__dict__.keys()
-
-        return self.__class__.FlatKeysView(self)
-
-    @overload
-    def items(self) -> ItemsView:
-        ...
-
-    @overload
-    def items(self, flat: bool = ...) -> Union[ItemsView, FlatItemsView]:
-        ...
-
-    def items(self, flat=False):
-        """
-        Get a view of this configuration's `(key, value)` pairs.
-
-        Parameters
-        ----------
-        flat : bool, optional
-            If ``True``, the view will ignore the hierarchy of this config.
-            This means that instead of returning subconfigs,
-            the subconfigs are recursively included in the view.
-            Keys of subconfigs are combined with the keys in the subconfig
-            with a ``.`` so that they are valid indices for this configuration.
-            If ``False`` (Default), a regular ``dict``-like view will be returned.
-
-        Returns
-        -------
-        keys_view : ItemsView or FlatItemsView
-            The new view on the `(key, value)` pairs in this config.
-
-        Examples
-        --------
-        >>> conf = PlainConfiguration(a=123, sub=PlainConfiguration(b="foo", c=None))
-        >>> list(conf.items())
-        [('a', 123), ('sub', PlainConfiguration(b='foo', c=None))]
-        >>> list(conf.items(flat=True))
-        [('a', 123), ('sub.b', 'foo'), ('sub.c', None)]
-        """
-        if not flat:
-            return self.__dict__.items()
-
-        return self.__class__.FlatItemsView(self)
-
-    @overload
-    def values(self) -> ValuesView:
-        ...
-
-    @overload
-    def values(
-        self, flat: bool = ...
-    ) -> Union[ValuesView, PlainConfiguration.FlatValuesView]:
-        ...
-
-    def values(self, flat=False):
-        """
-        Get a view of this configuration's values.
-
-        Parameters
-        ----------
-        flat : bool, optional
-            If ``True``, the view will ignore the hierarchy of this config.
-            This means that instead of returning subconfigs,
-            the subconfigs are recursively included in the view.
-            Keys of subconfigs are combined with the keys in the subconfig
-            with a ``.`` so that they are valid indices for this configuration.
-            If ``False`` (Default), a regular ``dict``-like view will be returned.
-
-        Returns
-        -------
-        keys_view : ValuesView or FlatValuesView
-            The new view on the values in this config.
-
-        Examples
-        --------
-        >>> conf = PlainConfiguration(a=123, sub=PlainConfiguration(b="foo", c=None))
-        >>> list(conf.values())
-        [123, PlainConfiguration(b='foo', c=None)]
-        >>> list(conf.values(flat=True))
-        [123, 'foo', None]
-        """
-        if not flat:
-            return self.__dict__.values()
-
-        return self.__class__.FlatValuesView(self)
-
-    # # # Merging # # #
-
-    def __or__(self: SelfFrozen, other: Mapping[str, Any]) -> SelfFrozen:
-        return self.__class__(**(PlainConfiguration(**self) | other))
-
-    def __ror__(self: SelfFrozen, other: Mapping[str, Any]) -> SelfFrozen:
-        return self.__class__(**(other | PlainConfiguration(**self)))
-
     # # # Attribute Access # # #
-
-    def __getattr__(self, name: str) -> Any:
-        msg = f"'{self.__class__.__name__}' object has no attribute '{name}'"
-        if "." in name:
-            msg = f"dot-strings only work for indexing, try `config[{name}]` instead"
-
-        raise AttributeError(msg)
 
     def __setattr__(self, name: str, value: Any) -> None:
         msg = f"'{self.__class__.__name__}' object has no attribute '{name}'"
@@ -750,109 +511,13 @@ class FrozenConfiguration(Mapping[str, Any]):
 
         raise AttributeError(msg)
 
-    # # # Key Magic # # #
+    # # # Merging # # #
 
-    def _resolve_key(
-        self: SelfFrozen, keys: Union[str, Tuple[str, ...]], create: bool = False
-    ) -> Tuple[SelfFrozen, str]:
-        """
-        Resolve dot-string and iterable keys
+    def __or__(self: Self, other: Mapping[str, Any]) -> Self:
+        return self.__class__(**(PlainConfiguration(**self) | other))
 
-        Parameters
-        ----------
-        keys : str or iterable of str
-            The key(s) to be resolved.
-        create : bool, optional
-            If ``True``, non-existent sub-configurations will be created.
-
-        Returns
-        -------
-        config: PlainConfiguration
-            The sub-configuration that should host the final key (and value).
-        key : str
-            The final key that should correspond to the actual value.
-
-        Raises
-        ------
-        KeyError
-            If any of the sub-keys (apart from the final key)
-            point to a value that is not a configuration.
-        """
-        if isinstance(keys, str):
-            keys = tuple(keys.split("."))
-        elif not isinstance(keys, tuple):
-            msg = f"index must be string or a tuple of strings, but got '{type(keys)}'"
-            raise TypeError(msg)
-
-        *parents, final = keys
-
-        root = self
-        for k in parents:
-            root = root[k]
-            if not isinstance(root, self.__class__):
-                raise KeyError(k)
-
-        return root, final
-
-    @classmethod
-    @overload
-    def _fix_value(
-        cls: Type[SelfFrozen], value: Mapping[str, Any], old_val: Any = None
-    ) -> SelfFrozen:
-        ...
-
-    @classmethod
-    @overload
-    def _fix_value(cls, value: T, old_val: Any = None) -> T:
-        ...
-
-    @classmethod
-    def _fix_value(cls, value, old_val=None):
-        """
-        Prepare value for storage in this configuration.
-
-        This method assures that the value satisfies the invariants
-        and does not unnecessarily destroy the old value.
-
-        Parameters
-        ----------
-        value
-            The new value before storing.
-        old_val (optional)
-            The value that is going to be replaced by this value.
-
-        Returns
-        -------
-        new_value
-            The value that is ready to be stored.
-        """
-        try:
-            value = cls(**value)
-            old_val |= value
-            return old_val
-        except TypeError:
-            return value
-
-    # # # Dict Conversion # # #
-
-    @classmethod
-    def from_dict(
-        cls: Type[SelfFrozen],
-        mapping: Mapping[str, Any],
-        key_mods: Optional[Mapping[str, str]] = None,
-    ) -> SelfFrozen:
-        if key_mods is None:
-            key_mods = {}
-
-        return cls(**_modify_keys(mapping.items(), key_mods))
-
-    def to_dict(
-        self, key_mods: Optional[Mapping[str, str]] = None, flat: bool = False
-    ) -> Dict[str, Any]:
-        if key_mods is None:
-            key_mods = {}
-
-        return _modify_keys(self.items(flat=flat), key_mods)
+    def __ror__(self: Self, other: Mapping[str, Any]) -> Self:
+        return self.__class__(**(other | PlainConfiguration(**self)))
 
 
 class InvalidKeyError(ValueError):
