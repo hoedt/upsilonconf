@@ -2267,9 +2267,7 @@ class TestFrozenConfiguration(TestCase):
             FrozenConfiguration(sub=FrozenConfiguration(a=123, b="foo")), conf
         )
         self.assertIsNot(old_conf, conf)
-        self.assertEqual(
-            FrozenConfiguration(a=123), sub_old, msg="hierarchical"
-        )
+        self.assertEqual(FrozenConfiguration(a=123), sub_old, msg="hierarchical")
 
     def test_union_inplace_subconfig_value(self):
         old_conf = conf = FrozenConfiguration(sub=123)

@@ -22,7 +22,12 @@ from typing import (
     Collection,
 )
 
-__all__ = ["PlainConfiguration", "FrozenConfiguration", "Configuration", "InvalidKeyError"]
+__all__ = [
+    "PlainConfiguration",
+    "FrozenConfiguration",
+    "Configuration",
+    "InvalidKeyError",
+]
 
 T = TypeVar("T")
 Self = TypeVar("Self", bound="PlainConfiguration")
@@ -466,6 +471,9 @@ class PlainConfiguration(MutableMapping[str, Any]):
         return _modify_keys(self.items(flat=flat), key_mods)
 
 
+SelfFrozen = TypeVar("SelfFrozen", bound="FrozenConfiguration")
+
+
 class FrozenConfiguration(Mapping[str, Any]):
     """"""
 
@@ -510,7 +518,7 @@ class FrozenConfiguration(Mapping[str, Any]):
                 if isinstance(value, self._config.__class__):
                     yield from (
                         (".".join([key, sub_key]), v)
-                        for sub_key, v in PlainConfiguration.FlatItemsView(value)
+                        for sub_key, v in FrozenConfiguration.FlatItemsView(value)
                     )
                 else:
                     yield key, value
@@ -588,7 +596,9 @@ class FrozenConfiguration(Mapping[str, Any]):
         ...
 
     @overload
-    def keys(self, flat: bool = ...) -> Union[KeysView, PlainConfiguration.FlatKeysView]:
+    def keys(
+        self, flat: bool = ...
+    ) -> Union[KeysView, PlainConfiguration.FlatKeysView]:
         ...
 
     def keys(self, flat=False):
@@ -668,7 +678,9 @@ class FrozenConfiguration(Mapping[str, Any]):
         ...
 
     @overload
-    def values(self, flat: bool = ...) -> Union[ValuesView, PlainConfiguration.FlatValuesView]:
+    def values(
+        self, flat: bool = ...
+    ) -> Union[ValuesView, PlainConfiguration.FlatValuesView]:
         ...
 
     def values(self, flat=False):
@@ -705,10 +717,10 @@ class FrozenConfiguration(Mapping[str, Any]):
 
     # # # Merging # # #
 
-    def __or__(self: Self, other: Mapping[str, Any]) -> Self:
+    def __or__(self: SelfFrozen, other: Mapping[str, Any]) -> SelfFrozen:
         return self.__class__(**(PlainConfiguration(**self) | other))
 
-    def __ror__(self: Self, other: Mapping[str, Any]) -> Self:
+    def __ror__(self: SelfFrozen, other: Mapping[str, Any]) -> SelfFrozen:
         return self.__class__(**(other | PlainConfiguration(**self)))
 
     # # # Attribute Access # # #
@@ -741,8 +753,8 @@ class FrozenConfiguration(Mapping[str, Any]):
     # # # Key Magic # # #
 
     def _resolve_key(
-        self: Self, keys: Union[str, Tuple[str, ...]], create: bool = False
-    ) -> Tuple[Self, str]:
+        self: SelfFrozen, keys: Union[str, Tuple[str, ...]], create: bool = False
+    ) -> Tuple[SelfFrozen, str]:
         """
         Resolve dot-string and iterable keys
 
@@ -785,8 +797,8 @@ class FrozenConfiguration(Mapping[str, Any]):
     @classmethod
     @overload
     def _fix_value(
-        cls: Type[Self], value: Mapping[str, Any], old_val: Any = None
-    ) -> Self:
+        cls: Type[SelfFrozen], value: Mapping[str, Any], old_val: Any = None
+    ) -> SelfFrozen:
         ...
 
     @classmethod
@@ -825,10 +837,10 @@ class FrozenConfiguration(Mapping[str, Any]):
 
     @classmethod
     def from_dict(
-        cls: Type[Self],
+        cls: Type[SelfFrozen],
         mapping: Mapping[str, Any],
         key_mods: Optional[Mapping[str, str]] = None,
-    ) -> Self:
+    ) -> SelfFrozen:
         if key_mods is None:
             key_mods = {}
 
