@@ -20,6 +20,7 @@ from typing import (
     KeysView,
     ValuesView,
     Collection,
+    Hashable,
 )
 
 __all__ = [
@@ -482,7 +483,7 @@ class PlainConfiguration(ConfigurationBase, MutableMapping[str, Any]):
         return self
 
 
-class FrozenConfiguration(ConfigurationBase):
+class FrozenConfiguration(ConfigurationBase, Hashable):
     """"""
 
     def __init__(self, **kwargs):
@@ -490,6 +491,16 @@ class FrozenConfiguration(ConfigurationBase):
             v = self._fix_value(v)
             conf, k = self._resolve_key(k, create=True)
             conf.__dict__[k] = v
+
+    def __hash__(self) -> int:
+        # inspired by https://stackoverflow.com/questions/20832279
+        h = len(self)
+        for k, v in self.items():
+            hx = hash((hash(k), hash(v)))
+            h ^= (hx ^ 0x156B45B3 ^ (hx << 16)) * 4_155_791_671  # randomise
+            h &= 0xFFFF_FFFF_FFFF_FFFF  # limit to 8 bytes
+
+        return h
 
     # # # Attribute Access # # #
 

@@ -900,6 +900,7 @@ class TestPlainConfiguration(TestCase):
 
     def test_eq(self):
         conf = PlainConfiguration(a=123, b=None)
+        self.assertEqual(conf, conf, msg="identity")
         self.assertEqual(conf, PlainConfiguration(a=123, b=None))
         self.assertEqual(PlainConfiguration(a=123, b=None), conf, msg="symmetry")
         self.assertEqual(conf, PlainConfiguration(b=None, a=123), msg="ordering")
@@ -913,10 +914,16 @@ class TestPlainConfiguration(TestCase):
         self.assertNotEqual(
             conf, PlainConfiguration(a=None, b=123), msg="respect key-value"
         )
-        self.assertEqual(
-            PlainConfiguration(sub=PlainConfiguration()),
-            PlainConfiguration(sub=PlainConfiguration()),
-            msg="hierarchical",
+
+    def test_eq_hierarchical(self):
+        conf = PlainConfiguration(sub=PlainConfiguration(a=123))
+        self.assertEqual(conf, conf, msg="identity")
+        self.assertEqual(conf, PlainConfiguration(sub=PlainConfiguration(a=123)))
+        self.assertNotEqual(
+            conf, PlainConfiguration(sub=PlainConfiguration(a=234)), msg="respect value"
+        )
+        self.assertNotEqual(
+            conf, PlainConfiguration(other=PlainConfiguration(a=123)), msg="respect key"
         )
 
     def test_eq_dict(self):
@@ -928,11 +935,12 @@ class TestPlainConfiguration(TestCase):
         self.assertNotEqual(conf, {"ax": 123, "bx": None}, msg="respect key")
         self.assertNotEqual(conf, {"a": 234, "b": None}, msg="respect value")
         self.assertNotEqual(conf, {"a": None, "b": 123}, msg="respect key-value")
-        self.assertEqual(
-            PlainConfiguration(sub=PlainConfiguration()),
-            PlainConfiguration(sub=PlainConfiguration()),
-            msg="hierarchical",
-        )
+
+    def test_eq_dict_hierarchical(self):
+        conf = PlainConfiguration(sub=PlainConfiguration(a=123))
+        self.assertEqual(conf, {"sub": {"a": 123}})
+        self.assertNotEqual(conf, {"sub": {"a": 234}}, msg="respect value")
+        self.assertNotEqual(conf, {"other": {"a": 123}}, msg="respect key")
 
     def test_eq_invalid_types(self):
         conf = PlainConfiguration(a=123, b=None)
@@ -940,6 +948,10 @@ class TestPlainConfiguration(TestCase):
         self.assertNotEqual(conf, ["a", 123, "b", None])
         # TODO: equality with dataclasses?
         self.assertNotEqual(conf, type("tmp", (object,), {"a": 123, "b": None})())
+
+    def test_hash(self):
+        with self.assertRaises(TypeError):
+            hash(PlainConfiguration())
 
     def test_copy(self):
         conf = PlainConfiguration(a=123, sub=PlainConfiguration())
@@ -1774,6 +1786,7 @@ class TestFrozenConfiguration(TestCase):
 
     def test_eq(self):
         conf = FrozenConfiguration(a=123, b=None)
+        self.assertEqual(conf, conf, msg="identity")
         self.assertEqual(conf, FrozenConfiguration(a=123, b=None))
         self.assertEqual(FrozenConfiguration(a=123, b=None), conf, msg="symmetry")
         self.assertEqual(conf, FrozenConfiguration(b=None, a=123), msg="ordering")
@@ -1787,10 +1800,20 @@ class TestFrozenConfiguration(TestCase):
         self.assertNotEqual(
             conf, FrozenConfiguration(a=None, b=123), msg="respect key-value"
         )
-        self.assertEqual(
-            FrozenConfiguration(sub=FrozenConfiguration()),
-            FrozenConfiguration(sub=FrozenConfiguration()),
-            msg="hierarchical",
+
+    def test_eq_hierarchical(self):
+        conf = FrozenConfiguration(sub=FrozenConfiguration(a=123))
+        self.assertEqual(conf, conf, msg="identity")
+        self.assertEqual(conf, FrozenConfiguration(sub=FrozenConfiguration(a=123)))
+        self.assertNotEqual(
+            conf,
+            FrozenConfiguration(sub=FrozenConfiguration(a=234)),
+            msg="respect value",
+        )
+        self.assertNotEqual(
+            conf,
+            FrozenConfiguration(other=FrozenConfiguration(a=123)),
+            msg="respect key",
         )
 
     def test_eq_dict(self):
@@ -1802,11 +1825,12 @@ class TestFrozenConfiguration(TestCase):
         self.assertNotEqual(conf, {"ax": 123, "bx": None}, msg="respect key")
         self.assertNotEqual(conf, {"a": 234, "b": None}, msg="respect value")
         self.assertNotEqual(conf, {"a": None, "b": 123}, msg="respect key-value")
-        self.assertEqual(
-            FrozenConfiguration(sub=FrozenConfiguration()),
-            FrozenConfiguration(sub=FrozenConfiguration()),
-            msg="hierarchical",
-        )
+
+    def test_eq_dict_hierarchical(self):
+        conf = FrozenConfiguration(sub=FrozenConfiguration(a=123))
+        self.assertEqual(conf, {"sub": {"a": 123}})
+        self.assertNotEqual(conf, {"sub": {"a": 234}}, msg="respect value")
+        self.assertNotEqual(conf, {"other": {"a": 123}}, msg="respect key")
 
     def test_eq_invalid_types(self):
         conf = FrozenConfiguration(a=123, b=None)
@@ -1814,6 +1838,79 @@ class TestFrozenConfiguration(TestCase):
         self.assertNotEqual(conf, ["a", 123, "b", None])
         # TODO: equality with dataclasses?
         self.assertNotEqual(conf, type("tmp", (object,), {"a": 123, "b": None})())
+
+    def test_hash(self):
+        conf = FrozenConfiguration(a=123, b=None)
+        self.assertEqual(hash(conf), hash(FrozenConfiguration(a=123, b=None)))
+        self.assertEqual(hash(conf), hash(conf), msg="identity")
+        self.assertEqual(
+            hash(conf), hash(FrozenConfiguration(b=None, a=123)), msg="ordering"
+        )
+        self.assertNotEqual(
+            hash(conf), hash(FrozenConfiguration(a=123)), msg="cardinality"
+        )
+        self.assertNotEqual(
+            hash(conf), hash(FrozenConfiguration(ax=123, bx=None)), msg="respect key"
+        )
+        self.assertNotEqual(
+            hash(conf), hash(FrozenConfiguration(a=234, b=None)), msg="respect value"
+        )
+        self.assertNotEqual(
+            hash(conf),
+            hash(FrozenConfiguration(a=None, b=123)),
+            msg="respect key-value",
+        )
+
+    def test_hash_hierarchical(self):
+        conf = FrozenConfiguration(sub=FrozenConfiguration(a=123))
+        self.assertEqual(hash(conf), hash(conf), msg="identity")
+        self.assertEqual(
+            hash(conf),
+            hash(FrozenConfiguration(sub=FrozenConfiguration(a=123))),
+        )
+        self.assertNotEqual(
+            hash(conf),
+            hash(FrozenConfiguration(sub=FrozenConfiguration(a=234))),
+            msg="respect value",
+        )
+        self.assertNotEqual(
+            hash(conf),
+            hash(FrozenConfiguration(other=FrozenConfiguration(a=123))),
+            msg="respect key",
+        )
+
+    def test_hash_collision_values(self):
+        count = 1024
+        unique_int = {hash(FrozenConfiguration(a=2023 + i)) for i in range(count)}
+        self.assertEqual(count, len(unique_int), msg="int values")
+        unique_str = {
+            hash(FrozenConfiguration(a=f"value{i:02d}")) for i in range(count)
+        }
+        self.assertEqual(count, len(unique_str), msg="str values")
+
+    def test_hash_collision_keys(self):
+        keys = tuple(enumerate("abcdefghi"))
+        uniques = {
+            hash(FrozenConfiguration(**{k: 123 for b, k in keys if (1 << b) & i}))
+            for i in range(1 << len(keys))
+        }
+        self.assertEqual(1 << len(keys), len(uniques))
+
+    def test_hash_collision_items(self):
+        items = tuple(zip("abcdefghi", range(9)))
+        uniques = {
+            hash(FrozenConfiguration(**{k: v + 1 for k, v in items if (1 << v) & i}))
+            for i in range(1 << len(items))
+        }
+        self.assertEqual(1 << len(items), len(uniques))
+
+    def test_hash_collision_recursions(self):
+        uniques, conf, depth = set(), {}, 21
+        for _ in range(depth):
+            conf = FrozenConfiguration(sub=conf)
+            uniques.add(hash(conf))
+
+        self.assertEqual(depth, len(uniques))
 
     def test_copy(self):
         conf = FrozenConfiguration(a=123, sub=FrozenConfiguration())
@@ -2313,7 +2410,9 @@ class TestFrozenConfiguration(TestCase):
     def test_union_dict_subconfig_value(self):
         conf = FrozenConfiguration(sub=123)
         d = {"sub": {"b": "foo"}}
-        self.assertEqual(FrozenConfiguration(sub=FrozenConfiguration(b="foo")), conf | d)
+        self.assertEqual(
+            FrozenConfiguration(sub=FrozenConfiguration(b="foo")), conf | d
+        )
         self.assertEqual(
             FrozenConfiguration(sub=123),
             d | conf,
@@ -2335,7 +2434,9 @@ class TestFrozenConfiguration(TestCase):
     def test_union_dict_dotted_create_subconfig(self):
         conf = FrozenConfiguration()
         d = {"sub.b": "foo"}
-        self.assertEqual(FrozenConfiguration(sub=FrozenConfiguration(b="foo")), conf | d)
+        self.assertEqual(
+            FrozenConfiguration(sub=FrozenConfiguration(b="foo")), conf | d
+        )
         self.assertEqual(
             FrozenConfiguration(sub=FrozenConfiguration(b="foo")),
             d | conf,
