@@ -2298,48 +2298,46 @@ class TestFrozenConfiguration(TestCase):
         self.assertEqual(FrozenConfiguration(a=123, b="bar", c=None), conf | d)
         self.assertEqual(FrozenConfiguration(a=123, b="foo", c=None), d | conf)
 
-    # TODO: transform tests below for frozen configs
-
     def test_union_dict_subconfig(self):
-        conf = PlainConfiguration(sub=PlainConfiguration(a=123))
+        conf = FrozenConfiguration(sub=FrozenConfiguration(a=123))
         d = {"sub": {"b": "foo"}}
         self.assertEqual(
-            PlainConfiguration(sub=PlainConfiguration(a=123, b="foo")), conf | d
+            FrozenConfiguration(sub=FrozenConfiguration(a=123, b="foo")), conf | d
         )
         self.assertEqual(
-            PlainConfiguration(sub=PlainConfiguration(a=123, b="foo")),
+            FrozenConfiguration(sub=FrozenConfiguration(a=123, b="foo")),
             d | conf,
             msg="symmetry",
         )
 
     def test_union_dict_subconfig_value(self):
-        conf = PlainConfiguration(sub=123)
+        conf = FrozenConfiguration(sub=123)
         d = {"sub": {"b": "foo"}}
-        self.assertEqual(PlainConfiguration(sub=PlainConfiguration(b="foo")), conf | d)
+        self.assertEqual(FrozenConfiguration(sub=FrozenConfiguration(b="foo")), conf | d)
         self.assertEqual(
-            PlainConfiguration(sub=123),
+            FrozenConfiguration(sub=123),
             d | conf,
             msg="symmetry",
         )
 
     def test_union_dict_dotted_subconfig(self):
-        conf = PlainConfiguration(sub=PlainConfiguration(a=123))
+        conf = FrozenConfiguration(sub=FrozenConfiguration(a=123))
         d = {"sub.b": "foo"}
         self.assertEqual(
-            PlainConfiguration(sub=PlainConfiguration(a=123, b="foo")), conf | d
+            FrozenConfiguration(sub=FrozenConfiguration(a=123, b="foo")), conf | d
         )
         self.assertEqual(
-            PlainConfiguration(sub=PlainConfiguration(a=123, b="foo")),
+            FrozenConfiguration(sub=FrozenConfiguration(a=123, b="foo")),
             d | conf,
             msg="symmetry",
         )
 
     def test_union_dict_dotted_create_subconfig(self):
-        conf = PlainConfiguration()
+        conf = FrozenConfiguration()
         d = {"sub.b": "foo"}
-        self.assertEqual(PlainConfiguration(sub=PlainConfiguration(b="foo")), conf | d)
+        self.assertEqual(FrozenConfiguration(sub=FrozenConfiguration(b="foo")), conf | d)
         self.assertEqual(
-            PlainConfiguration(sub=PlainConfiguration(b="foo")),
+            FrozenConfiguration(sub=FrozenConfiguration(b="foo")),
             d | conf,
             msg="symmetry",
         )
@@ -2347,25 +2345,25 @@ class TestFrozenConfiguration(TestCase):
     # # # Conversions # # #
 
     def test_from_dict(self):
-        conf = PlainConfiguration.from_dict({"a": 123, "b": "foo"})
-        self.assertEqual(PlainConfiguration(a=123, b="foo"), conf)
+        conf = FrozenConfiguration.from_dict({"a": 123, "b": "foo"})
+        self.assertEqual(FrozenConfiguration(a=123, b="foo"), conf)
 
     def test_from_dict_empty(self):
-        conf = PlainConfiguration.from_dict({})
-        self.assertEqual(PlainConfiguration(), conf)
+        conf = FrozenConfiguration.from_dict({})
+        self.assertEqual(FrozenConfiguration(), conf)
 
     def test_from_dict_subconfig(self):
-        conf = PlainConfiguration.from_dict({"sub": {"a": 123}})
-        self.assertEqual(PlainConfiguration(sub=PlainConfiguration(a=123)), conf)
+        conf = FrozenConfiguration.from_dict({"sub": {"a": 123}})
+        self.assertEqual(FrozenConfiguration(sub=FrozenConfiguration(a=123)), conf)
 
     def test_to_dict(self):
-        conf = PlainConfiguration(a=123, b="foo")
+        conf = FrozenConfiguration(a=123, b="foo")
         self.assertDictEqual({"a": 123, "b": "foo"}, conf.to_dict())
 
     def test_to_dict_empty(self):
-        conf = PlainConfiguration()
+        conf = FrozenConfiguration()
         self.assertDictEqual({}, conf.to_dict())
 
     def test_to_dict_subconfig(self):
-        conf = PlainConfiguration(sub=PlainConfiguration(a=123))
+        conf = FrozenConfiguration(sub=FrozenConfiguration(a=123))
         self.assertDictEqual({"sub": {"a": 123}}, conf.to_dict())
