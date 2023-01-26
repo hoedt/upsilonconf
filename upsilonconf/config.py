@@ -31,11 +31,12 @@ __all__ = [
 ]
 
 T = TypeVar("T")
+V = TypeVar("V")
 Self = TypeVar("Self", bound="ConfigurationBase")
 _MappingLike = Union[Mapping[str, Any], Iterable[Tuple[str, Any]]]
 
 
-class ConfigurationBase(Mapping[str, Any]):
+class ConfigurationBase(Mapping[str, V]):
 
     # TODO: drop py3.6 support for proper generics?
     class FlatConfigView(Collection):
@@ -60,7 +61,7 @@ class ConfigurationBase(Mapping[str, Any]):
         def __iter__(self):
             raise NotImplementedError("subclass must implement this method")
 
-        def _flat_iter(self) -> Iterator[Tuple[str, Any]]:
+        def _flat_iter(self) -> Iterator[Tuple[str, V]]:
             """
             Iterate over key-value pairs of flat config.
 
@@ -133,7 +134,7 @@ class ConfigurationBase(Mapping[str, Any]):
 
     # # # Attribute Access # # #
 
-    def __getattr__(self, name: str) -> Any:
+    def __getattr__(self, name: str) -> V:
         msg = f"'{self.__class__.__name__}' object has no attribute '{name}'"
         if "." in name:
             msg = f"dot-strings only work for indexing, try `config[{name}]` instead"
@@ -142,14 +143,14 @@ class ConfigurationBase(Mapping[str, Any]):
 
     # # # Mapping Interface # # #
 
-    def __getitem__(self, key: Union[str, Tuple[str, ...]]) -> Any:
+    def __getitem__(self, key: Union[str, Tuple[str, ...]]) -> V:
         conf, key = self._resolve_key(key)
         return conf.__dict__[key]
 
     def __len__(self) -> int:
         return self.__dict__.__len__()
 
-    def __iter__(self) -> Iterator[Any]:
+    def __iter__(self) -> Iterator[str]:
         return iter(self.__dict__)
 
     # # # Flat Iterators # # #
@@ -370,7 +371,7 @@ class ConfigurationBase(Mapping[str, Any]):
     @classmethod
     def from_dict(
         cls: Type[Self],
-        mapping: Mapping[str, Any],
+        mapping: Mapping[str, V],
         key_mods: Optional[Mapping[str, str]] = None,
     ) -> Self:
         if key_mods is None:
@@ -380,7 +381,7 @@ class ConfigurationBase(Mapping[str, Any]):
 
     def to_dict(
         self, key_mods: Optional[Mapping[str, str]] = None, flat: bool = False
-    ) -> Dict[str, Any]:
+    ) -> Dict[str, V]:
         if key_mods is None:
             key_mods = {}
 
@@ -391,7 +392,7 @@ class ConfigurationBase(Mapping[str, Any]):
 SelfPlain = TypeVar("SelfPlain", bound="PlainConfiguration")
 
 
-class PlainConfiguration(ConfigurationBase, MutableMapping[str, Any]):
+class PlainConfiguration(ConfigurationBase[Any], MutableMapping[str, Any]):
     """
     Configuration that maps variable names to their corresponding values.
 
@@ -436,7 +437,7 @@ class PlainConfiguration(ConfigurationBase, MutableMapping[str, Any]):
     {foo: 0, bar: bar, baz: {a: 1, b: 2, c: 3}}
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any):
         self.update(**kwargs)
 
     # # # Attribute Access # # #
@@ -483,10 +484,10 @@ class PlainConfiguration(ConfigurationBase, MutableMapping[str, Any]):
         return self
 
 
-class FrozenConfiguration(ConfigurationBase, Hashable):
+class FrozenConfiguration(ConfigurationBase[Hashable], Hashable):
     """"""
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Hashable):
         for k, v in kwargs.items():
             v = self._fix_value(v)
             conf, k = self._resolve_key(k, create=True)
@@ -529,6 +530,22 @@ class FrozenConfiguration(ConfigurationBase, Hashable):
 
     def __ror__(self: Self, other: Mapping[str, Any]) -> Self:
         return self.__class__(**(other | PlainConfiguration(**self)))
+
+    @classmethod
+    def _fix_value(cls, value, old_val=None):
+        def _make_hashable(o):
+            if isinstance(o, Hashable):
+                return o
+            elif isinstance(o, bytearray):
+                return o.decode()
+            elif isinstance(o, Mapping):
+                return cls(**o)
+            elif isinstance(o, Collection):
+                return tuple(_make_hashable(v) for v in o)
+
+            raise TypeError(f"unhashable type: '{type(o)}'")
+
+        return super()._fix_value(_make_hashable(value), old_val)
 
 
 class InvalidKeyError(ValueError):

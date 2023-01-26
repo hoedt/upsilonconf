@@ -1759,6 +1759,19 @@ class TestFrozenConfiguration(TestCase):
         self.assertEqual({"sub": FrozenConfiguration(**sub)}, conf.__dict__)
         self.assertIsInstance(conf.__dict__["sub"], FrozenConfiguration)
 
+    def test_constructor_sequences(self):
+        conf = FrozenConfiguration(a=(123,))
+        self.assertDictEqual({"a": (123,)}, conf.__dict__)
+        conf = FrozenConfiguration(a=[123])
+        self.assertDictEqual({"a": (123,)}, conf.__dict__, msg="list conversion")
+        conf = FrozenConfiguration(a={123})
+        self.assertDictEqual({"a": (123,)}, conf.__dict__, msg="set conversion")
+
+    def test_constructor_unhashable(self):
+        T = type("T", (object,), {"__eq__": lambda x, y: x is y})
+        with self.assertRaisesRegex(TypeError, "unhashable"):
+            FrozenConfiguration(unhashable=T())
+
     def test_constructor_positional_arg(self):
         with self.assertRaises(TypeError, msg="positional args invalid"):
             FrozenConfiguration({"a": 123})
@@ -1937,8 +1950,8 @@ class TestFrozenConfiguration(TestCase):
     # # # Mapping Interface # # #
 
     def test_getitem(self):
-        conf = FrozenConfiguration(a=[123], b="foo")
-        self.assertEqual([123], conf["a"])
+        conf = FrozenConfiguration(a=123, b="foo")
+        self.assertEqual(123, conf["a"])
         self.assertIs(getattr(conf, "a"), conf["a"], msg="dict/attr consistency")
         self.assertEqual("foo", conf["b"])
         self.assertIs(getattr(conf, "b"), conf["b"], msg="dict/attr consistency")
@@ -1970,8 +1983,8 @@ class TestFrozenConfiguration(TestCase):
             _ = conf["items"]
 
     def test_getitem_dotted(self):
-        conf = FrozenConfiguration(sub=FrozenConfiguration(a=[123]))
-        self.assertEqual([123], conf["sub.a"])
+        conf = FrozenConfiguration(sub=FrozenConfiguration(a=123))
+        self.assertEqual(123, conf["sub.a"])
         self.assertIs(conf["sub"]["a"], conf["sub.a"], msg="consistency")
 
     def test_getitem_dotted_invalid(self):
@@ -1982,8 +1995,8 @@ class TestFrozenConfiguration(TestCase):
             _ = conf["x.b"]
 
     def test_getitem_tuple(self):
-        conf = FrozenConfiguration(sub=FrozenConfiguration(a=[123]))
-        self.assertEqual([123], conf["sub", "a"])
+        conf = FrozenConfiguration(sub=FrozenConfiguration(a=123))
+        self.assertEqual(123, conf["sub", "a"])
         self.assertIs(conf["sub"]["a"], conf["sub", "a"], msg="consistency")
 
     def test_getitem_tuple_invalid(self):
@@ -2157,8 +2170,8 @@ class TestFrozenConfiguration(TestCase):
     # # # Attribute Interface # # #
 
     def test_getattr(self):
-        conf = FrozenConfiguration(a=[123], b="foo")
-        self.assertEqual([123], getattr(conf, "a"))
+        conf = FrozenConfiguration(a=123, b="foo")
+        self.assertEqual(123, getattr(conf, "a"))
         self.assertIs(conf["a"], getattr(conf, "a"), msg="dict/attr consistency")
         self.assertEqual("foo", getattr(conf, "b"))
         self.assertIs(conf["b"], getattr(conf, "b"), msg="dict/attr consistency")
