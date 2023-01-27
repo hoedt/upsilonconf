@@ -1007,6 +1007,7 @@ class TestPlainConfiguration(TestCase):
     def test_getattr_class_attributes(self):
         conf = PlainConfiguration()
         self.assertIs(getattr(conf, "__dict__"), conf.__dict__)
+        self.assertIs(getattr(conf, "__class__"), conf.__class__)
         self.assertEqual(getattr(conf, "items"), conf.items)
 
     def test_getattr_dotted(self):
@@ -1052,10 +1053,12 @@ class TestPlainConfiguration(TestCase):
         with self.assertRaisesRegex(TypeError, "string", msg="list attr"):
             setattr(conf, ["a"], [123])
 
-    def test_setatrr_class_attributes(self):
+    def test_setattr_class_attributes(self):
         conf = PlainConfiguration()
         with self.assertRaises(TypeError):
             setattr(conf, "__dict__", 123)
+        with self.assertRaises(TypeError):
+            setattr(conf, "__class__", 123)
 
         setattr(conf, "items", "foo")
         self.assertDictEqual({"items": "foo"}, conf.__dict__)
@@ -1105,6 +1108,8 @@ class TestPlainConfiguration(TestCase):
         conf = PlainConfiguration(a=123)
         delattr(conf, "__dict__")
         self.assertDictEqual({}, conf.__dict__)
+        with self.assertRaisesRegex(TypeError, "__class__"):
+            delattr(conf, "__class__")
         with self.assertRaisesRegex(AttributeError, "items"):
             delattr(conf, "items")
 
@@ -1150,6 +1155,8 @@ class TestPlainConfiguration(TestCase):
         conf = PlainConfiguration()
         with self.assertRaisesRegex(KeyError, "__dict__"):
             _ = conf["__dict__"]
+        with self.assertRaisesRegex(KeyError, "__class__"):
+            _ = conf["__class__"]
         with self.assertRaisesRegex(KeyError, "items"):
             _ = conf["items"]
 
@@ -1218,8 +1225,12 @@ class TestPlainConfiguration(TestCase):
     def test_setitem_class_attributes(self):
         conf = PlainConfiguration()
         conf["__dict__"] = 123
+        conf["__class__"] = None
         conf["items"] = "foo"
-        self.assertDictEqual({"__dict__": 123, "items": "foo"}, conf.__dict__)
+        self.assertDictEqual(
+            {"__dict__": 123, "__class__": None, "items": "foo"}, conf.__dict__
+        )
+        self.assertIsInstance(conf, conf.__class__)
 
     def test_get_setitem_class_attributes(self):
         conf = PlainConfiguration()
@@ -1227,10 +1238,11 @@ class TestPlainConfiguration(TestCase):
         self.assertEqual(123, conf["__dict__"])
 
     def test_del_setitem_class_attributes(self):
-        conf = PlainConfiguration()
-        conf["__dict__"] = 123
+        conf = PlainConfiguration(a=123)
+        conf["__dict__"] = "foo"
+        self.assertIn("__dict__", conf.__dict__)
         del conf["__dict__"]
-        self.assertDictEqual({}, conf.__dict__)
+        self.assertDictEqual({"a": 123}, conf.__dict__)
 
     def test_setitem_dotted(self):
         conf = PlainConfiguration(sub=PlainConfiguration())
@@ -1292,6 +1304,8 @@ class TestPlainConfiguration(TestCase):
         conf = PlainConfiguration()
         with self.assertRaisesRegex(KeyError, "__dict__"):
             del conf["__dict__"]
+        with self.assertRaisesRegex(KeyError, "__class__"):
+            del conf["__class__"]
         with self.assertRaisesRegex(KeyError, "items"):
             del conf["items"]
 
@@ -1979,6 +1993,8 @@ class TestFrozenConfiguration(TestCase):
         conf = FrozenConfiguration()
         with self.assertRaisesRegex(KeyError, "__dict__"):
             _ = conf["__dict__"]
+        with self.assertRaisesRegex(KeyError, "__class__"):
+            _ = conf["__class__"]
         with self.assertRaisesRegex(KeyError, "items"):
             _ = conf["items"]
 
@@ -2047,6 +2063,8 @@ class TestFrozenConfiguration(TestCase):
         with self.assertRaises(TypeError):
             conf["__dict__"] = 123
         with self.assertRaises(TypeError):
+            conf["__class__"] = 123
+        with self.assertRaises(TypeError):
             del conf["items"]
 
     def test_setitem_dotted(self):
@@ -2110,6 +2128,8 @@ class TestFrozenConfiguration(TestCase):
         conf = FrozenConfiguration()
         with self.assertRaises(TypeError):
             del conf["__dict__"]
+        with self.assertRaises(TypeError):
+            del conf["__class__"]
         with self.assertRaises(TypeError):
             del conf["items"]
 
@@ -2199,6 +2219,7 @@ class TestFrozenConfiguration(TestCase):
     def test_getattr_class_attributes(self):
         conf = FrozenConfiguration()
         self.assertIs(getattr(conf, "__dict__"), conf.__dict__)
+        self.assertIs(getattr(conf, "__class__"), conf.__class__)
         self.assertEqual(getattr(conf, "items"), conf.items)
 
     def test_getattr_dotted(self):
@@ -2243,10 +2264,12 @@ class TestFrozenConfiguration(TestCase):
         with self.assertRaisesRegex(TypeError, "string", msg="list attr"):
             setattr(conf, ["a"], [123])
 
-    def test_setatrr_class_attributes(self):
+    def test_setattr_class_attributes(self):
         conf = FrozenConfiguration()
         with self.assertRaisesRegex(AttributeError, "'__dict__'"):
             setattr(conf, "__dict__", 123)
+        with self.assertRaisesRegex(AttributeError, "'__class__'"):
+            setattr(conf, "__class__", 123)
         with self.assertRaisesRegex(AttributeError, "'items' is read-only"):
             setattr(conf, "items", "foo")
 
@@ -2287,6 +2310,9 @@ class TestFrozenConfiguration(TestCase):
         with self.assertRaisesRegex(AttributeError, "__dict__"):
             delattr(conf, "__dict__")
         self.assertDictEqual({"a": 123}, conf.__dict__)
+        with self.assertRaisesRegex(AttributeError, "__class__"):
+            delattr(conf, "__class__")
+        self.assertIsInstance(conf, conf.__class__)
         with self.assertRaisesRegex(AttributeError, "items"):
             delattr(conf, "items")
 
