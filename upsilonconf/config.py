@@ -37,6 +37,49 @@ _MappingLike = Union[Mapping[str, Any], Iterable[Tuple[str, Any]]]
 
 
 class ConfigurationBase(Mapping[str, V]):
+    """
+    Interface for configuration that maps variable names to their values.
+
+    A `ConfigurationBase` object can be used to represent values for various values.
+    It can be interpreted in two ways:
+
+    - a dictionary (or more generally, a mapping) with attribute syntax, or
+    - a python object with indexing syntax.
+
+    On top of the combined feature set of dictionaries and attributes,
+    this class introduces advanced indexing, convenient merging and `dict` conversions.
+    ``dict``-like values are automatically converted to `PlainConfiguration` objects,
+    giving rise to hierarchical configuration objects.
+
+    Examples
+    --------
+    Configurations are typically constructed from keyword arguments.
+
+    >>> conf = PlainConfiguration(foo=0, bar="bar", baz={'a': 1, 'b': 2})
+    >>> print(conf)
+    {foo: 0, bar: bar, baz: {a: 1, b: 2}}
+
+    A configuration is both ``object`` and ``Mapping`` at the same time.
+
+    >>> conf['bar'] == conf.bar
+    True
+    >>> conf['baz']['a'] == conf.baz.a
+    True
+
+    Advanced indexing for convenient access to subconfigs.
+
+    >>> conf['baz', 'a']  # tuple index
+    1
+    >>> conf['baz.a']  # dot-string index
+    1
+
+    Configurations can conveniently be merged with other ``Mapping`` objects.
+
+    >>> print(conf | {"xtra": None})
+    {foo: 0, bar: bar, baz: {a: 1, b: 2}, xtra: None}
+    >>> print(conf | {"baz": {"c": 3}})
+    {foo: 0, bar: bar, baz: {a: 1, b: 2, c: 3}}
+    """
 
     # TODO: drop py3.6 support for proper generics?
     class FlatConfigView(Collection):
@@ -152,6 +195,14 @@ class ConfigurationBase(Mapping[str, V]):
 
     def __iter__(self) -> Iterator[str]:
         return iter(self.__dict__)
+
+    # # # Merging # # #
+
+    def __or__(self: Self, other: Mapping[str, Any]) -> Self:
+        return self.__class__(**(PlainConfiguration(**self) | other))
+
+    def __ror__(self: Self, other: Mapping[str, Any]) -> Self:
+        return self.__class__(**(other | PlainConfiguration(**self)))
 
     # # # Flat Iterators # # #
 
@@ -388,46 +439,50 @@ class ConfigurationBase(Mapping[str, V]):
         return _modify_keys(self.items(flat=flat), key_mods)
 
 
-# TODO: find better solution for merging
-SelfPlain = TypeVar("SelfPlain", bound="PlainConfiguration")
-
-
 class PlainConfiguration(ConfigurationBase[Any], MutableMapping[str, Any]):
     """
-    Configuration that maps variable names to their corresponding values.
+    Freely mutable configuration.
 
-    A `PlainConfiguration` object can be used to collect values for various values.
-    It can be interpreted in two ways:
-
-    - a dictionary (or more generally, a mapping) with attribute syntax, or
-    - a python object with indexing syntax.
-
-    On top of the combined feature set of dictionaries and attributes,
-    this class introduces advanced indexing, convenient merging and `dict` conversions.
-    ``dict``-like values are automatically converted to `PlainConfiguration` objects,
-    giving rise to hierarchical configuration objects.
+    A `PlainConfiguration` object is a mutable implementation of a `ConfigurationBase`.
+    This means that you can add, change and/or delete values in this object.
+    Moreover, there are no limitations to the changes you can make.
+    Concretely, you are able to:
+        - overwrite values without warnings or errors,
+        - use variable names that are not valid attribute names,
+        - use attribute or method names as keys.
 
     Examples
     --------
-    Configurations are typically constructed from keyword arguments.
+    Starting with a simple configuration.
 
     >>> conf = PlainConfiguration(foo=0, bar="bar", baz={'a': 1, 'b': 2})
     >>> print(conf)
     {foo: 0, bar: bar, baz: {a: 1, b: 2}}
 
-    A configuration is both ``object`` and ``Mapping`` at the same time.
+    Variables can be added, changed or removed as desired.
 
-    >>> conf['bar'] == conf.bar
-    True
-    >>> conf['baz']['a'] == conf.baz.a
-    True
+    >>> conf.surprise = None
+    >>> print(conf)
+    {foo: 0, bar: bar, baz: {a: 1, b: 2}, surprise: None}
+    >>> conf["surprise"] = []
+    >>> print(conf)
+    {foo: 0, bar: bar, baz: {a: 1, b: 2}, surprise: []}
+    >>> del conf.baz.a
+    >>> print(conf)
+    {foo: 0, bar: bar, baz: {b: 2}, surprise: []}
 
-    Advanced indexing for convenient access to subconfigs.
+    Creating a single value in a subconfig is only possible using indexing syntax.
 
-    >>> conf['baz', 'a']  # tuple index
-    1
-    >>> conf['baz.a']  # dot-string index
-    1
+    >>> conf.sub.val = 0
+    Traceback (most recent call last):
+        ...
+    AttributeError: 'PlainConfiguration' object has no attribute 'sub'
+    >>> conf["sub", "val"] = -1
+    >>> print(conf)
+    {foo: 0, bar: bar, baz: {b: 2}, surprise: [], sub: {val: -1}}
+    >>> conf['surprise'] = {"val": "tada"}
+    >>> print(conf)
+    {foo: 0, bar: bar, baz: {b: 2}, surprise: {val: tada}, sub: {val: -1}}
 
     Configurations can conveniently be merged with other ``Mapping`` objects.
 
@@ -468,24 +523,72 @@ class PlainConfiguration(ConfigurationBase[Any], MutableMapping[str, Any]):
 
     # # # Merging # # #
 
-    def __or__(self: SelfPlain, other: Mapping[str, Any]) -> SelfPlain:
+    def __or__(self, other):
         result = self.__class__(**self)
         result |= other
         return result
 
-    def __ror__(self: SelfPlain, other: Mapping[str, Any]) -> SelfPlain:
+    def __ror__(self, other):
         result = self.__class__(**other)
         result |= self
         return result
 
-    def __ior__(self: SelfPlain, other: Mapping[str, Any]) -> SelfPlain:
+    def __ior__(self, other):
         for k, v in other.items():
             self[k] = self._fix_value(v, self.get(k, None))
         return self
 
 
 class FrozenConfiguration(ConfigurationBase[Hashable], Hashable):
-    """"""
+    """
+    Immutable configuration.
+
+    A `FrozenConfiguration` object is an immutable implementation of a `ConfigurationBase`.
+    This means that you can **not** add, change and/or delete anything in this object.
+    Because of this immutability, frozenconfigs are hashable,
+    which means that they can be used in ``set``s and serve as keys in a ``dict``.
+
+    Examples
+    --------
+    Starting with a simple configuration.
+
+    >>> conf = FrozenConfiguration(foo=0, bar="bar", baz={'a': 1, 'b': 2})
+    >>> print(conf)
+    {foo: 0, bar: bar, baz: {a: 1, b: 2}}
+
+    Attempts to change the configuration will result in errors.
+
+    >>> conf.surprise = None
+    Traceback (most recent call last):
+        ...
+    AttributeError: 'FrozenConfiguration' object has no attribute 'surprise'
+    >>> conf["surprise"] = []
+    Traceback (most recent call last):
+        ...
+    TypeError: 'FrozenConfiguration' object does not support item assignment
+    >>> del conf.baz.a
+    Traceback (most recent call last):
+        ...
+    AttributeError: 'FrozenConfiguration' object attribute 'a' is read-only
+
+    Values are converted to hashable types if possible.
+
+    >>> print(FrozenConfiguration(value=[1, 2, 3]))
+    {value: (1, 2, 3)}
+    >>> print(FrozenConfiguration(value=slice(None)))
+    Traceback (most recent call last):
+        ...
+    TypeError: unhashable type: '<class 'slice'>'
+
+    Hash function allows frozen configurations to be used as keys in a dictionary.
+
+    >>> results = {
+    ...     FrozenConfiguration(option=1): 0.1,
+    ...     FrozenConfiguration(option=2): 0.9,
+    ... }
+    >>> print(max(results.items(), key=lambda kv: kv[1]))
+    (FrozenConfiguration(option=2), 0.9)
+    """
 
     def __init__(self, **kwargs: Hashable):
         for k, v in kwargs.items():
@@ -519,17 +622,9 @@ class FrozenConfiguration(ConfigurationBase[Hashable], Hashable):
         if "." in name:
             msg = f"dot-strings only work for indexing, try `config[{name}]` instead"
         elif getattr(self, name, None) is not None:
-            msg = f"{self.__class__.__name__}' object attribute '{name}' is read-only"
+            msg = f"'{self.__class__.__name__}' object attribute '{name}' is read-only"
 
         raise AttributeError(msg)
-
-    # # # Merging # # #
-
-    def __or__(self: Self, other: Mapping[str, Any]) -> Self:
-        return self.__class__(**(PlainConfiguration(**self) | other))
-
-    def __ror__(self: Self, other: Mapping[str, Any]) -> Self:
-        return self.__class__(**(other | PlainConfiguration(**self)))
 
     @classmethod
     def _fix_value(cls, value, old_val=None):
