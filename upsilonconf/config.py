@@ -24,6 +24,7 @@ from typing import (
 )
 
 __all__ = [
+    "ConfigurationBase",
     "PlainConfiguration",
     "FrozenConfiguration",
     "Configuration",
@@ -121,7 +122,7 @@ class ConfigurationBase(Mapping[str, V]):
                 if isinstance(value, self._config.__class__):
                     yield from (
                         (".".join([key, sub_key]), v)
-                        for sub_key, v in PlainConfiguration.FlatItemsView(value)
+                        for sub_key, v in ConfigurationBase.FlatItemsView(value)
                     )
                 else:
                     yield key, value
@@ -167,7 +168,7 @@ class ConfigurationBase(Mapping[str, V]):
             yield from (v for _, v in self._flat_iter())
 
     def __init__(self, **kwargs: V):
-        raise NotImplementedError()
+        pass
 
     def __repr__(self) -> str:
         kwargs = ["=".join([k, f"{v!r}"]) for k, v in self.__dict__.items()]
@@ -674,8 +675,6 @@ class FrozenConfiguration(ConfigurationBase[Hashable], Hashable):
         def _make_hashable(o):
             if isinstance(o, Hashable):
                 return o
-            elif isinstance(o, bytearray):
-                return o.decode()
             elif isinstance(o, Mapping):
                 return cls(**o)
             elif isinstance(o, Collection):

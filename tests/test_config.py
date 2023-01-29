@@ -1,5 +1,6 @@
 import copy
 import doctest
+from typing import Type
 from unittest import TestCase
 
 import upsilonconf.config
@@ -853,167 +854,760 @@ class TestConfiguration(TestCase):
         self.assertEqual(d_ref, d)
 
 
-class TestPlainConfiguration(TestCase):
-    def test_constructor_empty(self):
-        conf = PlainConfiguration()
-        self.assertDictEqual({}, conf.__dict__)
+class Utils:
+    class TestConfigurationBase(TestCase):
+        @property
+        def config_class(self) -> Type[ConfigurationBase]:
+            raise NotImplementedError()
 
-    def test_constructor_single(self):
-        conf = PlainConfiguration(a=123)
-        self.assertDictEqual({"a": 123}, conf.__dict__)
+        def test_constructor_empty(self):
+            conf = self.config_class()
+            self.assertDictEqual({}, conf.__dict__)
 
-    def test_constructor(self):
-        KWARGS = {"a": 123, "b": "foo", "c": None, "d": object()}
-        conf = PlainConfiguration(**KWARGS)
-        self.assertDictEqual(KWARGS, conf.__dict__)
+        def test_constructor_single(self):
+            conf = self.config_class(a=123)
+            self.assertDictEqual({"a": 123}, conf.__dict__)
 
-    def test_constructor_subconfig(self):
-        sub = {"a": 123}
-        conf = PlainConfiguration(sub=sub)
-        self.assertEqual({"sub": PlainConfiguration(**sub)}, conf.__dict__)
-        self.assertIsInstance(conf.__dict__["sub"], PlainConfiguration)
+        def test_constructor(self):
+            KWARGS = {"a": 123, "b": "foo", "c": None, "d": object()}
+            conf = self.config_class(**KWARGS)
+            self.assertDictEqual(KWARGS, conf.__dict__)
 
-    def test_constructor_positional_arg(self):
-        with self.assertRaises(TypeError, msg="positional args invalid"):
-            PlainConfiguration({"a": 123})
+        def test_constructor_subconfig(self):
+            sub = {"a": 123}
+            conf = self.config_class(sub=sub)
+            self.assertEqual({"sub": self.config_class(**sub)}, conf.__dict__)
+            self.assertIsInstance(conf.__dict__["sub"], self.config_class)
 
-    def test_repr_empty(self):
-        conf = PlainConfiguration()
-        self.assertEqual("PlainConfiguration()", repr(conf))
+        def test_constructor_positional_arg(self):
+            with self.assertRaises(TypeError, msg="positional args invalid"):
+                self.config_class({"a": 123})
 
-    def test_repr(self):
-        conf = PlainConfiguration(a=123, b="foo", c=None)
-        self.assertEqual(conf, eval(repr(conf)))
+        def test_repr_empty(self):
+            conf = self.config_class()
+            self.assertEqual(f"{conf.__class__.__name__}()", repr(conf))
 
-    def test_str_empty(self):
-        conf = PlainConfiguration()
-        self.assertEqual(str({}), str(conf))
+        def test_repr(self):
+            conf = self.config_class(a=123, b="foo", c=None)
+            self.assertEqual(conf, eval(repr(conf)))
 
-    def test_str(self):
-        conf = PlainConfiguration(a=123, b="foo", c=None)
-        self.assertEqual("{a: 123, b: foo, c: None}", str(conf))
-        conf = PlainConfiguration(sub=PlainConfiguration(a=123))
-        self.assertEqual("{sub: {a: 123}}", str(conf), msg="hierarchical")
+        def test_str_empty(self):
+            conf = self.config_class()
+            self.assertEqual(str({}), str(conf))
 
-    def test_eq_empty(self):
-        self.assertEqual(PlainConfiguration(), PlainConfiguration())
+        def test_str(self):
+            conf = self.config_class(a=123, b="foo", c=None)
+            self.assertEqual("{a: 123, b: foo, c: None}", str(conf))
+            conf = self.config_class(sub=self.config_class(a=123))
+            self.assertEqual("{sub: {a: 123}}", str(conf), msg="hierarchical")
 
-    def test_eq(self):
-        conf = PlainConfiguration(a=123, b=None)
-        self.assertEqual(conf, conf, msg="identity")
-        self.assertEqual(conf, PlainConfiguration(a=123, b=None))
-        self.assertEqual(PlainConfiguration(a=123, b=None), conf, msg="symmetry")
-        self.assertEqual(conf, PlainConfiguration(b=None, a=123), msg="ordering")
-        self.assertNotEqual(conf, PlainConfiguration(a=123), msg="cardinality")
-        self.assertNotEqual(
-            conf, PlainConfiguration(ax=123, bx=None), msg="respect key"
-        )
-        self.assertNotEqual(
-            conf, PlainConfiguration(a=234, b=None), msg="respect value"
-        )
-        self.assertNotEqual(
-            conf, PlainConfiguration(a=None, b=123), msg="respect key-value"
-        )
+        def test_eq_empty(self):
+            conf = self.config_class()
+            self.assertEqual(conf, conf, msg="identity")
+            self.assertEqual(conf, self.config_class())
 
-    def test_eq_hierarchical(self):
-        conf = PlainConfiguration(sub=PlainConfiguration(a=123))
-        self.assertEqual(conf, conf, msg="identity")
-        self.assertEqual(conf, PlainConfiguration(sub=PlainConfiguration(a=123)))
-        self.assertNotEqual(
-            conf, PlainConfiguration(sub=PlainConfiguration(a=234)), msg="respect value"
-        )
-        self.assertNotEqual(
-            conf, PlainConfiguration(other=PlainConfiguration(a=123)), msg="respect key"
-        )
+        def test_eq(self):
+            conf = self.config_class(a=123, b=None)
+            self.assertEqual(conf, conf, msg="identity")
+            self.assertEqual(conf, self.config_class(a=123, b=None))
+            self.assertEqual(self.config_class(a=123, b=None), conf, msg="symmetry")
+            self.assertEqual(conf, self.config_class(b=None, a=123), msg="ordering")
+            self.assertNotEqual(conf, self.config_class(a=123), msg="cardinality")
+            self.assertNotEqual(
+                conf, self.config_class(ax=123, bx=None), msg="respect key"
+            )
+            self.assertNotEqual(
+                conf, self.config_class(a=234, b=None), msg="respect value"
+            )
+            self.assertNotEqual(
+                conf, self.config_class(a=None, b=123), msg="respect key-value"
+            )
 
-    def test_eq_dict(self):
-        conf = PlainConfiguration(a=123, b=None)
-        self.assertEqual(conf, {"a": 123, "b": None})
-        self.assertEqual({"a": 123, "b": None}, conf, msg="symmetry")
-        self.assertEqual(conf, {"b": None, "a": 123}, msg="ordering")
-        self.assertNotEqual(conf, {"a": 123}, msg="cardinality")
-        self.assertNotEqual(conf, {"ax": 123, "bx": None}, msg="respect key")
-        self.assertNotEqual(conf, {"a": 234, "b": None}, msg="respect value")
-        self.assertNotEqual(conf, {"a": None, "b": 123}, msg="respect key-value")
+        def test_eq_hierarchical(self):
+            conf = self.config_class(sub=PlainConfiguration(a=123))
+            self.assertEqual(conf, conf, msg="identity")
+            self.assertEqual(conf, self.config_class(sub=PlainConfiguration(a=123)))
+            self.assertNotEqual(
+                conf,
+                self.config_class(sub=self.config_class(a=234)),
+                msg="respect value",
+            )
+            self.assertNotEqual(
+                conf,
+                self.config_class(other=self.config_class(a=123)),
+                msg="respect key",
+            )
 
-    def test_eq_dict_hierarchical(self):
-        conf = PlainConfiguration(sub=PlainConfiguration(a=123))
-        self.assertEqual(conf, {"sub": {"a": 123}})
-        self.assertNotEqual(conf, {"sub": {"a": 234}}, msg="respect value")
-        self.assertNotEqual(conf, {"other": {"a": 123}}, msg="respect key")
+        def test_eq_dict(self):
+            conf = self.config_class(a=123, b=None)
+            self.assertEqual(conf, {"a": 123, "b": None})
+            self.assertEqual({"a": 123, "b": None}, conf, msg="symmetry")
+            self.assertEqual(conf, {"b": None, "a": 123}, msg="ordering")
+            self.assertNotEqual(conf, {"a": 123}, msg="cardinality")
+            self.assertNotEqual(conf, {"ax": 123, "bx": None}, msg="respect key")
+            self.assertNotEqual(conf, {"a": 234, "b": None}, msg="respect value")
+            self.assertNotEqual(conf, {"a": None, "b": 123}, msg="respect key-value")
 
-    def test_eq_invalid_types(self):
-        conf = PlainConfiguration(a=123, b=None)
-        self.assertNotEqual(conf, 123)
-        self.assertNotEqual(conf, ["a", 123, "b", None])
-        # TODO: equality with dataclasses?
-        self.assertNotEqual(conf, type("tmp", (object,), {"a": 123, "b": None})())
+        def test_eq_dict_hierarchical(self):
+            conf = self.config_class(sub=self.config_class(a=123))
+            self.assertEqual(conf, {"sub": {"a": 123}})
+            self.assertNotEqual(conf, {"sub": {"a": 234}}, msg="respect value")
+            self.assertNotEqual(conf, {"other": {"a": 123}}, msg="respect key")
 
-    def test_hash(self):
-        with self.assertRaises(TypeError):
-            hash(PlainConfiguration())
+        def test_eq_invalid_types(self):
+            conf = self.config_class(a=123, b=None)
+            self.assertNotEqual(conf, 123)
+            self.assertNotEqual(conf, ["a", 123, "b", None])
+            # TODO: equality with dataclasses?
+            self.assertNotEqual(conf, type("tmp", (object,), {"a": 123, "b": None})())
 
-    def test_copy(self):
-        conf = PlainConfiguration(a=123, sub=PlainConfiguration())
-        conf_copy = copy.copy(conf)
-        self.assertIsNot(conf, conf_copy, msg="new object")
-        self.assertEqual(conf, conf_copy, msg="respect equality")
-        self.assertIs(conf["sub"], conf_copy["sub"], msg="copy superficial")
+        def test_hash(self):
+            with self.assertRaises(TypeError):
+                hash(self.config_class())
 
-    def test_deepcopy(self):
-        conf = PlainConfiguration(a=123, sub=PlainConfiguration())
-        conf_copy = copy.deepcopy(conf)
-        self.assertIsNot(conf, conf_copy, msg="new object")
-        self.assertEqual(conf, conf_copy, msg="respect equality")
-        self.assertIsNot(conf["sub"], conf_copy["sub"], msg="copy deep")
+        def test_copy(self):
+            conf = self.config_class(a=123, sub=self.config_class())
+            conf_copy = copy.copy(conf)
+            self.assertIsNot(conf, conf_copy, msg="new object")
+            self.assertEqual(conf, conf_copy, msg="respect equality")
+            self.assertIs(conf["sub"], conf_copy["sub"], msg="copy superficial")
 
-    def test_serialisation(self):
-        import pickle
+        def test_deepcopy(self):
+            conf = self.config_class(a=123, sub=self.config_class())
+            conf_copy = copy.deepcopy(conf)
+            self.assertIsNot(conf, conf_copy, msg="new object")
+            self.assertEqual(conf, conf_copy, msg="respect equality")
+            self.assertIsNot(conf["sub"], conf_copy["sub"], msg="copy deep")
 
-        conf = PlainConfiguration(a=123, b="foo", sub=PlainConfiguration())
-        serial = pickle.dumps(conf)
-        reconstructed = pickle.loads(serial)
-        self.assertEqual(conf, reconstructed)
+        def test_serialisation(self):
+            import pickle
+
+            conf = self.config_class(a=123, b="foo", sub=self.config_class())
+            serial = pickle.dumps(conf)
+            reconstructed = pickle.loads(serial)
+            self.assertEqual(conf, reconstructed)
+
+        # # # Attribute Interface # # #
+
+        def test_getattr(self):
+            conf = self.config_class(a=123, b="foo")
+            self.assertEqual(123, getattr(conf, "a"))
+            self.assertIs(conf["a"], getattr(conf, "a"), msg="dict/attr consistency")
+            self.assertEqual("foo", getattr(conf, "b"))
+            self.assertIs(conf["b"], getattr(conf, "b"), msg="dict/attr consistency")
+
+        def test_getattr_invalid(self):
+            conf = self.config_class(a=123)
+            with self.assertRaisesRegex(AttributeError, "b"):
+                _ = getattr(conf, "b")
+
+        def test_getattr_invalid_key_type(self):
+            conf = self.config_class(a=123)
+            with self.assertRaisesRegex(TypeError, "string", msg="int attr"):
+                _ = getattr(conf, 1)
+            with self.assertRaisesRegex(TypeError, "string", msg="obj attr"):
+                _ = getattr(conf, object())
+            with self.assertRaisesRegex(TypeError, "string", msg="int-tuple attr"):
+                _ = getattr(conf, (1, 2, 3))
+            with self.assertRaisesRegex(TypeError, "string", msg="set attr"):
+                _ = getattr(conf, ("a",))
+            with self.assertRaisesRegex(TypeError, "string", msg="set attr"):
+                _ = getattr(conf, {"a"})
+            with self.assertRaisesRegex(TypeError, "string", msg="list attr"):
+                _ = getattr(conf, ["a"])
+
+        def test_getattr_class_attributes(self):
+            conf = self.config_class()
+            self.assertIs(getattr(conf, "__dict__"), conf.__dict__)
+            self.assertIs(getattr(conf, "__class__"), self.config_class)
+            self.assertEqual(getattr(conf, "items"), conf.items)
+
+        def test_getattr_dotted(self):
+            conf = self.config_class(sub=self.config_class(a=[123]))
+            with self.assertRaisesRegex(AttributeError, "dot-string"):
+                _ = getattr(conf, "sub.a")
+
+        def test_dir(self):
+            conf = self.config_class(a=123, b="foo", c=None, d=object())
+            expected = sorted(dir(self.config_class) + ["a", "b", "c", "d"])
+            self.assertSequenceEqual(expected, dir(conf))
+
+        # # # Mapping Interface # # #
+
+        def test_getitem(self):
+            conf = self.config_class(a=123, b="foo")
+            self.assertEqual(123, conf["a"])
+            self.assertIs(getattr(conf, "a"), conf["a"], msg="dict/attr consistency")
+            self.assertEqual("foo", conf["b"])
+            self.assertIs(getattr(conf, "b"), conf["b"], msg="dict/attr consistency")
+
+        def test_getitem_invalid(self):
+            conf = self.config_class(a=123)
+            with self.assertRaisesRegex(KeyError, "b"):
+                _ = conf["b"]
+
+        def test_getitem_invalid_key_type(self):
+            conf = self.config_class(a=123)
+            with self.assertRaisesRegex(TypeError, "string", msg="int indexing"):
+                _ = conf[1]
+            with self.assertRaisesRegex(TypeError, "string", msg="obj indexing"):
+                _ = conf[object()]
+            with self.assertRaisesRegex(TypeError, "string", msg="int-tuple indexing"):
+                _ = conf[1, 2, 3]
+
+            with self.assertRaisesRegex(TypeError, "tuple", msg="set indexing"):
+                _ = conf[{"a"}]
+            with self.assertRaisesRegex(TypeError, "tuple", msg="list indexing"):
+                _ = conf[["a"]]
+
+        def test_getitem_class_attributes(self):
+            conf = self.config_class()
+            with self.assertRaisesRegex(KeyError, "__dict__"):
+                _ = conf["__dict__"]
+            with self.assertRaisesRegex(KeyError, "__class__"):
+                _ = conf["__class__"]
+            with self.assertRaisesRegex(KeyError, "items"):
+                _ = conf["items"]
+
+        def test_getitem_dotted(self):
+            conf = self.config_class(sub=self.config_class(a=123))
+            self.assertEqual(123, conf["sub.a"])
+            self.assertIs(conf["sub"]["a"], conf["sub.a"], msg="consistency")
+
+        def test_getitem_dotted_invalid(self):
+            conf = self.config_class(sub=self.config_class(a=123))
+            with self.assertRaisesRegex(KeyError, "b", msg="bad subconfig key"):
+                _ = conf["sub.b"]
+            with self.assertRaisesRegex(KeyError, "x", msg="bad subconfig"):
+                _ = conf["x.b"]
+
+        def test_getitem_tuple(self):
+            conf = self.config_class(sub=self.config_class(a=123))
+            self.assertEqual(123, conf["sub", "a"])
+            self.assertIs(conf["sub"]["a"], conf["sub", "a"], msg="consistency")
+
+        def test_getitem_tuple_invalid(self):
+            conf = self.config_class(sub=self.config_class(a=123))
+            with self.assertRaisesRegex(KeyError, "b", msg="bad subconfig key"):
+                _ = conf["sub", "b"]
+            with self.assertRaisesRegex(KeyError, "x", msg="bad subconfig"):
+                _ = conf["x", "b"]
+
+        def test_setitem(self):
+            conf = self.config_class()
+            with self.assertRaises(TypeError):
+                conf["a"] = 123
+
+        def test_setitem_overwrite(self):
+            conf = self.config_class(a=123)
+            with self.assertRaises(TypeError):
+                conf["a"] = 234
+            self.assertDictEqual({"a": 123}, conf.__dict__)
+
+        def test_setitem_dict(self):
+            conf = self.config_class()
+            with self.assertRaises(TypeError):
+                conf["sub"] = {"a": 123}
+
+        def test_setitem_dict_overwrite(self):
+            conf = self.config_class(sub=self.config_class(a=123))
+            with self.assertRaises(TypeError):
+                conf["sub"] = {"b": "foo"}
+            self.assertDictEqual({"sub": FrozenConfiguration(a=123)}, conf.__dict__)
+
+        def test_setitem_invalid_key_type(self):
+            conf = self.config_class()
+            with self.assertRaises(TypeError, msg="int indexing"):
+                conf[1] = 123
+            with self.assertRaises(TypeError, msg="obj indexing"):
+                conf[object()] = 123
+            with self.assertRaises(TypeError, msg="int-tuple indexing"):
+                conf[1, 2, 3] = 123
+
+            with self.assertRaises(TypeError, msg="set indexing"):
+                conf[{"a"}] = 123
+            with self.assertRaises(TypeError, msg="list indexing"):
+                conf[["a"]] = [123]
+
+        def test_setitem_class_attributes(self):
+            conf = self.config_class()
+            with self.assertRaises(TypeError):
+                conf["__dict__"] = 123
+            with self.assertRaises(TypeError):
+                conf["__class__"] = 123
+            with self.assertRaises(TypeError):
+                del conf["items"]
+
+        def test_setitem_dotted(self):
+            conf = self.config_class(sub=self.config_class())
+            with self.assertRaises(TypeError):
+                conf["sub.a"] = 123
+
+        def test_setitem_dotted_overwrite(self):
+            conf = self.config_class(sub=self.config_class(a=123))
+            with self.assertRaises(TypeError):
+                conf["sub.a"] = 234
+            self.assertDictEqual({"sub": self.config_class(a=123)}, conf.__dict__)
+
+        def test_setitem_dotted_create_subconfig(self):
+            conf = self.config_class()
+            with self.assertRaises(TypeError):
+                conf["sub.a"] = 123
+
+        def test_setitem_tuple(self):
+            conf = self.config_class(sub=self.config_class())
+            with self.assertRaises(TypeError):
+                conf["sub", "a"] = 123
+
+        def test_setitem_tuple_overwrite(self):
+            conf = self.config_class(sub=self.config_class(a=123))
+            with self.assertRaises(TypeError):
+                conf["sub", "a"] = 234
+            self.assertDictEqual({"sub": self.config_class(a=123)}, conf.__dict__)
+
+        def test_setitem_tuple_create_subconfig(self):
+            conf = self.config_class()
+            with self.assertRaises(TypeError):
+                conf["sub", "a"] = 123
+
+        def test_delitem(self):
+            conf = self.config_class(a=123, b="foo")
+            with self.assertRaises(TypeError):
+                del conf["a"]
+            self.assertDictEqual({"a": 123, "b": "foo"}, conf.__dict__)
+
+        def test_delitem_invalid(self):
+            conf = self.config_class(a=123)
+            with self.assertRaises(TypeError):
+                del conf["b"]
+
+        def test_delitem_invalid_key_type(self):
+            conf = self.config_class(a=123)
+            with self.assertRaises(TypeError, msg="int indexing"):
+                _ = conf[1]
+            with self.assertRaises(TypeError, msg="obj indexing"):
+                _ = conf[object()]
+            with self.assertRaises(TypeError, msg="int-tuple indexing"):
+                _ = conf[1, 2, 3]
+
+            with self.assertRaises(TypeError, msg="set indexing"):
+                _ = conf[{"a"}]
+            with self.assertRaises(TypeError, msg="list indexing"):
+                _ = conf[["a"]]
+
+        def test_delitem_class_attributes(self):
+            conf = self.config_class()
+            with self.assertRaises(TypeError):
+                del conf["__dict__"]
+            with self.assertRaises(TypeError):
+                del conf["__class__"]
+            with self.assertRaises(TypeError):
+                del conf["items"]
+
+        def test_delitem_dotted(self):
+            conf = self.config_class(sub=self.config_class(a=123))
+            with self.assertRaises(TypeError):
+                del conf["sub.a"]
+            self.assertDictEqual({"sub": self.config_class(a=123)}, conf.__dict__)
+
+        def test_delitem_dotted_invalid(self):
+            conf = self.config_class(sub=self.config_class(a=123))
+            with self.assertRaises(TypeError, msg="bad subconfig key"):
+                del conf["sub.b"]
+            with self.assertRaises(TypeError, msg="bad subconfig"):
+                del conf["x.b"]
+
+        def test_delitem_tuple(self):
+            conf = self.config_class(sub=self.config_class(a=123))
+            with self.assertRaises(TypeError):
+                del conf["sub", "a"]
+            self.assertDictEqual({"sub": self.config_class(a=123)}, conf.__dict__)
+
+        def test_delitem_tuple_invalid(self):
+            conf = self.config_class(sub=self.config_class(a=123))
+            with self.assertRaises(TypeError, msg="bad subconfig key"):
+                del conf["sub", "b"]
+            with self.assertRaises(TypeError, msg="bad subconfig"):
+                del conf["x", "b"]
+
+        def test_iter(self):
+            conf = self.config_class(a=123, sub=self.config_class(b="foo", c=None))
+            conf_iter = iter(conf)
+            self.assertEqual("a", next(conf_iter))
+            self.assertEqual("sub", next(conf_iter))
+            with self.assertRaises(StopIteration):
+                next(conf_iter)
+
+            conf = self.config_class(sub=self.config_class(b="foo", c=None), a=123)
+            conf_iter = iter(conf)
+            self.assertEqual("sub", next(conf_iter))
+            self.assertEqual("a", next(conf_iter))
+            with self.assertRaises(StopIteration):
+                next(conf_iter)
+
+        def test_update_subconfig(self):
+            conf = self.config_class(sub=self.config_class(a=123))
+            with self.assertRaisesRegex(AttributeError, "update"):
+                conf.update(sub=self.config_class(b="foo"))
+            self.assertDictEqual({"sub": self.config_class(a=123)}, conf.__dict__)
+
+        def test_length(self):
+            self.assertEqual(0, len(self.config_class()))
+            self.assertEqual(1, len(self.config_class(a=123)))
+            self.assertEqual(
+                2,
+                len(self.config_class(a=123, sub=self.config_class(b="foo", c=None))),
+            )
+
+        # # # Flat Iterators # # #
+
+        def test_keys(self):
+            conf = self.config_class(a=123, b="foo")
+            keys = conf.keys()
+            self.assertEqual(2, len(keys), msg="has length")
+            self.assertIn("a", keys, msg="consistent container")
+            self.assertIn("b", keys, msg="consistent container")
+            self.assertNotIn("c", keys, msg="consistent container")
+            self.assertSequenceEqual(["a", "b"], tuple(keys))
+
+        def test_keys_subconfig(self):
+            conf = self.config_class(sub=self.config_class(a=123, b="foo"))
+            keys = conf.keys()
+            self.assertEqual(1, len(keys), msg="has length")
+            self.assertIn("sub", keys, msg="consistent container")
+            self.assertNotIn("sub.a", keys, msg="consistent container")
+            self.assertNotIn("sub.b", keys, msg="consistent container")
+            self.assertSequenceEqual(["sub"], tuple(keys))
+
+        def test_keys_flat(self):
+            conf = self.config_class(a=123, b="foo")
+            keys = conf.keys(flat=True)
+            self.assertEqual(2, len(keys), msg="has length")
+            self.assertIn("a", keys, msg="consistent container")
+            self.assertIn("b", keys, msg="consistent container")
+            self.assertNotIn("c", keys, msg="consistent container")
+            self.assertSequenceEqual(["a", "b"], tuple(keys))
+
+        def test_keys_flat_subconfig(self):
+            conf = self.config_class(a=123, sub=self.config_class(b="foo", c=None))
+            keys = conf.keys(flat=True)
+            self.assertIn("a", keys, msg="consistent container")
+            self.assertIn("sub.b", keys, msg="consistent container")
+            self.assertIn("sub.c", keys, msg="consistent container")
+            self.assertNotIn("sub", keys, msg="consistent container")
+            self.assertSequenceEqual(["a", "sub.b", "sub.c"], tuple(keys))
+
+        def test_keys_flat_subconfig_empty(self):
+            conf = self.config_class(a=123, sub=self.config_class())
+            keys = conf.keys(flat=True)
+            self.assertSequenceEqual(["a"], tuple(keys))
+
+        def test_items(self):
+            conf = self.config_class(a=123, b="foo")
+            items = conf.items()
+            self.assertEqual(2, len(items), msg="has length")
+            self.assertIn(("a", 123), items, msg="consistent container")
+            self.assertIn(("b", "foo"), items, msg="consistent container")
+            self.assertNotIn(("a", 234), items, msg="consistent container")
+            self.assertNotIn(("b", 123), items, msg="consistent container")
+            self.assertSequenceEqual([("a", 123), ("b", "foo")], tuple(items))
+
+        def test_items_subconfig(self):
+            conf = self.config_class(sub=self.config_class(a=123, b="foo"))
+            items = conf.items()
+            self.assertEqual(1, len(items), msg="has length")
+            self.assertIn(
+                ("sub", self.config_class(a=123, b="foo")),
+                items,
+                msg="consistent container",
+            )
+            self.assertNotIn(("sub.a", 123), items, msg="consistent container")
+            self.assertNotIn(("sub.b", "foo"), items, msg="consistent container")
+            self.assertSequenceEqual(
+                [("sub", self.config_class(a=123, b="foo"))], tuple(items)
+            )
+
+        def test_items_flat(self):
+            conf = self.config_class(a=123, b="foo")
+            items = conf.items(flat=True)
+            self.assertEqual(2, len(items), msg="has length")
+            self.assertIn(("a", 123), items, msg="consistent container")
+            self.assertIn(("b", "foo"), items, msg="consistent container")
+            self.assertNotIn(("a", 234), items, msg="consistent container")
+            self.assertNotIn(("b", 123), items, msg="consistent container")
+            self.assertSequenceEqual([("a", 123), ("b", "foo")], tuple(items))
+
+        def test_items_flat_subconfig(self):
+            conf = self.config_class(a=123, sub=self.config_class(b="foo", c=None))
+            items = conf.items(flat=True)
+            self.assertIn(("a", 123), items, msg="consistent container")
+            self.assertIn(("sub.b", "foo"), items, msg="consistent container")
+            self.assertIn(("sub.c", None), items, msg="consistent container")
+            self.assertNotIn(
+                ("sub", self.config_class(b="foo", c=None)),
+                items,
+                msg="consistent container",
+            )
+            self.assertSequenceEqual(
+                [("a", 123), ("sub.b", "foo"), ("sub.c", None)], tuple(items)
+            )
+
+        def test_items_flat_subconfig_empty(self):
+            conf = self.config_class(a=123, sub=self.config_class())
+            items = conf.items(flat=True)
+            self.assertSequenceEqual([("a", 123)], tuple(items))
+
+        def test_values(self):
+            conf = self.config_class(a=123, b="foo")
+            values = conf.values()
+            self.assertEqual(2, len(values), msg="has length")
+            self.assertIn(123, values, msg="consistent container")
+            self.assertIn("foo", values, msg="consistent container")
+            self.assertNotIn(None, values, msg="consistent container")
+            self.assertSequenceEqual([123, "foo"], tuple(values))
+
+        def test_values_subconfig(self):
+            conf = self.config_class(sub=self.config_class(a=123, b="foo"))
+            values = conf.values()
+            self.assertEqual(1, len(values), msg="has length")
+            self.assertIn(
+                self.config_class(a=123, b="foo"), values, msg="consistent container"
+            )
+            self.assertNotIn(123, values, msg="consistent container")
+            self.assertNotIn("foo", values, msg="consistent container")
+            self.assertSequenceEqual([self.config_class(a=123, b="foo")], tuple(values))
+
+        def test_values_flat(self):
+            conf = self.config_class(a=123, b="foo")
+            values = conf.values(flat=True)
+            self.assertEqual(2, len(values), msg="has length")
+            self.assertIn(123, values, msg="consistent container")
+            self.assertIn("foo", values, msg="consistent container")
+            self.assertNotIn(234, values, msg="consistent container")
+            self.assertSequenceEqual([123, "foo"], tuple(values))
+
+        def test_values_flat_subconfig(self):
+            conf = self.config_class(a=123, sub=self.config_class(b="foo", c=None))
+            values = conf.values(flat=True)
+            self.assertIn(123, values, msg="consistent container")
+            self.assertIn("foo", values, msg="consistent container")
+            self.assertIn(None, values, msg="consistent container")
+            self.assertNotIn(
+                self.config_class(b="foo", c=None), values, msg="consistent container"
+            )
+            self.assertSequenceEqual([123, "foo", None], tuple(values))
+
+        def test_values_flat_subconfig_empty(self):
+            conf = self.config_class(a=123, sub=self.config_class())
+            values = conf.values(flat=True)
+            self.assertSequenceEqual([123], tuple(values))
+
+        # # # Merging # # #
+
+        def test_union(self):
+            conf1 = self.config_class(a=123)
+            conf2 = self.config_class(b="foo")
+            self.assertEqual(self.config_class(a=123, b="foo"), conf1 | conf2)
+            self.assertEqual(
+                self.config_class(a=123, b="foo"), conf2 | conf1, msg="symmetry"
+            )
+            self.assertIsNot(conf1 | conf2, conf1, msg="new object")
+            self.assertIsNot(conf1 | conf2, conf2, msg="new object")
+
+        def test_union_empty(self):
+            conf = self.config_class(a=123)
+            self.assertEqual(conf, conf | self.config_class())
+            self.assertEqual(conf, self.config_class() | conf, msg="symmetry")
+            self.assertIsNot(conf | self.config_class(), conf, msg="new object")
+
+        def test_union_overlap(self):
+            conf1 = self.config_class(a=123, b="foo")
+            conf2 = self.config_class(b="bar", c=None)
+            self.assertEqual(self.config_class(a=123, b="bar", c=None), conf1 | conf2)
+            self.assertEqual(self.config_class(a=123, b="foo", c=None), conf2 | conf1)
+
+        def test_union_subconfig(self):
+            conf1 = self.config_class(sub=self.config_class(a=123))
+            conf2 = self.config_class(sub=self.config_class(b="foo"))
+            self.assertEqual(
+                self.config_class(sub=self.config_class(a=123, b="foo")),
+                conf1 | conf2,
+            )
+            self.assertEqual(
+                self.config_class(sub=self.config_class(a=123, b="foo")),
+                conf2 | conf1,
+                msg="symmetry",
+            )
+            self.assertIsNot((conf1 | conf2)["sub"], conf1["sub"], msg="new subconfig")
+            self.assertIsNot((conf1 | conf2)["sub"], conf2["sub"], msg="new subconfig")
+
+        def test_union_subconfig_value(self):
+            conf1 = self.config_class(sub=123)
+            conf2 = self.config_class(sub=self.config_class(b="foo"))
+            self.assertEqual(
+                self.config_class(sub=self.config_class(b="foo")), conf1 | conf2
+            )
+            self.assertEqual(
+                self.config_class(sub=123),
+                conf2 | conf1,
+                msg="symmetry",
+            )
+
+        def test_union_inplace(self):
+            conf = self.config_class(a=123)
+            conf |= self.config_class(b="foo")
+            self.assertEqual(self.config_class(a=123, b="foo"), conf)
+
+        def test_union_inplace_empty(self):
+            conf = self.config_class(a=123)
+            conf |= self.config_class()
+            self.assertEqual(self.config_class(a=123), conf)
+
+        def test_union_inplace_overlap(self):
+            conf = self.config_class(a=123, b="foo")
+            conf |= self.config_class(b="bar", c=None)
+            self.assertEqual(self.config_class(a=123, b="bar", c=None), conf)
+
+        def test_union_inplace_subconfig(self):
+            conf = self.config_class(sub=self.config_class(a=123))
+            conf |= self.config_class(sub=self.config_class(b="foo"))
+            self.assertEqual(
+                self.config_class(sub=self.config_class(a=123, b="foo")), conf
+            )
+
+        def test_union_inplace_subconfig_value(self):
+            conf = self.config_class(sub=123)
+            conf |= self.config_class(sub=self.config_class(b="foo"))
+            self.assertEqual(self.config_class(sub=self.config_class(b="foo")), conf)
+
+            conf |= self.config_class(sub=123)
+            self.assertEqual(self.config_class(sub=123), conf)
+
+        def test_union_dict(self):
+            conf = self.config_class(a=123)
+            d = {"b": "foo"}
+            self.assertEqual(self.config_class(a=123, b="foo"), conf | d)
+            self.assertEqual(
+                self.config_class(a=123, b="foo"), d | conf, msg="symmetry"
+            )
+            self.assertIsNot(conf | d, conf, msg="new object")
+
+        def test_union_dict_empty(self):
+            conf = self.config_class(a=123)
+            self.assertEqual(conf, conf | {})
+            self.assertEqual(conf, {} | conf, msg="symmetry")
+            self.assertIsNot(conf | {}, conf, msg="new object")
+
+        def test_union_dict_overlap(self):
+            conf = self.config_class(a=123, b="foo")
+            d = {"b": "bar", "c": None}
+            self.assertEqual(self.config_class(a=123, b="bar", c=None), conf | d)
+            self.assertEqual(self.config_class(a=123, b="foo", c=None), d | conf)
+
+        def test_union_dict_subconfig(self):
+            conf = self.config_class(sub=self.config_class(a=123))
+            d = {"sub": {"b": "foo"}}
+            self.assertEqual(
+                self.config_class(sub=self.config_class(a=123, b="foo")), conf | d
+            )
+            self.assertEqual(
+                self.config_class(sub=self.config_class(a=123, b="foo")),
+                d | conf,
+                msg="symmetry",
+            )
+
+        def test_union_dict_subconfig_value(self):
+            conf = self.config_class(sub=123)
+            d = {"sub": {"b": "foo"}}
+            self.assertEqual(
+                self.config_class(sub=self.config_class(b="foo")), conf | d
+            )
+            self.assertEqual(
+                self.config_class(sub=123),
+                d | conf,
+                msg="symmetry",
+            )
+
+        def test_union_dict_dotted_subconfig(self):
+            conf = self.config_class(sub=self.config_class(a=123))
+            d = {"sub.b": "foo"}
+            self.assertEqual(
+                self.config_class(sub=self.config_class(a=123, b="foo")), conf | d
+            )
+            self.assertEqual(
+                self.config_class(sub=self.config_class(a=123, b="foo")),
+                d | conf,
+                msg="symmetry",
+            )
+
+        def test_union_dict_dotted_create_subconfig(self):
+            conf = self.config_class()
+            d = {"sub.b": "foo"}
+            self.assertEqual(
+                self.config_class(sub=self.config_class(b="foo")), conf | d
+            )
+            self.assertEqual(
+                self.config_class(sub=self.config_class(b="foo")),
+                d | conf,
+                msg="symmetry",
+            )
+
+        # # # Conversions # # #
+
+        def test_from_dict(self):
+            conf = self.config_class.from_dict({"a": 123, "b": "foo"})
+            self.assertEqual(self.config_class(a=123, b="foo"), conf)
+            self.assertIsInstance(conf, self.config_class)
+
+        def test_from_dict_empty(self):
+            conf = self.config_class.from_dict({})
+            self.assertEqual(self.config_class(), conf)
+            self.assertIsInstance(conf, self.config_class)
+
+        def test_from_dict_subconfig(self):
+            conf = self.config_class.from_dict({"sub": {"a": 123}})
+            self.assertEqual(self.config_class(sub=self.config_class(a=123)), conf)
+            self.assertIsInstance(conf, self.config_class)
+
+        def test_to_dict(self):
+            conf = self.config_class(a=123, b="foo")
+            self.assertDictEqual({"a": 123, "b": "foo"}, conf.to_dict())
+
+        def test_to_dict_empty(self):
+            conf = self.config_class()
+            self.assertDictEqual({}, conf.to_dict())
+
+        def test_to_dict_subconfig(self):
+            conf = self.config_class(sub=self.config_class(a=123))
+            self.assertDictEqual({"sub": {"a": 123}}, conf.to_dict())
+
+        # # # Class Attribute Robustness # # #
+
+        def test_repr_robustness(self):
+            conf = self.config_class()
+            for key in dir(conf):
+                conf = self.config_class(**{key: None})
+                self.assertEqual(
+                    f"{conf.__class__.__name__}({key}=None)",
+                    repr(conf),
+                    msg=f"overwritten {key}",
+                )
+
+        def test_str_robustness(self):
+            conf = self.config_class()
+            for key in dir(conf):
+                conf = self.config_class(**{key: None})
+                self.assertEqual(
+                    f"{{{key}: None}}", str(conf), msg=f"overwritten {key}"
+                )
+
+
+class TestPlainConfiguration(Utils.TestConfigurationBase):
+    @property
+    def config_class(self):
+        return PlainConfiguration
 
     # # # Attribute Interface # # #
-
-    def test_getattr(self):
-        conf = PlainConfiguration(a=[123], b="foo")
-        self.assertEqual([123], getattr(conf, "a"))
-        self.assertIs(conf["a"], getattr(conf, "a"), msg="dict/attr consistency")
-        self.assertEqual("foo", getattr(conf, "b"))
-        self.assertIs(conf["b"], getattr(conf, "b"), msg="dict/attr consistency")
-
-    def test_getattr_invalid(self):
-        conf = PlainConfiguration(a=123)
-        with self.assertRaisesRegex(AttributeError, "b"):
-            _ = getattr(conf, "b")
-
-    def test_getattr_invalid_key_type(self):
-        conf = PlainConfiguration(a=123)
-        with self.assertRaisesRegex(TypeError, "string", msg="int attr"):
-            _ = getattr(conf, 1)
-        with self.assertRaisesRegex(TypeError, "string", msg="obj attr"):
-            _ = getattr(conf, object())
-        with self.assertRaisesRegex(TypeError, "string", msg="int-tuple attr"):
-            _ = getattr(conf, (1, 2, 3))
-        with self.assertRaisesRegex(TypeError, "string", msg="set attr"):
-            _ = getattr(conf, ("a",))
-        with self.assertRaisesRegex(TypeError, "string", msg="set attr"):
-            _ = getattr(conf, {"a"})
-        with self.assertRaisesRegex(TypeError, "string", msg="list attr"):
-            _ = getattr(conf, ["a"])
-
-    def test_getattr_class_attributes(self):
-        conf = PlainConfiguration()
-        self.assertIs(getattr(conf, "__dict__"), conf.__dict__)
-        self.assertIs(getattr(conf, "__class__"), conf.__class__)
-        self.assertEqual(getattr(conf, "items"), conf.items)
-
-    def test_getattr_dotted(self):
-        conf = PlainConfiguration(sub=PlainConfiguration(a=[123]))
-        with self.assertRaisesRegex(AttributeError, "dot-string"):
-            _ = getattr(conf, "sub.a")
 
     def test_setattr(self):
         conf = PlainConfiguration()
@@ -1118,71 +1712,13 @@ class TestPlainConfiguration(TestCase):
         with self.assertRaisesRegex(AttributeError, "dot-string"):
             delattr(conf, "sub.a")
 
-    def test_dir(self):
-        conf = PlainConfiguration(a=123, b="foo", c=None, d=object())
-        expected = sorted(dir(PlainConfiguration) + ["a", "b", "c", "d"])
-        self.assertSequenceEqual(expected, dir(conf))
-
     # # # Mapping Interface # # #
 
-    def test_getitem(self):
-        conf = PlainConfiguration(a=[123], b="foo")
-        self.assertEqual([123], conf["a"])
-        self.assertIs(getattr(conf, "a"), conf["a"], msg="dict/attr consistency")
-        self.assertEqual("foo", conf["b"])
-        self.assertIs(getattr(conf, "b"), conf["b"], msg="dict/attr consistency")
-
-    def test_getitem_invalid(self):
-        conf = PlainConfiguration(a=123)
-        with self.assertRaisesRegex(KeyError, "b"):
-            _ = conf["b"]
-
-    def test_getitem_invalid_key_type(self):
-        conf = PlainConfiguration(a=123)
+    def test_getitem_invalid_key_type_hacky(self):
+        conf = PlainConfiguration()
+        conf.__dict__ = {1: None}
         with self.assertRaisesRegex(TypeError, "string", msg="int indexing"):
             _ = conf[1]
-        with self.assertRaisesRegex(TypeError, "string", msg="obj indexing"):
-            _ = conf[object()]
-        with self.assertRaisesRegex(TypeError, "string", msg="int-tuple indexing"):
-            _ = conf[1, 2, 3]
-
-        with self.assertRaisesRegex(TypeError, "tuple", msg="set indexing"):
-            _ = conf[{"a"}]
-        with self.assertRaisesRegex(TypeError, "tuple", msg="list indexing"):
-            _ = conf[["a"]]
-
-    def test_getitem_class_attributes(self):
-        conf = PlainConfiguration()
-        with self.assertRaisesRegex(KeyError, "__dict__"):
-            _ = conf["__dict__"]
-        with self.assertRaisesRegex(KeyError, "__class__"):
-            _ = conf["__class__"]
-        with self.assertRaisesRegex(KeyError, "items"):
-            _ = conf["items"]
-
-    def test_getitem_dotted(self):
-        conf = PlainConfiguration(sub=PlainConfiguration(a=[123]))
-        self.assertEqual([123], conf["sub.a"])
-        self.assertIs(conf["sub"]["a"], conf["sub.a"], msg="consistency")
-
-    def test_getitem_dotted_invalid(self):
-        conf = PlainConfiguration(sub=PlainConfiguration(a=123))
-        with self.assertRaisesRegex(KeyError, "b", msg="bad subconfig key"):
-            _ = conf["sub.b"]
-        with self.assertRaisesRegex(KeyError, "x", msg="bad subconfig"):
-            _ = conf["x.b"]
-
-    def test_getitem_tuple(self):
-        conf = PlainConfiguration(sub=PlainConfiguration(a=[123]))
-        self.assertEqual([123], conf["sub", "a"])
-        self.assertIs(conf["sub"]["a"], conf["sub", "a"], msg="consistency")
-
-    def test_getitem_tuple_invalid(self):
-        conf = PlainConfiguration(sub=PlainConfiguration(a=123))
-        with self.assertRaisesRegex(KeyError, "b", msg="bad subconfig key"):
-            _ = conf["sub", "b"]
-        with self.assertRaisesRegex(KeyError, "x", msg="bad subconfig"):
-            _ = conf["x", "b"]
 
     def test_setitem(self):
         conf = PlainConfiguration()
@@ -1333,43 +1869,12 @@ class TestPlainConfiguration(TestCase):
         with self.assertRaisesRegex(KeyError, "x", msg="bad subconfig"):
             del conf["x", "b"]
 
-    def test_iter(self):
-        conf = PlainConfiguration(a=123, sub=PlainConfiguration(b="foo", c=None))
-        conf_iter = iter(conf)
-        self.assertEqual("a", next(conf_iter))
-        self.assertEqual("sub", next(conf_iter))
-        with self.assertRaises(StopIteration):
-            next(conf_iter)
-
-        conf = PlainConfiguration(sub=PlainConfiguration(b="foo", c=None), a=123)
-        conf_iter = iter(conf)
-        self.assertEqual("sub", next(conf_iter))
-        self.assertEqual("a", next(conf_iter))
-        with self.assertRaises(StopIteration):
-            next(conf_iter)
-
-    def test_length(self):
-        self.assertEqual(0, len(PlainConfiguration()))
-        self.assertEqual(1, len(PlainConfiguration(a=123)))
-        self.assertEqual(
-            2, len(PlainConfiguration(a=123, sub=PlainConfiguration(b="foo", c=None)))
-        )
-
     def test_update_subconfig(self):
         conf = PlainConfiguration(sub=PlainConfiguration(a=123))
         conf.update(sub=PlainConfiguration(b="foo"))
         self.assertEqual(PlainConfiguration(sub=PlainConfiguration(b="foo")), conf)
 
     # # # Flat Iterators # # #
-
-    def test_keys(self):
-        conf = PlainConfiguration(a=123, b="foo")
-        keys = conf.keys()
-        self.assertEqual(2, len(keys), msg="has length")
-        self.assertIn("a", keys, msg="consistent container")
-        self.assertIn("b", keys, msg="consistent container")
-        self.assertNotIn("c", keys, msg="consistent container")
-        self.assertSequenceEqual(["a", "b"], tuple(keys))
 
     def test_keys_sync(self):
         conf = PlainConfiguration(a=123)
@@ -1380,44 +1885,12 @@ class TestPlainConfiguration(TestCase):
         self.assertEqual(2, len(keys), msg="has length")
         self.assertSequenceEqual(["a", "b"], tuple(keys))
 
-    def test_keys_subconfig(self):
-        conf = PlainConfiguration(sub=PlainConfiguration(a=123, b="foo"))
-        keys = conf.keys()
-        self.assertEqual(1, len(keys), msg="has length")
-        self.assertIn("sub", keys, msg="consistent container")
-        self.assertNotIn("sub.a", keys, msg="consistent container")
-        self.assertNotIn("sub.b", keys, msg="consistent container")
-        self.assertSequenceEqual(["sub"], tuple(keys))
-
-    def test_keys_flat(self):
-        conf = PlainConfiguration(a=123, b="foo")
-        keys = conf.keys(flat=True)
-        self.assertEqual(2, len(keys), msg="has length")
-        self.assertIn("a", keys, msg="consistent container")
-        self.assertIn("b", keys, msg="consistent container")
-        self.assertNotIn("c", keys, msg="consistent container")
-        self.assertSequenceEqual(["a", "b"], tuple(keys))
-
     def test_keys_flat_sync(self):
         conf = PlainConfiguration(a=123)
         keys = conf.keys(flat=True)
         self.assertEqual(1, len(keys), msg="baseline")
         conf["b"] = "foo"
         self.assertSequenceEqual(["a", "b"], tuple(keys))
-
-    def test_keys_flat_subconfig(self):
-        conf = PlainConfiguration(a=123, sub=PlainConfiguration(b="foo", c=None))
-        keys = conf.keys(flat=True)
-        self.assertIn("a", keys, msg="consistent container")
-        self.assertIn("sub.b", keys, msg="consistent container")
-        self.assertIn("sub.c", keys, msg="consistent container")
-        self.assertNotIn("sub", keys, msg="consistent container")
-        self.assertSequenceEqual(["a", "sub.b", "sub.c"], tuple(keys))
-
-    def test_keys_flat_subconfig_empty(self):
-        conf = PlainConfiguration(a=123, sub=PlainConfiguration())
-        keys = conf.keys(flat=True)
-        self.assertSequenceEqual(["a"], tuple(keys))
 
     def test_keys_flat_subconfig_sync(self):
         conf = PlainConfiguration(a=123, sub=PlainConfiguration(b="foo"))
@@ -1426,16 +1899,6 @@ class TestPlainConfiguration(TestCase):
         conf["sub"]["c"] = None
         self.assertIn("sub.c", keys, msg="consistent container")
         self.assertSequenceEqual(["a", "sub.b", "sub.c"], tuple(keys))
-
-    def test_items(self):
-        conf = PlainConfiguration(a=123, b="foo")
-        items = conf.items()
-        self.assertEqual(2, len(items), msg="has length")
-        self.assertIn(("a", 123), items, msg="consistent container")
-        self.assertIn(("b", "foo"), items, msg="consistent container")
-        self.assertNotIn(("a", 234), items, msg="consistent container")
-        self.assertNotIn(("b", 123), items, msg="consistent container")
-        self.assertSequenceEqual([("a", 123), ("b", "foo")], tuple(items))
 
     def test_items_sync(self):
         conf = PlainConfiguration(a=123)
@@ -1446,31 +1909,6 @@ class TestPlainConfiguration(TestCase):
         self.assertIn(("b", "foo"), items, msg="consistent container")
         self.assertSequenceEqual([("a", 123), ("b", "foo")], tuple(items))
 
-    def test_items_subconfig(self):
-        conf = PlainConfiguration(sub=PlainConfiguration(a=123, b="foo"))
-        items = conf.items()
-        self.assertEqual(1, len(items), msg="has length")
-        self.assertIn(
-            ("sub", PlainConfiguration(a=123, b="foo")),
-            items,
-            msg="consistent container",
-        )
-        self.assertNotIn(("sub.a", 123), items, msg="consistent container")
-        self.assertNotIn(("sub.b", "foo"), items, msg="consistent container")
-        self.assertSequenceEqual(
-            [("sub", PlainConfiguration(a=123, b="foo"))], tuple(items)
-        )
-
-    def test_items_flat(self):
-        conf = PlainConfiguration(a=123, b="foo")
-        items = conf.items(flat=True)
-        self.assertEqual(2, len(items), msg="has length")
-        self.assertIn(("a", 123), items, msg="consistent container")
-        self.assertIn(("b", "foo"), items, msg="consistent container")
-        self.assertNotIn(("a", 234), items, msg="consistent container")
-        self.assertNotIn(("b", 123), items, msg="consistent container")
-        self.assertSequenceEqual([("a", 123), ("b", "foo")], tuple(items))
-
     def test_items_flat_sync(self):
         conf = PlainConfiguration(a=123)
         items = conf.items(flat=True)
@@ -1478,26 +1916,6 @@ class TestPlainConfiguration(TestCase):
         conf["b"] = "foo"
         self.assertIn(("b", "foo"), items, msg="consistent container")
         self.assertSequenceEqual([("a", 123), ("b", "foo")], tuple(items))
-
-    def test_items_flat_subconfig(self):
-        conf = PlainConfiguration(a=123, sub=PlainConfiguration(b="foo", c=None))
-        items = conf.items(flat=True)
-        self.assertIn(("a", 123), items, msg="consistent container")
-        self.assertIn(("sub.b", "foo"), items, msg="consistent container")
-        self.assertIn(("sub.c", None), items, msg="consistent container")
-        self.assertNotIn(
-            ("sub", PlainConfiguration(b="foo", c=None)),
-            items,
-            msg="consistent container",
-        )
-        self.assertSequenceEqual(
-            [("a", 123), ("sub.b", "foo"), ("sub.c", None)], tuple(items)
-        )
-
-    def test_items_flat_subconfig_empty(self):
-        conf = PlainConfiguration(a=123, sub=PlainConfiguration())
-        items = conf.items(flat=True)
-        self.assertSequenceEqual([("a", 123)], tuple(items))
 
     def test_items_flat_subconfig_sync(self):
         conf = PlainConfiguration(a=123, sub=PlainConfiguration(b="foo"))
@@ -1509,15 +1927,6 @@ class TestPlainConfiguration(TestCase):
             [("a", 123), ("sub.b", "foo"), ("sub.c", None)], tuple(items)
         )
 
-    def test_values(self):
-        conf = PlainConfiguration(a=123, b="foo")
-        values = conf.values()
-        self.assertEqual(2, len(values), msg="has length")
-        self.assertIn(123, values, msg="consistent container")
-        self.assertIn("foo", values, msg="consistent container")
-        self.assertNotIn(None, values, msg="consistent container")
-        self.assertSequenceEqual([123, "foo"], tuple(values))
-
     def test_values_sync(self):
         conf = PlainConfiguration(a=123)
         values = conf.values()
@@ -1527,26 +1936,6 @@ class TestPlainConfiguration(TestCase):
         self.assertIn("foo", values, msg="consistent container")
         self.assertSequenceEqual([123, "foo"], tuple(values))
 
-    def test_values_subconfig(self):
-        conf = PlainConfiguration(sub=PlainConfiguration(a=123, b="foo"))
-        values = conf.values()
-        self.assertEqual(1, len(values), msg="has length")
-        self.assertIn(
-            PlainConfiguration(a=123, b="foo"), values, msg="consistent container"
-        )
-        self.assertNotIn(123, values, msg="consistent container")
-        self.assertNotIn("foo", values, msg="consistent container")
-        self.assertSequenceEqual([PlainConfiguration(a=123, b="foo")], tuple(values))
-
-    def test_values_flat(self):
-        conf = PlainConfiguration(a=123, b="foo")
-        values = conf.values(flat=True)
-        self.assertEqual(2, len(values), msg="has length")
-        self.assertIn(123, values, msg="consistent container")
-        self.assertIn("foo", values, msg="consistent container")
-        self.assertNotIn(234, values, msg="consistent container")
-        self.assertSequenceEqual([123, "foo"], tuple(values))
-
     def test_values_flat_sync(self):
         conf = PlainConfiguration(a=123)
         values = conf.values(flat=True)
@@ -1554,22 +1943,6 @@ class TestPlainConfiguration(TestCase):
         conf["b"] = "foo"
         self.assertIn("foo", values, msg="consistent container")
         self.assertSequenceEqual([123, "foo"], tuple(values))
-
-    def test_values_flat_subconfig(self):
-        conf = PlainConfiguration(a=123, sub=PlainConfiguration(b="foo", c=None))
-        values = conf.values(flat=True)
-        self.assertIn(123, values, msg="consistent container")
-        self.assertIn("foo", values, msg="consistent container")
-        self.assertIn(None, values, msg="consistent container")
-        self.assertNotIn(
-            PlainConfiguration(b="foo", c=None), values, msg="consistent container"
-        )
-        self.assertSequenceEqual([123, "foo", None], tuple(values))
-
-    def test_values_flat_subconfig_empty(self):
-        conf = PlainConfiguration(a=123, sub=PlainConfiguration())
-        values = conf.values(flat=True)
-        self.assertSequenceEqual([123], tuple(values))
 
     def test_values_flat_subconfig_sync(self):
         conf = PlainConfiguration(a=123, sub=PlainConfiguration(b="foo"))
@@ -1581,213 +1954,19 @@ class TestPlainConfiguration(TestCase):
 
     # # # Merging # # #
 
-    def test_union(self):
-        conf1 = PlainConfiguration(a=123)
-        conf2 = PlainConfiguration(b="foo")
-        self.assertEqual(PlainConfiguration(a=123, b="foo"), conf1 | conf2)
-        self.assertEqual(
-            PlainConfiguration(a=123, b="foo"), conf2 | conf1, msg="symmetry"
-        )
-        self.assertIsNot(conf1 | conf2, conf1, msg="new object")
-        self.assertIsNot(conf1 | conf2, conf2, msg="new object")
-
-    def test_union_empty(self):
-        conf = PlainConfiguration(a=123)
-        self.assertEqual(conf, conf | PlainConfiguration())
-        self.assertEqual(conf, PlainConfiguration() | conf, msg="symmetry")
-        self.assertIsNot(conf | PlainConfiguration(), conf, msg="new object")
-
-    def test_union_overlap(self):
-        conf1 = PlainConfiguration(a=123, b="foo")
-        conf2 = PlainConfiguration(b="bar", c=None)
-        self.assertEqual(PlainConfiguration(a=123, b="bar", c=None), conf1 | conf2)
-        self.assertEqual(PlainConfiguration(a=123, b="foo", c=None), conf2 | conf1)
-
-    def test_union_subconfig(self):
-        conf1 = PlainConfiguration(sub=PlainConfiguration(a=123))
-        conf2 = PlainConfiguration(sub=PlainConfiguration(b="foo"))
-        self.assertEqual(
-            PlainConfiguration(sub=PlainConfiguration(a=123, b="foo")), conf1 | conf2
-        )
-        self.assertEqual(
-            PlainConfiguration(sub=PlainConfiguration(a=123, b="foo")),
-            conf2 | conf1,
-            msg="symmetry",
-        )
-        self.assertIsNot((conf1 | conf2)["sub"], conf1["sub"], msg="new subconfig")
-        self.assertIsNot((conf1 | conf2)["sub"], conf2["sub"], msg="new subconfig")
-
-    def test_union_subconfig_value(self):
-        conf1 = PlainConfiguration(sub=123)
-        conf2 = PlainConfiguration(sub=PlainConfiguration(b="foo"))
-        self.assertEqual(
-            PlainConfiguration(sub=PlainConfiguration(b="foo")), conf1 | conf2
-        )
-        self.assertEqual(
-            PlainConfiguration(sub=123),
-            conf2 | conf1,
-            msg="symmetry",
-        )
-
-    def test_union_inplace(self):
-        conf = PlainConfiguration(a=123)
-        conf |= PlainConfiguration(b="foo")
-        self.assertEqual(PlainConfiguration(a=123, b="foo"), conf)
-
-    def test_union_inplace_empty(self):
-        conf = PlainConfiguration(a=123)
-        conf |= PlainConfiguration()
-        self.assertEqual(PlainConfiguration(a=123), conf)
-
-    def test_union_inplace_overlap(self):
-        conf = PlainConfiguration(a=123, b="foo")
-        conf |= PlainConfiguration(b="bar", c=None)
-        self.assertEqual(PlainConfiguration(a=123, b="bar", c=None), conf)
-
-    def test_union_inplace_subconfig(self):
+    def test_union_inplace_subconfig_change(self):
         conf = PlainConfiguration(sub=PlainConfiguration(a=123))
         sub_old = conf["sub"]
         conf |= PlainConfiguration(sub=PlainConfiguration(b="foo"))
         self.assertEqual(
-            PlainConfiguration(sub=PlainConfiguration(a=123, b="foo")), conf
-        )
-        self.assertEqual(
             PlainConfiguration(a=123, b="foo"), sub_old, msg="hierarchical"
         )
 
-    def test_union_inplace_subconfig_value(self):
-        conf = PlainConfiguration(sub=123)
-        conf |= PlainConfiguration(sub=PlainConfiguration(b="foo"))
-        self.assertEqual(PlainConfiguration(sub=PlainConfiguration(b="foo")), conf)
 
-        conf |= PlainConfiguration(sub=123)
-        self.assertEqual(PlainConfiguration(sub=123), conf)
-
-    def test_union_dict(self):
-        conf = PlainConfiguration(a=123)
-        d = {"b": "foo"}
-        self.assertEqual(PlainConfiguration(a=123, b="foo"), conf | d)
-        self.assertEqual(PlainConfiguration(a=123, b="foo"), d | conf, msg="symmetry")
-        self.assertIsNot(conf | d, conf, msg="new object")
-
-    def test_union_dict_empty(self):
-        conf = PlainConfiguration(a=123)
-        self.assertEqual(conf, conf | {})
-        self.assertEqual(conf, {} | conf, msg="symmetry")
-        self.assertIsNot(conf | {}, conf, msg="new object")
-
-    def test_union_dict_overlap(self):
-        conf = PlainConfiguration(a=123, b="foo")
-        d = {"b": "bar", "c": None}
-        self.assertEqual(PlainConfiguration(a=123, b="bar", c=None), conf | d)
-        self.assertEqual(PlainConfiguration(a=123, b="foo", c=None), d | conf)
-
-    def test_union_dict_subconfig(self):
-        conf = PlainConfiguration(sub=PlainConfiguration(a=123))
-        d = {"sub": {"b": "foo"}}
-        self.assertEqual(
-            PlainConfiguration(sub=PlainConfiguration(a=123, b="foo")), conf | d
-        )
-        self.assertEqual(
-            PlainConfiguration(sub=PlainConfiguration(a=123, b="foo")),
-            d | conf,
-            msg="symmetry",
-        )
-
-    def test_union_dict_subconfig_value(self):
-        conf = PlainConfiguration(sub=123)
-        d = {"sub": {"b": "foo"}}
-        self.assertEqual(PlainConfiguration(sub=PlainConfiguration(b="foo")), conf | d)
-        self.assertEqual(
-            PlainConfiguration(sub=123),
-            d | conf,
-            msg="symmetry",
-        )
-
-    def test_union_dict_dotted_subconfig(self):
-        conf = PlainConfiguration(sub=PlainConfiguration(a=123))
-        d = {"sub.b": "foo"}
-        self.assertEqual(
-            PlainConfiguration(sub=PlainConfiguration(a=123, b="foo")), conf | d
-        )
-        self.assertEqual(
-            PlainConfiguration(sub=PlainConfiguration(a=123, b="foo")),
-            d | conf,
-            msg="symmetry",
-        )
-
-    def test_union_dict_dotted_create_subconfig(self):
-        conf = PlainConfiguration()
-        d = {"sub.b": "foo"}
-        self.assertEqual(PlainConfiguration(sub=PlainConfiguration(b="foo")), conf | d)
-        self.assertEqual(
-            PlainConfiguration(sub=PlainConfiguration(b="foo")),
-            d | conf,
-            msg="symmetry",
-        )
-
-    # # # Conversions # # #
-
-    def test_from_dict(self):
-        conf = PlainConfiguration.from_dict({"a": 123, "b": "foo"})
-        self.assertEqual(PlainConfiguration(a=123, b="foo"), conf)
-
-    def test_from_dict_empty(self):
-        conf = PlainConfiguration.from_dict({})
-        self.assertEqual(PlainConfiguration(), conf)
-
-    def test_from_dict_subconfig(self):
-        conf = PlainConfiguration.from_dict({"sub": {"a": 123}})
-        self.assertEqual(PlainConfiguration(sub=PlainConfiguration(a=123)), conf)
-
-    def test_to_dict(self):
-        conf = PlainConfiguration(a=123, b="foo")
-        self.assertDictEqual({"a": 123, "b": "foo"}, conf.to_dict())
-
-    def test_to_dict_empty(self):
-        conf = PlainConfiguration()
-        self.assertDictEqual({}, conf.to_dict())
-
-    def test_to_dict_subconfig(self):
-        conf = PlainConfiguration(sub=PlainConfiguration(a=123))
-        self.assertDictEqual({"sub": {"a": 123}}, conf.to_dict())
-
-    # # # Class Attribute Robustness # # #
-
-    def test_repr_robustness(self):
-        conf = PlainConfiguration()
-        for key in dir(conf):
-            conf = PlainConfiguration(**{key: None})
-            self.assertEqual(
-                f"PlainConfiguration({key}=None)", repr(conf), msg=f"overwritten {key}"
-            )
-
-    def test_str_robustness(self):
-        conf = PlainConfiguration()
-        for key in dir(conf):
-            conf = PlainConfiguration(**{key: None})
-            self.assertEqual(f"{{{key}: None}}", str(conf), msg=f"overwritten {key}")
-
-
-class TestFrozenConfiguration(TestCase):
-    def test_constructor_empty(self):
-        conf = FrozenConfiguration()
-        self.assertDictEqual({}, conf.__dict__)
-
-    def test_constructor_single(self):
-        conf = FrozenConfiguration(a=123)
-        self.assertDictEqual({"a": 123}, conf.__dict__)
-
-    def test_constructor(self):
-        KWARGS = {"a": 123, "b": "foo", "c": None, "d": object()}
-        conf = FrozenConfiguration(**KWARGS)
-        self.assertDictEqual(KWARGS, conf.__dict__)
-
-    def test_constructor_subconfig(self):
-        sub = {"a": 123}
-        conf = FrozenConfiguration(sub=sub)
-        self.assertEqual({"sub": FrozenConfiguration(**sub)}, conf.__dict__)
-        self.assertIsInstance(conf.__dict__["sub"], FrozenConfiguration)
+class TestFrozenConfiguration(Utils.TestConfigurationBase):
+    @property
+    def config_class(self):
+        return FrozenConfiguration
 
     def test_constructor_sequences(self):
         conf = FrozenConfiguration(a=(123,))
@@ -1804,86 +1983,6 @@ class TestFrozenConfiguration(TestCase):
     def test_constructor_unhashable_sequence(self):
         with self.assertRaisesRegex(TypeError, "unhashable"):
             FrozenConfiguration(unhashable=[slice(None)])
-
-    def test_constructor_positional_arg(self):
-        with self.assertRaises(TypeError, msg="positional args invalid"):
-            FrozenConfiguration({"a": 123})
-
-    def test_repr_empty(self):
-        conf = FrozenConfiguration()
-        self.assertEqual("FrozenConfiguration()", repr(conf))
-
-    def test_repr(self):
-        conf = FrozenConfiguration(a=123, b="foo", c=None)
-        self.assertEqual(conf, eval(repr(conf)))
-
-    def test_str_empty(self):
-        conf = FrozenConfiguration()
-        self.assertEqual(str({}), str(conf))
-
-    def test_str(self):
-        conf = FrozenConfiguration(a=123, b="foo", c=None)
-        self.assertEqual("{a: 123, b: foo, c: None}", str(conf))
-        conf = FrozenConfiguration(sub=FrozenConfiguration(a=123))
-        self.assertEqual("{sub: {a: 123}}", str(conf), msg="hierarchical")
-
-    def test_eq_empty(self):
-        self.assertEqual(FrozenConfiguration(), FrozenConfiguration())
-
-    def test_eq(self):
-        conf = FrozenConfiguration(a=123, b=None)
-        self.assertEqual(conf, conf, msg="identity")
-        self.assertEqual(conf, FrozenConfiguration(a=123, b=None))
-        self.assertEqual(FrozenConfiguration(a=123, b=None), conf, msg="symmetry")
-        self.assertEqual(conf, FrozenConfiguration(b=None, a=123), msg="ordering")
-        self.assertNotEqual(conf, FrozenConfiguration(a=123), msg="cardinality")
-        self.assertNotEqual(
-            conf, FrozenConfiguration(ax=123, bx=None), msg="respect key"
-        )
-        self.assertNotEqual(
-            conf, FrozenConfiguration(a=234, b=None), msg="respect value"
-        )
-        self.assertNotEqual(
-            conf, FrozenConfiguration(a=None, b=123), msg="respect key-value"
-        )
-
-    def test_eq_hierarchical(self):
-        conf = FrozenConfiguration(sub=FrozenConfiguration(a=123))
-        self.assertEqual(conf, conf, msg="identity")
-        self.assertEqual(conf, FrozenConfiguration(sub=FrozenConfiguration(a=123)))
-        self.assertNotEqual(
-            conf,
-            FrozenConfiguration(sub=FrozenConfiguration(a=234)),
-            msg="respect value",
-        )
-        self.assertNotEqual(
-            conf,
-            FrozenConfiguration(other=FrozenConfiguration(a=123)),
-            msg="respect key",
-        )
-
-    def test_eq_dict(self):
-        conf = FrozenConfiguration(a=123, b=None)
-        self.assertEqual(conf, {"a": 123, "b": None})
-        self.assertEqual({"a": 123, "b": None}, conf, msg="symmetry")
-        self.assertEqual(conf, {"b": None, "a": 123}, msg="ordering")
-        self.assertNotEqual(conf, {"a": 123}, msg="cardinality")
-        self.assertNotEqual(conf, {"ax": 123, "bx": None}, msg="respect key")
-        self.assertNotEqual(conf, {"a": 234, "b": None}, msg="respect value")
-        self.assertNotEqual(conf, {"a": None, "b": 123}, msg="respect key-value")
-
-    def test_eq_dict_hierarchical(self):
-        conf = FrozenConfiguration(sub=FrozenConfiguration(a=123))
-        self.assertEqual(conf, {"sub": {"a": 123}})
-        self.assertNotEqual(conf, {"sub": {"a": 234}}, msg="respect value")
-        self.assertNotEqual(conf, {"other": {"a": 123}}, msg="respect key")
-
-    def test_eq_invalid_types(self):
-        conf = FrozenConfiguration(a=123, b=None)
-        self.assertNotEqual(conf, 123)
-        self.assertNotEqual(conf, ["a", 123, "b", None])
-        # TODO: equality with dataclasses?
-        self.assertNotEqual(conf, type("tmp", (object,), {"a": 123, "b": None})())
 
     def test_hash(self):
         conf = FrozenConfiguration(a=123, b=None)
@@ -1958,293 +2057,7 @@ class TestFrozenConfiguration(TestCase):
 
         self.assertEqual(depth, len(uniques))
 
-    def test_copy(self):
-        conf = FrozenConfiguration(a=123, sub=FrozenConfiguration())
-        conf_copy = copy.copy(conf)
-        self.assertIsNot(conf, conf_copy, msg="new object")
-        self.assertEqual(conf, conf_copy, msg="respect equality")
-        self.assertIs(conf["sub"], conf_copy["sub"], msg="copy superficial")
-
-    def test_deepcopy(self):
-        conf = FrozenConfiguration(a=123, sub=FrozenConfiguration())
-        conf_copy = copy.deepcopy(conf)
-        self.assertIsNot(conf, conf_copy, msg="new object")
-        self.assertEqual(conf, conf_copy, msg="respect equality")
-        self.assertIsNot(conf["sub"], conf_copy["sub"], msg="copy deep")
-
-    def test_serialisation(self):
-        import pickle
-
-        conf = FrozenConfiguration(a=123, b="foo", sub=FrozenConfiguration())
-        serial = pickle.dumps(conf)
-        reconstructed = pickle.loads(serial)
-        self.assertEqual(conf, reconstructed)
-
-    # # # Mapping Interface # # #
-
-    def test_getitem(self):
-        conf = FrozenConfiguration(a=123, b="foo")
-        self.assertEqual(123, conf["a"])
-        self.assertIs(getattr(conf, "a"), conf["a"], msg="dict/attr consistency")
-        self.assertEqual("foo", conf["b"])
-        self.assertIs(getattr(conf, "b"), conf["b"], msg="dict/attr consistency")
-
-    def test_getitem_invalid(self):
-        conf = FrozenConfiguration(a=123)
-        with self.assertRaisesRegex(KeyError, "b"):
-            _ = conf["b"]
-
-    def test_getitem_invalid_key_type(self):
-        conf = FrozenConfiguration(a=123)
-        with self.assertRaisesRegex(TypeError, "string", msg="int indexing"):
-            _ = conf[1]
-        with self.assertRaisesRegex(TypeError, "string", msg="obj indexing"):
-            _ = conf[object()]
-        with self.assertRaisesRegex(TypeError, "string", msg="int-tuple indexing"):
-            _ = conf[1, 2, 3]
-
-        with self.assertRaisesRegex(TypeError, "tuple", msg="set indexing"):
-            _ = conf[{"a"}]
-        with self.assertRaisesRegex(TypeError, "tuple", msg="list indexing"):
-            _ = conf[["a"]]
-
-    def test_getitem_class_attributes(self):
-        conf = FrozenConfiguration()
-        with self.assertRaisesRegex(KeyError, "__dict__"):
-            _ = conf["__dict__"]
-        with self.assertRaisesRegex(KeyError, "__class__"):
-            _ = conf["__class__"]
-        with self.assertRaisesRegex(KeyError, "items"):
-            _ = conf["items"]
-
-    def test_getitem_dotted(self):
-        conf = FrozenConfiguration(sub=FrozenConfiguration(a=123))
-        self.assertEqual(123, conf["sub.a"])
-        self.assertIs(conf["sub"]["a"], conf["sub.a"], msg="consistency")
-
-    def test_getitem_dotted_invalid(self):
-        conf = FrozenConfiguration(sub=FrozenConfiguration(a=123))
-        with self.assertRaisesRegex(KeyError, "b", msg="bad subconfig key"):
-            _ = conf["sub.b"]
-        with self.assertRaisesRegex(KeyError, "x", msg="bad subconfig"):
-            _ = conf["x.b"]
-
-    def test_getitem_tuple(self):
-        conf = FrozenConfiguration(sub=FrozenConfiguration(a=123))
-        self.assertEqual(123, conf["sub", "a"])
-        self.assertIs(conf["sub"]["a"], conf["sub", "a"], msg="consistency")
-
-    def test_getitem_tuple_invalid(self):
-        conf = FrozenConfiguration(sub=FrozenConfiguration(a=123))
-        with self.assertRaisesRegex(KeyError, "b", msg="bad subconfig key"):
-            _ = conf["sub", "b"]
-        with self.assertRaisesRegex(KeyError, "x", msg="bad subconfig"):
-            _ = conf["x", "b"]
-
-    def test_setitem(self):
-        conf = FrozenConfiguration()
-        with self.assertRaises(TypeError):
-            conf["a"] = 123
-
-    def test_setitem_overwrite(self):
-        conf = FrozenConfiguration(a=123)
-        with self.assertRaises(TypeError):
-            conf["a"] = 234
-        self.assertDictEqual({"a": 123}, conf.__dict__)
-
-    def test_setitem_dict(self):
-        conf = FrozenConfiguration()
-        with self.assertRaises(TypeError):
-            conf["sub"] = {"a": 123}
-
-    def test_setitem_dict_overwrite(self):
-        conf = FrozenConfiguration(sub=FrozenConfiguration(a=123))
-        with self.assertRaises(TypeError):
-            conf["sub"] = {"b": "foo"}
-        self.assertDictEqual({"sub": FrozenConfiguration(a=123)}, conf.__dict__)
-
-    def test_setitem_invalid_key_type(self):
-        conf = FrozenConfiguration()
-        with self.assertRaises(TypeError, msg="int indexing"):
-            conf[1] = 123
-        with self.assertRaises(TypeError, msg="obj indexing"):
-            conf[object()] = 123
-        with self.assertRaises(TypeError, msg="int-tuple indexing"):
-            conf[1, 2, 3] = 123
-
-        with self.assertRaises(TypeError, msg="set indexing"):
-            conf[{"a"}] = 123
-        with self.assertRaises(TypeError, msg="list indexing"):
-            conf[["a"]] = [123]
-
-    def test_setitem_class_attributes(self):
-        conf = FrozenConfiguration()
-        with self.assertRaises(TypeError):
-            conf["__dict__"] = 123
-        with self.assertRaises(TypeError):
-            conf["__class__"] = 123
-        with self.assertRaises(TypeError):
-            del conf["items"]
-
-    def test_setitem_dotted(self):
-        conf = FrozenConfiguration(sub=FrozenConfiguration())
-        with self.assertRaises(TypeError):
-            conf["sub.a"] = 123
-
-    def test_setitem_dotted_overwrite(self):
-        conf = FrozenConfiguration(sub=FrozenConfiguration(a=123))
-        with self.assertRaises(TypeError):
-            conf["sub.a"] = 234
-        self.assertDictEqual({"sub": FrozenConfiguration(a=123)}, conf.__dict__)
-
-    def test_setitem_dotted_create_subconfig(self):
-        conf = FrozenConfiguration()
-        with self.assertRaises(TypeError):
-            conf["sub.a"] = 123
-
-    def test_setitem_tuple(self):
-        conf = FrozenConfiguration(sub=FrozenConfiguration())
-        with self.assertRaises(TypeError):
-            conf["sub", "a"] = 123
-
-    def test_setitem_tuple_overwrite(self):
-        conf = FrozenConfiguration(sub=FrozenConfiguration(a=123))
-        with self.assertRaises(TypeError):
-            conf["sub", "a"] = 234
-        self.assertDictEqual({"sub": FrozenConfiguration(a=123)}, conf.__dict__)
-
-    def test_setitem_tuple_create_subconfig(self):
-        conf = FrozenConfiguration()
-        with self.assertRaises(TypeError):
-            conf["sub", "a"] = 123
-
-    def test_delitem(self):
-        conf = FrozenConfiguration(a=123, b="foo")
-        with self.assertRaises(TypeError):
-            del conf["a"]
-        self.assertDictEqual({"a": 123, "b": "foo"}, conf.__dict__)
-
-    def test_delitem_invalid(self):
-        conf = FrozenConfiguration(a=123)
-        with self.assertRaises(TypeError):
-            del conf["b"]
-
-    def test_delitem_invalid_key_type(self):
-        conf = FrozenConfiguration(a=123)
-        with self.assertRaises(TypeError, msg="int indexing"):
-            _ = conf[1]
-        with self.assertRaises(TypeError, msg="obj indexing"):
-            _ = conf[object()]
-        with self.assertRaises(TypeError, msg="int-tuple indexing"):
-            _ = conf[1, 2, 3]
-
-        with self.assertRaises(TypeError, msg="set indexing"):
-            _ = conf[{"a"}]
-        with self.assertRaises(TypeError, msg="list indexing"):
-            _ = conf[["a"]]
-
-    def test_delitem_class_attributes(self):
-        conf = FrozenConfiguration()
-        with self.assertRaises(TypeError):
-            del conf["__dict__"]
-        with self.assertRaises(TypeError):
-            del conf["__class__"]
-        with self.assertRaises(TypeError):
-            del conf["items"]
-
-    def test_delitem_dotted(self):
-        conf = FrozenConfiguration(sub=FrozenConfiguration(a=123))
-        with self.assertRaises(TypeError):
-            del conf["sub.a"]
-        self.assertDictEqual({"sub": FrozenConfiguration(a=123)}, conf.__dict__)
-
-    def test_delitem_dotted_invalid(self):
-        conf = FrozenConfiguration(sub=FrozenConfiguration(a=123))
-        with self.assertRaises(TypeError, msg="bad subconfig key"):
-            del conf["sub.b"]
-        with self.assertRaises(TypeError, msg="bad subconfig"):
-            del conf["x.b"]
-
-    def test_delitem_tuple(self):
-        conf = FrozenConfiguration(sub=FrozenConfiguration(a=123))
-        with self.assertRaises(TypeError):
-            del conf["sub", "a"]
-        self.assertDictEqual({"sub": FrozenConfiguration(a=123)}, conf.__dict__)
-
-    def test_delitem_tuple_invalid(self):
-        conf = FrozenConfiguration(sub=FrozenConfiguration(a=123))
-        with self.assertRaises(TypeError, msg="bad subconfig key"):
-            del conf["sub", "b"]
-        with self.assertRaises(TypeError, msg="bad subconfig"):
-            del conf["x", "b"]
-
-    def test_iter(self):
-        conf = FrozenConfiguration(a=123, sub=FrozenConfiguration(b="foo", c=None))
-        conf_iter = iter(conf)
-        self.assertEqual("a", next(conf_iter))
-        self.assertEqual("sub", next(conf_iter))
-        with self.assertRaises(StopIteration):
-            next(conf_iter)
-
-        conf = FrozenConfiguration(sub=FrozenConfiguration(b="foo", c=None), a=123)
-        conf_iter = iter(conf)
-        self.assertEqual("sub", next(conf_iter))
-        self.assertEqual("a", next(conf_iter))
-        with self.assertRaises(StopIteration):
-            next(conf_iter)
-
-    def test_length(self):
-        self.assertEqual(0, len(FrozenConfiguration()))
-        self.assertEqual(1, len(FrozenConfiguration(a=123)))
-        self.assertEqual(
-            2, len(FrozenConfiguration(a=123, sub=FrozenConfiguration(b="foo", c=None)))
-        )
-
-    def test_update_subconfig(self):
-        conf = FrozenConfiguration(sub=FrozenConfiguration(a=123))
-        with self.assertRaisesRegex(AttributeError, "update"):
-            conf.update(sub=FrozenConfiguration(b="foo"))
-        self.assertDictEqual({"sub": FrozenConfiguration(a=123)}, conf.__dict__)
-
     # # # Attribute Interface # # #
-
-    def test_getattr(self):
-        conf = FrozenConfiguration(a=123, b="foo")
-        self.assertEqual(123, getattr(conf, "a"))
-        self.assertIs(conf["a"], getattr(conf, "a"), msg="dict/attr consistency")
-        self.assertEqual("foo", getattr(conf, "b"))
-        self.assertIs(conf["b"], getattr(conf, "b"), msg="dict/attr consistency")
-
-    def test_getattr_invalid(self):
-        conf = FrozenConfiguration(a=123)
-        with self.assertRaisesRegex(AttributeError, "b"):
-            _ = getattr(conf, "b")
-
-    def test_getattr_invalid_key_type(self):
-        conf = FrozenConfiguration(a=123)
-        with self.assertRaisesRegex(TypeError, "string", msg="int attr"):
-            _ = getattr(conf, 1)
-        with self.assertRaisesRegex(TypeError, "string", msg="obj attr"):
-            _ = getattr(conf, object())
-        with self.assertRaisesRegex(TypeError, "string", msg="int-tuple attr"):
-            _ = getattr(conf, (1, 2, 3))
-        with self.assertRaisesRegex(TypeError, "string", msg="set attr"):
-            _ = getattr(conf, ("a",))
-        with self.assertRaisesRegex(TypeError, "string", msg="set attr"):
-            _ = getattr(conf, {"a"})
-        with self.assertRaisesRegex(TypeError, "string", msg="list attr"):
-            _ = getattr(conf, ["a"])
-
-    def test_getattr_class_attributes(self):
-        conf = FrozenConfiguration()
-        self.assertIs(getattr(conf, "__dict__"), conf.__dict__)
-        self.assertIs(getattr(conf, "__class__"), conf.__class__)
-        self.assertEqual(getattr(conf, "items"), conf.items)
-
-    def test_getattr_dotted(self):
-        conf = FrozenConfiguration(sub=FrozenConfiguration(a=[123]))
-        with self.assertRaisesRegex(AttributeError, "dot-string"):
-            _ = getattr(conf, "sub.a")
 
     def test_setattr(self):
         conf = FrozenConfiguration()
@@ -2341,188 +2154,12 @@ class TestFrozenConfiguration(TestCase):
             delattr(conf, "sub.a")
         self.assertDictEqual({"sub": FrozenConfiguration(a=123)}, conf.__dict__)
 
-    def test_dir(self):
-        conf = FrozenConfiguration(a=123, b="foo", c=None, d=object())
-        expected = sorted(dir(FrozenConfiguration) + ["a", "b", "c", "d"])
-        self.assertSequenceEqual(expected, dir(conf))
-
     # # # Merging # # #
 
-    def test_union(self):
-        conf1 = FrozenConfiguration(a=123)
-        conf2 = FrozenConfiguration(b="foo")
-        self.assertEqual(FrozenConfiguration(a=123, b="foo"), conf1 | conf2)
-        self.assertEqual(
-            FrozenConfiguration(a=123, b="foo"), conf2 | conf1, msg="symmetry"
-        )
-        self.assertIsNot(conf1 | conf2, conf1, msg="new object")
-        self.assertIsNot(conf1 | conf2, conf2, msg="new object")
-
-    def test_union_empty(self):
-        conf = FrozenConfiguration(a=123)
-        self.assertEqual(conf, conf | FrozenConfiguration())
-        self.assertEqual(conf, FrozenConfiguration() | conf, msg="symmetry")
-        self.assertIsNot(conf | FrozenConfiguration(), conf, msg="new object")
-
-    def test_union_overlap(self):
-        conf1 = FrozenConfiguration(a=123, b="foo")
-        conf2 = FrozenConfiguration(b="bar", c=None)
-        self.assertEqual(FrozenConfiguration(a=123, b="bar", c=None), conf1 | conf2)
-        self.assertEqual(FrozenConfiguration(a=123, b="foo", c=None), conf2 | conf1)
-
-    def test_union_subconfig(self):
-        conf1 = FrozenConfiguration(sub=FrozenConfiguration(a=123))
-        conf2 = FrozenConfiguration(sub=FrozenConfiguration(b="foo"))
-        self.assertEqual(
-            FrozenConfiguration(sub=FrozenConfiguration(a=123, b="foo")), conf1 | conf2
-        )
-        self.assertEqual(
-            FrozenConfiguration(sub=FrozenConfiguration(a=123, b="foo")),
-            conf2 | conf1,
-            msg="symmetry",
-        )
-        self.assertIsNot((conf1 | conf2)["sub"], conf1["sub"], msg="new subconfig")
-        self.assertIsNot((conf1 | conf2)["sub"], conf2["sub"], msg="new subconfig")
-
-    def test_union_subconfig_value(self):
-        conf1 = FrozenConfiguration(sub=123)
-        conf2 = FrozenConfiguration(sub=FrozenConfiguration(b="foo"))
-        self.assertEqual(
-            FrozenConfiguration(sub=FrozenConfiguration(b="foo")), conf1 | conf2
-        )
-        self.assertEqual(
-            FrozenConfiguration(sub=123),
-            conf2 | conf1,
-            msg="symmetry",
-        )
-
-    def test_union_inplace(self):
-        old_conf = conf = FrozenConfiguration(a=123)
-        conf |= FrozenConfiguration(b="foo")
-        self.assertEqual(FrozenConfiguration(a=123, b="foo"), conf)
-        self.assertIsNot(old_conf, conf)
-
-    def test_union_inplace_empty(self):
-        old_conf = conf = FrozenConfiguration(a=123)
-        conf |= FrozenConfiguration()
-        self.assertEqual(FrozenConfiguration(a=123), conf)
-        self.assertIsNot(old_conf, conf)
-
-    def test_union_inplace_overlap(self):
-        old_conf = conf = FrozenConfiguration(a=123, b="foo")
-        conf |= FrozenConfiguration(b="bar", c=None)
-        self.assertEqual(FrozenConfiguration(a=123, b="bar", c=None), conf)
-        self.assertIsNot(old_conf, conf)
-
-    def test_union_inplace_subconfig(self):
+    def test_union_inplace_subconfig_change(self):
+        super().test_union_inplace_subconfig()
         old_conf = conf = FrozenConfiguration(sub=FrozenConfiguration(a=123))
         sub_old = conf["sub"]
         conf |= FrozenConfiguration(sub=FrozenConfiguration(b="foo"))
-        self.assertEqual(
-            FrozenConfiguration(sub=FrozenConfiguration(a=123, b="foo")), conf
-        )
         self.assertIsNot(old_conf, conf)
         self.assertEqual(FrozenConfiguration(a=123), sub_old, msg="hierarchical")
-
-    def test_union_inplace_subconfig_value(self):
-        old_conf = conf = FrozenConfiguration(sub=123)
-        conf |= FrozenConfiguration(sub=FrozenConfiguration(b="foo"))
-        self.assertEqual(FrozenConfiguration(sub=FrozenConfiguration(b="foo")), conf)
-        self.assertIsNot(old_conf, conf)
-
-        conf |= FrozenConfiguration(sub=123)
-        self.assertEqual(FrozenConfiguration(sub=123), conf)
-        self.assertIsNot(old_conf, conf)
-
-    def test_union_dict(self):
-        conf = FrozenConfiguration(a=123)
-        d = {"b": "foo"}
-        self.assertEqual(FrozenConfiguration(a=123, b="foo"), conf | d)
-        self.assertEqual(FrozenConfiguration(a=123, b="foo"), d | conf, msg="symmetry")
-        self.assertIsNot(conf | d, conf, msg="new object")
-
-    def test_union_dict_empty(self):
-        conf = FrozenConfiguration(a=123)
-        self.assertEqual(conf, conf | {})
-        self.assertEqual(conf, {} | conf, msg="symmetry")
-        self.assertIsNot(conf | {}, conf, msg="new object")
-
-    def test_union_dict_overlap(self):
-        conf = FrozenConfiguration(a=123, b="foo")
-        d = {"b": "bar", "c": None}
-        self.assertEqual(FrozenConfiguration(a=123, b="bar", c=None), conf | d)
-        self.assertEqual(FrozenConfiguration(a=123, b="foo", c=None), d | conf)
-
-    def test_union_dict_subconfig(self):
-        conf = FrozenConfiguration(sub=FrozenConfiguration(a=123))
-        d = {"sub": {"b": "foo"}}
-        self.assertEqual(
-            FrozenConfiguration(sub=FrozenConfiguration(a=123, b="foo")), conf | d
-        )
-        self.assertEqual(
-            FrozenConfiguration(sub=FrozenConfiguration(a=123, b="foo")),
-            d | conf,
-            msg="symmetry",
-        )
-
-    def test_union_dict_subconfig_value(self):
-        conf = FrozenConfiguration(sub=123)
-        d = {"sub": {"b": "foo"}}
-        self.assertEqual(
-            FrozenConfiguration(sub=FrozenConfiguration(b="foo")), conf | d
-        )
-        self.assertEqual(
-            FrozenConfiguration(sub=123),
-            d | conf,
-            msg="symmetry",
-        )
-
-    def test_union_dict_dotted_subconfig(self):
-        conf = FrozenConfiguration(sub=FrozenConfiguration(a=123))
-        d = {"sub.b": "foo"}
-        self.assertEqual(
-            FrozenConfiguration(sub=FrozenConfiguration(a=123, b="foo")), conf | d
-        )
-        self.assertEqual(
-            FrozenConfiguration(sub=FrozenConfiguration(a=123, b="foo")),
-            d | conf,
-            msg="symmetry",
-        )
-
-    def test_union_dict_dotted_create_subconfig(self):
-        conf = FrozenConfiguration()
-        d = {"sub.b": "foo"}
-        self.assertEqual(
-            FrozenConfiguration(sub=FrozenConfiguration(b="foo")), conf | d
-        )
-        self.assertEqual(
-            FrozenConfiguration(sub=FrozenConfiguration(b="foo")),
-            d | conf,
-            msg="symmetry",
-        )
-
-    # # # Conversions # # #
-
-    def test_from_dict(self):
-        conf = FrozenConfiguration.from_dict({"a": 123, "b": "foo"})
-        self.assertEqual(FrozenConfiguration(a=123, b="foo"), conf)
-
-    def test_from_dict_empty(self):
-        conf = FrozenConfiguration.from_dict({})
-        self.assertEqual(FrozenConfiguration(), conf)
-
-    def test_from_dict_subconfig(self):
-        conf = FrozenConfiguration.from_dict({"sub": {"a": 123}})
-        self.assertEqual(FrozenConfiguration(sub=FrozenConfiguration(a=123)), conf)
-
-    def test_to_dict(self):
-        conf = FrozenConfiguration(a=123, b="foo")
-        self.assertDictEqual({"a": 123, "b": "foo"}, conf.to_dict())
-
-    def test_to_dict_empty(self):
-        conf = FrozenConfiguration()
-        self.assertDictEqual({}, conf.to_dict())
-
-    def test_to_dict_subconfig(self):
-        conf = FrozenConfiguration(sub=FrozenConfiguration(a=123))
-        self.assertDictEqual({"sub": {"a": 123}}, conf.to_dict())
