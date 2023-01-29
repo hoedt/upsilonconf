@@ -1752,6 +1752,22 @@ class TestPlainConfiguration(TestCase):
         conf = PlainConfiguration(sub=PlainConfiguration(a=123))
         self.assertDictEqual({"sub": {"a": 123}}, conf.to_dict())
 
+    # # # Class Attribute Robustness # # #
+
+    def test_repr_robustness(self):
+        conf = PlainConfiguration()
+        for key in dir(conf):
+            conf = PlainConfiguration(**{key: None})
+            self.assertEqual(
+                f"PlainConfiguration({key}=None)", repr(conf), msg=f"overwritten {key}"
+            )
+
+    def test_str_robustness(self):
+        conf = PlainConfiguration()
+        for key in dir(conf):
+            conf = PlainConfiguration(**{key: None})
+            self.assertEqual(f"{{{key}: None}}", str(conf), msg=f"overwritten {key}")
+
 
 class TestFrozenConfiguration(TestCase):
     def test_constructor_empty(self):
@@ -1782,9 +1798,12 @@ class TestFrozenConfiguration(TestCase):
         self.assertDictEqual({"a": (123,)}, conf.__dict__, msg="set conversion")
 
     def test_constructor_unhashable(self):
-        T = type("T", (object,), {"__eq__": lambda x, y: x is y})
         with self.assertRaisesRegex(TypeError, "unhashable"):
-            FrozenConfiguration(unhashable=T())
+            FrozenConfiguration(unhashable=slice(None))
+
+    def test_constructor_unhashable_sequence(self):
+        with self.assertRaisesRegex(TypeError, "unhashable"):
+            FrozenConfiguration(unhashable=[slice(None)])
 
     def test_constructor_positional_arg(self):
         with self.assertRaises(TypeError, msg="positional args invalid"):

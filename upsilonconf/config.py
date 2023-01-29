@@ -30,7 +30,6 @@ __all__ = [
     "InvalidKeyError",
 ]
 
-T = TypeVar("T")
 V = TypeVar("V")
 Self = TypeVar("Self", bound="ConfigurationBase")
 _MappingLike = Union[Mapping[str, Any], Iterable[Tuple[str, Any]]]
@@ -167,12 +166,15 @@ class ConfigurationBase(Mapping[str, V]):
         def __iter__(self):
             yield from (v for _, v in self._flat_iter())
 
+    def __init__(self, **kwargs: V):
+        raise NotImplementedError()
+
     def __repr__(self) -> str:
-        kwargs = ["=".join([k, f"{v!r}"]) for k, v in self.items()]
+        kwargs = ["=".join([k, f"{v!r}"]) for k, v in self.__dict__.items()]
         return f"{self.__class__.__name__}({', '.join(kwargs)})"
 
     def __str__(self) -> str:
-        kwargs = [": ".join([k, f"{v!s}"]) for k, v in self.items()]
+        kwargs = [": ".join([k, f"{v!s}"]) for k, v in self.__dict__.items()]
         return f"{{{', '.join(kwargs)}}}"
 
     # # # Attribute Access # # #
@@ -387,7 +389,7 @@ class ConfigurationBase(Mapping[str, V]):
 
     @classmethod
     @overload
-    def _fix_value(cls, value: T, old_val: Any = None) -> T:
+    def _fix_value(cls, value: V, old_val: Any = None) -> V:
         ...
 
     @classmethod
@@ -451,6 +453,30 @@ class PlainConfiguration(ConfigurationBase[Any], MutableMapping[str, Any]):
         - use variable names that are not valid attribute names,
         - use attribute or method names as keys.
 
+    See Also
+    --------
+    `FrozenConfiguration`: an immutable configuration.
+
+    Notes
+    -----
+    In the current implementation, using method names as keys is possible,
+
+    >>> conf = PlainConfiguration()
+    >>> print(conf.items)
+    <bound method ConfigurationBase.items of PlainConfiguration()>
+    >>> conf["items"] = 123
+    >>> print(conf.items)
+    123
+
+    but it can lead to some unexpected behaviour.
+
+    >>> print(conf)
+    {items: 123}
+    >>> conf == {"items": 123}
+    Traceback (most recent call last):
+        ...
+    TypeError: 'int' object is not callable
+
     Examples
     --------
     Starting with a simple configuration.
@@ -483,13 +509,6 @@ class PlainConfiguration(ConfigurationBase[Any], MutableMapping[str, Any]):
     >>> conf['surprise'] = {"val": "tada"}
     >>> print(conf)
     {foo: 0, bar: bar, baz: {b: 2}, surprise: {val: tada}, sub: {val: -1}}
-
-    Configurations can conveniently be merged with other ``Mapping`` objects.
-
-    >>> print(conf | {"xtra": None})
-    {foo: 0, bar: bar, baz: {a: 1, b: 2}, xtra: None}
-    >>> print(conf | {"baz": {"c": 3}})
-    {foo: 0, bar: bar, baz: {a: 1, b: 2, c: 3}}
     """
 
     def __init__(self, **kwargs: Any):
@@ -545,8 +564,32 @@ class FrozenConfiguration(ConfigurationBase[Hashable], Hashable):
 
     A `FrozenConfiguration` object is an immutable implementation of a `ConfigurationBase`.
     This means that you can **not** add, change and/or delete anything in this object.
-    Because of this immutability, frozenconfigs are hashable,
+    Because of this immutability, `FrozenConfiguration` is a `Hashable` type,
     which means that they can be used in ``set``s and serve as keys in a ``dict``.
+
+    See Also
+    --------
+    `PlainConfiguration`: a mutable configuration.
+
+    Notes
+    -----
+    In the current implementation, using method names as keys is possible,
+
+    >>> conf = FrozenConfiguration()
+    >>> print(conf.items)
+    <bound method ConfigurationBase.items of FrozenConfiguration()>
+    >>> conf = FrozenConfiguration(items=123)
+    >>> print(conf.items)
+    123
+
+    but it can lead to some unexpected behaviour.
+
+    >>> print(conf)
+    {items: 123}
+    >>> conf == {"items": 123}
+    Traceback (most recent call last):
+        ...
+    TypeError: 'int' object is not callable
 
     Examples
     --------
@@ -578,9 +621,9 @@ class FrozenConfiguration(ConfigurationBase[Hashable], Hashable):
     >>> print(FrozenConfiguration(value=slice(None)))
     Traceback (most recent call last):
         ...
-    TypeError: unhashable type: '<class 'slice'>'
+    TypeError: unhashable type: 'slice'
 
-    Hash function allows frozen configurations to be used as keys in a dictionary.
+    The main feature is that frozen configurations can be used as ``dict`` keys.
 
     >>> results = {
     ...     FrozenConfiguration(option=1): 0.1,
@@ -590,7 +633,7 @@ class FrozenConfiguration(ConfigurationBase[Hashable], Hashable):
     (FrozenConfiguration(option=2), 0.9)
     """
 
-    def __init__(self, **kwargs: Hashable):
+    def __init__(self, **kwargs: Union[Hashable, Collection, Mapping]):
         for k, v in kwargs.items():
             v = self._fix_value(v)
             conf, k = self._resolve_key(k, create=True)
@@ -600,7 +643,7 @@ class FrozenConfiguration(ConfigurationBase[Hashable], Hashable):
         # inspired by https://stackoverflow.com/questions/20832279
         h = len(self)
         for k, v in self.items():
-            hx = hash((hash(k), hash(v)))
+            hx = hash((k, v))
             h ^= (hx ^ 0x156B45B3 ^ (hx << 16)) * 4_155_791_671  # randomise
             h &= 0xFFFF_FFFF_FFFF_FFFF  # limit to 8 bytes
 
@@ -638,7 +681,7 @@ class FrozenConfiguration(ConfigurationBase[Hashable], Hashable):
             elif isinstance(o, Collection):
                 return tuple(_make_hashable(v) for v in o)
 
-            raise TypeError(f"unhashable type: '{type(o)}'")
+            raise TypeError(f"unhashable type: '{type(o).__name__}'")
 
         return super()._fix_value(_make_hashable(value), old_val)
 
