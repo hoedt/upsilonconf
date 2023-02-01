@@ -2,6 +2,7 @@ import keyword
 import re
 import warnings
 from abc import abstractmethod
+from types import MappingProxyType
 from typing import (
     TypeVar,
     MutableMapping,
@@ -513,6 +514,7 @@ class PlainConfiguration(ConfigurationBase[Any], MutableMapping[str, Any]):
     """
 
     def __init__(self, **kwargs: Any):
+        super().__init__()
         self.update(**kwargs)
 
     # # # Attribute Access # # #
@@ -635,6 +637,7 @@ class FrozenConfiguration(ConfigurationBase[Hashable], Hashable):
     """
 
     def __init__(self, **kwargs: Union[Hashable, Collection, Mapping]):
+        super().__init__()
         for k, v in kwargs.items():
             v = self._fix_value(v)
             conf, k = self._resolve_key(k, create=True)
@@ -652,23 +655,13 @@ class FrozenConfiguration(ConfigurationBase[Hashable], Hashable):
 
     # # # Attribute Access # # #
 
-    def __setattr__(self, name: str, value: Any) -> None:
-        msg = f"'{self.__class__.__name__}' object has no attribute '{name}'"
-        if "." in name:
-            msg = f"dot-strings only work for indexing, try `config[{name}]` instead"
-        elif getattr(self, name, None) is not None:
-            msg = f"{self.__class__.__name__}' object attribute '{name}' is read-only"
+    def __setattr__(self, name: str, value: Any = None) -> None:
+        _ = getattr(self, name)  # recycle errors from getattr
+        raise AttributeError(
+            f"'{self.__class__.__name__}' object attribute '{name}' is read-only"
+        )
 
-        raise AttributeError(msg)
-
-    def __delattr__(self, name: str) -> Any:
-        msg = f"'{self.__class__.__name__}' object has no attribute '{name}'"
-        if "." in name:
-            msg = f"dot-strings only work for indexing, try `config[{name}]` instead"
-        elif getattr(self, name, None) is not None:
-            msg = f"'{self.__class__.__name__}' object attribute '{name}' is read-only"
-
-        raise AttributeError(msg)
+    __delattr__ = __setattr__
 
     @classmethod
     def _fix_value(cls, value, old_val=None):
