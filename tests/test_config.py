@@ -1086,6 +1086,11 @@ class Utils:
             self.assertEqual(123, conf["sub", "a"])
             self.assertIs(conf["sub"]["a"], conf["sub", "a"], msg="consistency")
 
+        def test_getitem_tuple_empty(self):
+            conf = self.config_class(a=123)
+            with self.assertRaisesRegex(InvalidKeyError, "empty tuple"):
+                _ = conf[()]
+
         def test_getitem_tuple_invalid(self):
             conf = self.config_class(sub=self.config_class(a=123))
             with self.assertRaisesRegex(KeyError, "b", msg="bad subconfig key"):
@@ -1159,6 +1164,11 @@ class Utils:
             with self.assertRaises(TypeError):
                 conf["sub", "a"] = 123
 
+        def test_setitem_tuple_empty(self):
+            conf = self.config_class()
+            with self.assertRaises(TypeError):
+                conf[()] = 123
+
         def test_setitem_tuple_overwrite(self):
             conf = self.config_class(sub=self.config_class(a=123))
             with self.assertRaises(TypeError):
@@ -1221,6 +1231,12 @@ class Utils:
             conf = self.config_class(sub=self.config_class(a=123))
             with self.assertRaises(TypeError):
                 del conf["sub", "a"]
+            self.assertDictEqual({"sub": self.config_class(a=123)}, conf.__dict__)
+
+        def test_delitem_tuple_empty(self):
+            conf = self.config_class(sub=self.config_class(a=123))
+            with self.assertRaises(TypeError):
+                del conf[()]
             self.assertDictEqual({"sub": self.config_class(a=123)}, conf.__dict__)
 
         def test_delitem_tuple_invalid(self):
@@ -1801,6 +1817,11 @@ class TestPlainConfiguration(Utils.TestConfigurationBase):
         conf["sub", "a"] = 123
         self.assertDictEqual({"a": 123}, conf["sub"].__dict__)
 
+    def test_setitem_tuple_empty(self):
+        conf = self.config_class()
+        with self.assertRaisesRegex(InvalidKeyError, "empty tuple"):
+            conf[()] = 123
+
     def test_setitem_tuple_overwrite(self):
         conf = PlainConfiguration(sub=PlainConfiguration(a=123))
         conf["sub", "a"] = 234
@@ -1861,6 +1882,11 @@ class TestPlainConfiguration(Utils.TestConfigurationBase):
         conf = PlainConfiguration(sub=PlainConfiguration(a=[123]))
         del conf["sub", "a"]
         self.assertDictEqual({}, conf["sub"].__dict__)
+
+    def test_delitem_tuple_empty(self):
+        conf = self.config_class()
+        with self.assertRaisesRegex(InvalidKeyError, "empty tuple"):
+            del conf[()]
 
     def test_delitem_tuple_invalid(self):
         conf = PlainConfiguration(sub=PlainConfiguration(a=123))

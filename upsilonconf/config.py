@@ -2,7 +2,6 @@ import keyword
 import re
 import warnings
 from abc import abstractmethod
-from types import MappingProxyType
 from typing import (
     TypeVar,
     MutableMapping,
@@ -35,6 +34,12 @@ __all__ = [
 V = TypeVar("V")
 Self = TypeVar("Self", bound="ConfigurationBase")
 _MappingLike = Union[Mapping[str, Any], Iterable[Tuple[str, Any]]]
+
+
+class InvalidKeyError(ValueError):
+    """Raised when a key can not be used in a configuration object."""
+
+    pass
 
 
 class ConfigurationBase(Mapping[str, V]):
@@ -363,6 +368,8 @@ class ConfigurationBase(Mapping[str, V]):
         elif not isinstance(keys, tuple):
             msg = f"index must be string or a tuple of strings, but got '{type(keys)}'"
             raise TypeError(msg)
+        elif len(keys) == 0:
+            raise InvalidKeyError("empty tuple")
 
         *parents, final = keys
 
@@ -676,12 +683,6 @@ class FrozenConfiguration(ConfigurationBase[Hashable], Hashable):
             raise TypeError(f"unhashable type: '{type(o).__name__}'")
 
         return super()._fix_value(_make_hashable(value), old_val)
-
-
-class InvalidKeyError(ValueError):
-    """Raised when a key can not be used in a configuration object."""
-
-    pass
 
 
 class Configuration(PlainConfiguration):
