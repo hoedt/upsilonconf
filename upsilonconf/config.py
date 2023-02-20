@@ -370,6 +370,10 @@ class ConfigurationBase(Mapping[str, V]):
             raise TypeError(msg)
         elif len(keys) == 0:
             raise InvalidKeyError("empty tuple")
+        elif any(not isinstance(k, str) for k in keys):
+            proto = next(k for k in keys if not isinstance(k, str))
+            msg = f"index must be string or a tuple of strings, but got tuple of '{type(proto)}'"
+            raise TypeError(msg)
 
         *parents, final = keys
 

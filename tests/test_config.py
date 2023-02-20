@@ -1054,6 +1054,12 @@ class Utils:
                 _ = conf[object()]
             with self.assertRaisesRegex(TypeError, "string", msg="int-tuple indexing"):
                 _ = conf[1, 2, 3]
+            with self.assertRaisesRegex(
+                TypeError, "string", msg="nested tuple indexing"
+            ):
+                _ = conf[
+                    ("a",),
+                ]
 
             with self.assertRaisesRegex(TypeError, "tuple", msg="set indexing"):
                 _ = conf[{"a"}]
@@ -1199,6 +1205,12 @@ class Utils:
                 _ = conf[object()]
             with self.assertRaises(TypeError, msg="int-tuple indexing"):
                 _ = conf[1, 2, 3]
+            with self.assertRaisesRegex(
+                TypeError, "string", msg="nested tuple indexing"
+            ):
+                _ = conf[
+                    ("a",),
+                ]
 
             with self.assertRaises(TypeError, msg="set indexing"):
                 _ = conf[{"a"}]
@@ -2009,6 +2021,20 @@ class TestFrozenConfiguration(Utils.TestConfigurationBase):
     def test_constructor_unhashable_sequence(self):
         with self.assertRaisesRegex(TypeError, "unhashable"):
             FrozenConfiguration(unhashable=[slice(None)])
+
+    # # # Immutability (consenting adults) # # #
+    #
+    # def test_constructor_reuse(self):
+    #     conf = FrozenConfiguration(a=123)
+    #     conf.__init__(b="foo")
+    #     self.assertDictEqual({"a": 123}, conf.__dict__)
+    #
+    # def test_dict_manipulation(self):
+    #     conf = FrozenConfiguration(a=123)
+    #     conf.__dict__["b"] = "foo"
+    #     self.assertDictEqual({"a": 123}, conf.__dict__)
+
+    # # # Hashing # # #
 
     def test_hash(self):
         conf = FrozenConfiguration(a=123, b=None)
