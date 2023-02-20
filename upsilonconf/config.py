@@ -196,7 +196,9 @@ class ConfigurationBase(Mapping[str, V]):
     # # # Mapping Interface # # #
 
     def __getitem__(self, key: Union[str, Tuple[str, ...]]) -> V:
-        conf, key = self._resolve_key(key)
+        conf, key, unresolved = self._resolve_key(key)
+        if unresolved:
+            raise KeyError(key)
         return conf.__dict__[key]
 
     def __len__(self) -> int:
@@ -338,24 +340,25 @@ class ConfigurationBase(Mapping[str, V]):
     # # # Key Magic # # #
 
     def _resolve_key(
-        self: Self, keys: Union[str, Tuple[str, ...]], create: bool = False
-    ) -> Tuple[Self, str]:
+        self: Self, keys: Union[str, Tuple[str, ...]]
+    ) -> Tuple[Self, str, Tuple[str, ...]]:
         """
-        Resolve dot-string and iterable keys
+        Resolve dot-string and iterable keys in the hierarchy of this config.
 
         Parameters
         ----------
         keys : str or iterable of str
             The key(s) to be resolved.
-        create : bool, optional
-            If ``True``, non-existent sub-configurations will be created.
 
         Returns
         -------
         config: PlainConfiguration
-            The sub-configuration that should host the final key (and value).
-        key : str
-            The final key that should correspond to the actual value.
+            The deepest existing sub-configuration as specified by `keys`.
+        op_key : str
+            The key to be used in `config` to perform the desired operation.
+            This is either the first unresolved key or the final key in the hierarchy.
+        unresolved : tuple of str
+            The keys that could not be resolved due to the missing of `op_key`
 
         Raises
         ------
@@ -363,35 +366,31 @@ class ConfigurationBase(Mapping[str, V]):
             If any of the sub-keys (apart from the final key)
             point to a value that is not a configuration.
         """
+        type_err_msg = "index must be string or a tuple of strings, but got {}"
         if isinstance(keys, str):
             keys = tuple(keys.split("."))
         elif not isinstance(keys, tuple):
-            msg = f"index must be string or a tuple of strings, but got '{type(keys)}'"
-            raise TypeError(msg)
+            raise TypeError(type_err_msg.format(f"'{type(keys)}'"))
         elif len(keys) == 0:
             raise InvalidKeyError("empty tuple")
         elif any(not isinstance(k, str) for k in keys):
             proto = next(k for k in keys if not isinstance(k, str))
-            msg = f"index must be string or a tuple of strings, but got tuple of '{type(proto)}'"
-            raise TypeError(msg)
+            raise TypeError(type_err_msg.format(f"tuple of '{type(proto)}'"))
 
-        *parents, final = keys
+        *sub_keys, op_key = keys
 
         root = self
-        for k in parents:
+        sub_key_iter = iter(sub_keys)
+        for k in sub_key_iter:
             try:
                 root = root[k]
             except KeyError:
-                if not create:
-                    raise
-
-                root[k] = {}
-                root = root[k]
+                return root, k, (*sub_key_iter, op_key)
             else:
                 if not isinstance(root, self.__class__):
                     raise KeyError(k)
 
-        return root, final
+        return root, op_key, ()
 
     @classmethod
     @overload
@@ -547,11 +546,18 @@ class PlainConfiguration(ConfigurationBase[Any], MutableMapping[str, Any]):
     # # # Mapping Interface # # #
 
     def __setitem__(self, key: Union[str, Tuple[str, ...]], value: Any) -> None:
-        conf, key = self._resolve_key(key, create=True)
-        conf.__dict__[key] = self._fix_value(value)
+        conf, key, unresolved = self._resolve_key(key)
+
+        value = self._fix_value(value)
+        for k in unresolved:
+            value = self.__class__(**{k: value})
+
+        conf.__dict__[key] = value
 
     def __delitem__(self, key: Union[str, Tuple[str, ...]]) -> None:
-        conf, key = self._resolve_key(key)
+        conf, key, unresolved = self._resolve_key(key)
+        if unresolved:
+            raise KeyError(key)
         del conf.__dict__[key]
 
     # # # Merging # # #
@@ -650,9 +656,11 @@ class FrozenConfiguration(ConfigurationBase[Hashable], Hashable):
     def __init__(self, **kwargs: Union[Hashable, Collection, Mapping]):
         super().__init__()
         for k, v in kwargs.items():
+            conf, key, unresolved = self._resolve_key(k)
             v = self._fix_value(v)
-            conf, k = self._resolve_key(k, create=True)
-            conf.__dict__[k] = v
+            for k_sub in unresolved:
+                v = self.__class__(**{k_sub: v})
+            conf.__dict__[key] = v
 
     def __hash__(self) -> int:
         # inspired by https://stackoverflow.com/questions/20832279
@@ -756,18 +764,28 @@ class Configuration(PlainConfiguration):
     """
 
     def _resolve_key(
-        self, keys: Union[str, Iterable[str]], create: bool = False
-    ) -> Tuple["Configuration", str]:
+        self, keys: Union[str, Iterable[str]]
+    ) -> Tuple["Configuration", str, Tuple[str, ...]]:
         if not isinstance(keys, str):
             keys = tuple(keys)
 
-        root, key = super()._resolve_key(keys, create)
+        root, key, unresolved = super()._resolve_key(keys)
         root._validate_key(key)
-        if create and key in root.__dict__:
+        return root, key, unresolved
+
+    def __setitem__(self, key, value):
+        root, key, unresolved = self._resolve_key(key)
+        if key in root.__dict__:
             msg = f"key '{key}' already defined, use 'overwrite' methods instead"
             raise ValueError(msg)
 
-        return root, key
+        if unresolved:
+            for k in (key, *unresolved[:-1]):
+                root[k] = self.__class__()
+                root = root[k]
+            key = unresolved[-1]
+
+        root.__dict__[key] = self._fix_value(value)
 
     # # # Attribute Access # # #
 
@@ -827,7 +845,13 @@ class Configuration(PlainConfiguration):
         # TODO: this is practically a copy of __setitem__ now
         if not isinstance(key, str):
             key = tuple(key)
-        conf, key = super()._resolve_key(key, create=True)
+        conf, key, unresolved = super()._resolve_key(key)
+        if unresolved:
+            for k in (key, *unresolved[:-1]):
+                conf[k] = self.__class__()
+                conf = conf[k]
+            key = unresolved[-1]
+
         old_value = conf.get(key, None)
         if old_value is None:
             conf._validate_key(key)

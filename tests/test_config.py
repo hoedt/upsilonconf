@@ -879,9 +879,29 @@ class Utils:
             self.assertEqual({"sub": self.config_class(**sub)}, conf.__dict__)
             self.assertIsInstance(conf.__dict__["sub"], self.config_class)
 
+        def test_constructor_dot_string(self):
+            conf = self.config_class(**{"sub.a": 123})
+            self.assertDictEqual({"sub": {"a": 123}}, conf.__dict__)
+
+        def test_constructor_tuple(self):
+            with self.assertRaises(TypeError):
+                self.config_class({("sub", "a"): 123})
+
         def test_constructor_positional_arg(self):
             with self.assertRaises(TypeError, msg="positional args invalid"):
                 self.config_class({"a": 123})
+
+        def test_constructor_dot_string_subconfig(self):
+            conf = self.config_class(**{"sub.a": 123, "sub.b": "foo"})
+            self.assertDictEqual({"sub": {"a": 123, "b": "foo"}}, conf.__dict__)
+
+        def test_constructor_dot_string_overwrite_subconfig(self):
+            conf = self.config_class(sub=self.config_class(a=123), **{"sub.a": 234})
+            self.assertDictEqual({"sub": {"a": 234}}, conf.__dict__)
+
+        def test_constructor_subconfig_overwrite_dot_string(self):
+            conf = self.config_class(sub=self.config_class(a=123), **{"sub.a": 234})
+            self.assertDictEqual({"sub": {"a": 234}}, conf.__dict__)
 
         def test_repr_empty(self):
             conf = self.config_class()
@@ -1655,7 +1675,7 @@ class TestPlainConfiguration(Utils.TestConfigurationBase):
         self.assertIsInstance(conf["sub"], PlainConfiguration)
 
     def test_setattr_dict_overwrite(self):
-        conf = PlainConfiguration(sub=Configuration(a=123))
+        conf = PlainConfiguration(sub=PlainConfiguration(a=123))
         setattr(conf, "sub", {"b": "foo"})
         self.assertDictEqual({"sub": PlainConfiguration(b="foo")}, conf.__dict__)
         self.assertIsInstance(conf["sub"], PlainConfiguration)
