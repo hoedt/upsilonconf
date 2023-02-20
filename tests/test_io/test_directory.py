@@ -42,7 +42,6 @@ def fake_directory_structure(root, paths):
 
 
 class TestDirectoryIO(TestCase):
-
     path = Path.cwd()
 
     @staticmethod

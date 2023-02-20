@@ -1077,9 +1077,7 @@ class Utils:
             with self.assertRaisesRegex(
                 TypeError, "string", msg="nested tuple indexing"
             ):
-                _ = conf[
-                    ("a",),
-                ]
+                _ = conf[("a",),]
 
             with self.assertRaisesRegex(TypeError, "tuple", msg="set indexing"):
                 _ = conf[{"a"}]
@@ -1228,9 +1226,7 @@ class Utils:
             with self.assertRaisesRegex(
                 TypeError, "string", msg="nested tuple indexing"
             ):
-                _ = conf[
-                    ("a",),
-                ]
+                _ = conf[("a",),]
 
             with self.assertRaises(TypeError, msg="set indexing"):
                 _ = conf[{"a"}]

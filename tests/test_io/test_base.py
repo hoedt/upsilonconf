@@ -10,7 +10,6 @@ from upsilonconf.io.yaml import YAMLIO
 
 
 class Utils:
-
     CONFIG = Configuration(foo=1, bar="test", baz={"a": 0.1, "b": 0.2})
     DEFAULT_LINES = (
         "{",
