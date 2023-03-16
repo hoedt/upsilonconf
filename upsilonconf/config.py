@@ -210,10 +210,21 @@ class ConfigurationBase(Mapping[str, V]):
     # # # Merging # # #
 
     def __or__(self: Self, other: Mapping[str, Any]) -> Self:
-        return self.__class__(**(PlainConfiguration(**self) | other))
+        if not isinstance(other, self.__class__):
+            other = self.__class__(**other)
+
+        kwargs = dict(self.items())
+        for k, v in other.items():
+            try:
+                v = kwargs[k] | v
+            except (KeyError, TypeError):
+                pass
+
+            kwargs[k] = v
+        return self.__class__(**kwargs)
 
     def __ror__(self: Self, other: Mapping[str, Any]) -> Self:
-        return self.__class__(**(other | PlainConfiguration(**self)))
+        return self.__class__(**other) | self
 
     # # # Flat Iterators # # #
 
@@ -352,7 +363,7 @@ class ConfigurationBase(Mapping[str, V]):
 
         Returns
         -------
-        config: PlainConfiguration
+        config : PlainConfiguration
             The deepest existing sub-configuration as specified by `keys`.
         op_key : str
             The key to be used in `config` to perform the desired operation.
@@ -386,9 +397,9 @@ class ConfigurationBase(Mapping[str, V]):
                 root = root[k]
             except KeyError:
                 return root, k, (*sub_key_iter, op_key)
-            else:
-                if not isinstance(root, self.__class__):
-                    raise KeyError(k)
+
+            if not isinstance(root, self.__class__):
+                raise KeyError(".".join((k, *sub_key_iter, op_key)))
 
         return root, op_key, ()
 
@@ -567,12 +578,10 @@ class PlainConfiguration(ConfigurationBase[Any], MutableMapping[str, Any]):
         result |= other
         return result
 
-    def __ror__(self, other):
-        result = self.__class__(**other)
-        result |= self
-        return result
-
     def __ior__(self, other):
+        if not isinstance(other, self.__class__):
+            other = self.__class__(**other)
+
         for k, v in other.items():
             self[k] = self._fix_value(v, self.get(k, None))
         return self

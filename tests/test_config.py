@@ -1584,6 +1584,18 @@ class Utils:
                 msg="symmetry",
             )
 
+        def test_union_dict_dotted_subconfig_value(self):
+            conf = self.config_class(sub=123)
+            d = {"sub.b": "foo"}
+            self.assertEqual(
+                self.config_class(sub=self.config_class(b="foo")), conf | d
+            )
+            self.assertEqual(
+                self.config_class(sub=123),
+                d | conf,
+                msg="symmetry",
+            )
+
         def test_union_dict_dotted_create_subconfig(self):
             conf = self.config_class()
             d = {"sub.b": "foo"}
