@@ -1470,6 +1470,14 @@ class Utils:
             self.assertEqual(self.config_class(a=123, b="bar", c=None), conf1 | conf2)
             self.assertEqual(self.config_class(a=123, b="foo", c=None), conf2 | conf1)
 
+        def test_union_overwrite_int(self):
+            conf1 = self.config_class(a=123)
+            conf2 = self.config_class(a=234)
+            self.assertEqual(self.config_class(a=234), conf1 | conf2)
+            self.assertEqual(self.config_class(a=123), conf2 | conf1, msg="symmetry")
+            self.assertIsNot(conf1 | conf2, conf1, msg="new object")
+            self.assertIsNot(conf1 | conf2, conf2, msg="new object")
+
         def test_union_subconfig(self):
             conf1 = self.config_class(sub=self.config_class(a=123))
             conf2 = self.config_class(sub=self.config_class(b="foo"))
@@ -1512,6 +1520,11 @@ class Utils:
             conf |= self.config_class(b="bar", c=None)
             self.assertEqual(self.config_class(a=123, b="bar", c=None), conf)
 
+        def test_union_inplace_overwrite_int(self):
+            conf = self.config_class(a=123)
+            conf |= self.config_class(a=234)
+            self.assertEqual(self.config_class(a=234), conf)
+
         def test_union_inplace_subconfig(self):
             conf = self.config_class(sub=self.config_class(a=123))
             conf |= self.config_class(sub=self.config_class(b="foo"))
@@ -1547,6 +1560,12 @@ class Utils:
             d = {"b": "bar", "c": None}
             self.assertEqual(self.config_class(a=123, b="bar", c=None), conf | d)
             self.assertEqual(self.config_class(a=123, b="foo", c=None), d | conf)
+
+        def test_union_dict_overwrite_int(self):
+            conf1 = self.config_class(a=123)
+            d = {"a": 234}
+            self.assertEqual(self.config_class(a=234), conf1 | d)
+            self.assertEqual(self.config_class(a=123), d | conf1, msg="symmetry")
 
         def test_union_dict_subconfig(self):
             conf = self.config_class(sub=self.config_class(a=123))

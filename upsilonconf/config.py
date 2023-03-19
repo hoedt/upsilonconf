@@ -209,21 +209,19 @@ class ConfigurationBase(Mapping[str, V]):
 
     # # # Merging # # #
 
-    def __or__(self: Self, other: Mapping[str, Any]) -> Self:
-        if not isinstance(other, self.__class__):
-            other = self.__class__(**other)
+    def __or__(self: Self, other: Mapping[str, V]) -> Self:
+        cls = self.__class__
+        if not isinstance(other, cls):
+            other = cls(**other)
 
-        kwargs = dict(self.items())
-        for k, v in other.items():
-            try:
-                v = kwargs[k] | v
-            except (KeyError, TypeError):
-                pass
+        kwargs = dict(self)
+        kwargs.update(
+            {k: self._fix_value(v, kwargs.get(k, None)) for k, v in other.items()}
+        )
 
-            kwargs[k] = v
-        return self.__class__(**kwargs)
+        return cls(**kwargs)
 
-    def __ror__(self: Self, other: Mapping[str, Any]) -> Self:
+    def __ror__(self: Self, other: Mapping[str, V]) -> Self:
         return self.__class__(**other) | self
 
     # # # Flat Iterators # # #
@@ -573,12 +571,7 @@ class PlainConfiguration(ConfigurationBase[Any], MutableMapping[str, Any]):
 
     # # # Merging # # #
 
-    def __or__(self, other):
-        result = self.__class__(**self)
-        result |= other
-        return result
-
-    def __ior__(self, other):
+    def __ior__(self, other: Mapping[str, Any]):
         if not isinstance(other, self.__class__):
             other = self.__class__(**other)
 
@@ -795,6 +788,13 @@ class Configuration(PlainConfiguration):
             key = unresolved[-1]
 
         root.__dict__[key] = self._fix_value(value)
+
+    # # # Merging # # #
+
+    def __or__(self, other):
+        result = self.__class__(**self)
+        result |= other
+        return result
 
     # # # Attribute Access # # #
 
