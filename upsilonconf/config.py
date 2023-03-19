@@ -1,7 +1,7 @@
 import keyword
 import re
 import warnings
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from typing import (
     TypeVar,
     MutableMapping,
@@ -31,7 +31,7 @@ __all__ = [
     "InvalidKeyError",
 ]
 
-V = TypeVar("V")
+V = TypeVar("V", covariant=True)
 Self = TypeVar("Self", bound="ConfigurationBase")
 _MappingLike = Union[Mapping[str, Any], Iterable[Tuple[str, Any]]]
 
@@ -42,7 +42,7 @@ class InvalidKeyError(ValueError):
     pass
 
 
-class ConfigurationBase(Mapping[str, V]):
+class ConfigurationBase(Mapping[str, V], ABC):
     """
     Interface for configuration that maps variable names to their values.
 
@@ -104,13 +104,13 @@ class ConfigurationBase(Mapping[str, V]):
 
         @abstractmethod
         def __contains__(self, item: Any) -> bool:
-            raise NotImplementedError("subclass must implement this method")
+            ...
 
         @abstractmethod
-        def __iter__(self):
-            raise NotImplementedError("subclass must implement this method")
+        def __iter__(self) -> Iterator:
+            ...
 
-        def _flat_iter(self) -> Iterator[Tuple[str, V]]:
+        def _flat_iter(self) -> Iterator[Tuple[str, Any]]:
             """
             Iterate over key-value pairs of flat config.
 
@@ -147,7 +147,7 @@ class ConfigurationBase(Mapping[str, V]):
                     v is value or v == value
                 )
 
-        def __iter__(self):
+        def __iter__(self) -> Iterator[Tuple[str, Any]]:
             yield from self._flat_iter()
 
     class FlatKeysView(FlatConfigView):
@@ -161,7 +161,7 @@ class ConfigurationBase(Mapping[str, V]):
             else:
                 return not isinstance(val, self._config.__class__)
 
-        def __iter__(self):
+        def __iter__(self) -> Iterator[str]:
             yield from (k for k, _ in self._flat_iter())
 
     class FlatValuesView(FlatConfigView):
@@ -170,7 +170,7 @@ class ConfigurationBase(Mapping[str, V]):
         def __contains__(self, value):
             return any(v is value or v == value for k, v in self._flat_iter())
 
-        def __iter__(self):
+        def __iter__(self) -> Iterator[Any]:
             yield from (v for _, v in self._flat_iter())
 
     def __init__(self, **kwargs: V):
@@ -410,7 +410,7 @@ class ConfigurationBase(Mapping[str, V]):
 
     @classmethod
     @overload
-    def _fix_value(cls, value: V, old_val: Any = None) -> V:
+    def _fix_value(cls, value: Any, old_val: Any = None) -> V:
         ...
 
     @classmethod
