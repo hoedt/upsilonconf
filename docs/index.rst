@@ -15,6 +15,7 @@ A few handy tools to help with IO are also included.
    :maxdepth: 2
 
    usage
+   api
 
 Some Features
 -------------

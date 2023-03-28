@@ -69,12 +69,13 @@ Quickstart
 
 Before you can use any package, you have to import it:
 
-.. doctest::
-
-    >>> import upsilonconf
+>>> import upsilonconf
 
 This should give you access to all of the functionality this package has to offer.
 
+Alternatively, you can just import only what you need:
+
+>>> from upsilonconf import PlainConfiguration, load_config
 
 How to create configuration objects?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -82,39 +83,33 @@ How to create configuration objects?
 There are multiple ways to create configuration objects in UpsilonConf.
 The most direct one is to specify key-value pairs as keyword arguments to the constructor:
 
-.. doctest::
-
-    >>> conf = upsilonconf.Configuration(sep="\t", file=None, flush=True)
-    >>> print(conf)
-    ... {}
+>>> opts = PlainConfiguration(sep="  ", file=None, flush=True)
+>>> opts
+PlainConfiguration(sep='  ', file=None, flush=True)
 
 If you happen to have a ``dict`` with key-value pairs already, you can use the constructor as follows:
 
-.. doctest::
-
-    >>> dictionary = {"sep": "\t", "file": None, "flush": True}
-    >>> conf = upsilonconf.Configuration(**dictionary)
-    >>> print(conf)
-    ... {}
+>>> dictionary = {"sep": "  ", "file": None, "flush": True}
+>>> opts = PlainConfiguration(**dictionary)
+>>> opts
+PlainConfiguration(sep='  ', file=None, flush=True)
 
 This should also work for other `mapping`_ types.
 
 Note that when a value is of type ``dict`` (or any other `mapping`_),
-it will automatically be converted to a *hierarchical* configuration object:
+it will automatically be converted to a configuration object:
 
-.. doctest::
-
-    >>> conf = upsilonconf.Configuration(content="hello world", options=dictionary)
-    >>> print(conf)
-    ... {}
+>>> conf = PlainConfiguration(content="world", options=dictionary)
+>>> conf
+PlainConfiguration(content='world', options=PlainConfiguration(...))
 
 However, often the most convenient way is to read the configuration from some file.
-This can be done by means of the :func:`load_config` function:::
+This can be done by means of the :func:`load_config` function::
 
-    >>> upsilonconf.load_config("config.json")
-    ... {}
+    >>> load_config("config.json")
+    PlainConfiguration(...)
 
-Other file formats are also supported if the corresponding (optional) dependencies are installed.
+Other configuration file formats are also supported if the corresponding (optional) dependencies are installed.
 
 .. _mapping: https://docs.python.org/3/glossary.html#term-mapping
 
@@ -124,34 +119,48 @@ How to access values?
 There are also multiple ways to access the values that are stored in a configuration.
 The first option is to use the corresponding key as attribute name:
 
-.. doctest::
-
-    >>> conf.content
-    ... "hello world"
+>>> conf.content
+'world'
 
 Alternatively, the key can be used as an index for the configuration:
 
-.. doctest::
-
-    >>> conf["content"]
-    ... "hello world"
+>>> conf["content"]
+'world'
 
 This also works for hierarchical configuration objects:
 
-.. doctest::
-
-    >>> conf.options.sep
-    ... "\t"
-    >>> conf["options"]["sep"]
-    ... "\t"
+>>> conf.options.sep
+'  '
+>>> conf["options"]["sep"]
+'  '
 
 Moreover, hierarchical indices can also be given as ``tuple`` or ``.``-separated strings:
 
-.. doctest::
-
-    >>> conf["options", "sep"]
-    ... "\t"
-    >>> conf["options.sep"]
-    ... "\t"
+>>> conf["options", "sep"]
+'  '
+>>> conf["options.sep"]
+'  '
 
 All of these access modes also work for setting or modifying values (if the configuration is writeable).
+
+What else can I do?
+^^^^^^^^^^^^^^^^^^^
+
+Use the configuration to conveniently call any function you like:
+
+>>> print("<", "hello", conf.content, ">", **conf.options)
+<  hello  world  >
+
+Get flat views for libraries that do not play well with hierarchical mappings:
+
+>>> tuple(conf.keys(flat=True))
+('content', 'options.sep', 'options.file', 'options.flush')
+>>> {k: v for k, v in conf.items(flat=True)}
+{'content': 'world', 'options.sep': '  ', ...}
+
+Conveniently merge configurations to combine values coming from different sources:
+
+>>> opts
+PlainConfiguration(sep='  ', file=None, flush=True)
+>>> opts | PlainConfiguration(sep="\t", end="\r")
+PlainConfiguration(sep='\t', file=None, flush=True, end='\r')

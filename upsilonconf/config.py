@@ -476,7 +476,7 @@ class PlainConfiguration(ConfigurationBase[Any], MutableMapping[str, Any]):
 
     See Also
     --------
-    `FrozenConfiguration`: an immutable configuration.
+    FrozenConfiguration: an immutable configuration.
 
     Notes
     -----
@@ -591,7 +591,7 @@ class FrozenConfiguration(ConfigurationBase[Hashable], Hashable):
 
     See Also
     --------
-    `PlainConfiguration`: a mutable configuration.
+    PlainConfiguration: a mutable configuration.
 
     Notes
     -----
