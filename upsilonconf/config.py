@@ -448,6 +448,71 @@ class ConfigurationBase(Mapping[str, V], ABC):
         mapping: Mapping[str, V],
         key_mods: Optional[Mapping[str, str]] = None,
     ) -> Self:
+        """
+        Create a configuration object from another mapping.
+
+        In its simplest form, this method unpacks the dictionary
+        and passes the key-value pairs as arguments to the constructor.
+        The `key_mods` argument additionally allows to *clean up* keys.
+        This is especially useful if keys are not valid attribute names,
+        but you wish to use the attribute syntax on the object.
+
+        Parameters
+        ----------
+        mapping : Mapping[str, V]
+            The dictionary from which to create a configuration object.
+        key_mods : Mapping[str, str], optional
+            A mapping from key patterns to their respective replacement.
+            In case of multiple patterns, longer patterns are replaced first.
+
+        Returns
+        -------
+        config : ConfigurationBase
+            A configuration object representing the original mapping
+            where all patterns in `keys_mods` found in keys have been replaced.
+
+        See Also
+        --------
+        __init__ : regular constructor
+        to_dict : inverse conversion from config to mapping.
+
+        Examples
+        --------
+        Without `key_mods`, the dictionary is equivalent to `__init__`.
+
+        >>> d = {"my key": "foo", "a key": 1}
+        >>> conf = PlainConfiguration.from_dict(d)
+        >>> conf
+        PlainConfiguration(my key='foo', a key=1)
+        >>> conf["my key"]
+        'foo'
+
+        By using the `key_mods` argument, keys can be made more accessible.
+
+        >>> conf = PlainConfiguration.from_dict(d, key_mods={" ": "_"})
+        >>> conf
+        PlainConfiguration(my_key='foo', a_key=1)
+        >>> conf.my_key
+        'foo'
+
+        It can also be used to convert flat ``dict``s to a hierarchical config.
+
+        >>> conf = PlainConfiguration.from_dict(d, key_mods={" ": "."})
+        >>> conf
+        PlainConfiguration(my=PlainConfiguration(key='foo'), a=PlainConfiguration(key=1))
+
+        Multiple replacements can be combined to fix multiple issues at once.
+
+        >>> conf = PlainConfiguration.from_dict(d, key_mods={" ": "_", "e": "3"})
+        >>> conf
+        PlainConfiguration(my_k3y='foo', a_k3y=1)
+
+        Note that replacements are executed in order of length.
+
+        >>> conf = PlainConfiguration.from_dict(d, key_mods={"my ": "A", " ": "B"})
+        >>> conf
+        PlainConfiguration(Akey='foo', aBkey=1)
+        """
         if key_mods is None:
             key_mods = {}
 
@@ -456,6 +521,79 @@ class ConfigurationBase(Mapping[str, V], ABC):
     def to_dict(
         self, key_mods: Optional[Mapping[str, str]] = None, flat: bool = False
     ) -> Dict[str, V]:
+        """
+        Convert this configuration object to a dictionary.
+
+        This method transfers the key-value pairs in this configuration object
+        to a dictionary in a recursive manner (for hierarchical configurations).
+        The `key_mods` argument additionally allows to modify keys.
+        This is especially useful if you wish to make keys more readable
+        than what the Python attribute syntax allows.
+        The `flat` argument allows to flatten hierarchical configurations.
+
+        Parameters
+        ----------
+        key_mods : Mapping[str, str], optional
+            A mapping from key patterns to their respective replacement.
+            In case of multiple patterns, longer patterns are replaced first.
+        flat : bool, optional
+            Discard the hierarchy in this configuration object.
+            When ``True``, keys in subconfigurations are converted to
+            the dot-string that can be used to index its corresponding value.
+
+        Returns
+        -------
+        mapping : dict[str, V]
+            A configuration object representing the original mapping
+            where all patterns in `keys_mods` found in keys have been replaced.
+
+        See Also
+        --------
+        dict : convert mapping to dictionary
+        from_dict : inverse conversion from mapping to config.
+
+        Examples
+        --------
+        For flat configurations, this method has the same effect as calling ``dict``.
+
+        >>> conf = PlainConfiguration(my_key="foo", a_key=1)
+        >>> dict(conf)
+        {'my_key': 'foo', 'a_key': 1}
+        >>> conf.to_dict()
+        {'my_key': 'foo', 'a_key': 1}
+
+        For hierarchical configurations, the conversion is applied recursively.
+        >>> conf = PlainConfiguration(sub=conf)
+        >>> dict(conf)
+        {'sub': PlainConfiguration(my_key='foo', a_key=1)}
+        >>> conf.to_dict()
+        {'sub': {'my_key': 'foo', 'a_key': 1}}
+
+        It is also possible to discard the hierarchy using the `flat` argument.
+
+        >>> conf.to_dict(flat=True)
+        {'sub.my_key': 'foo', 'sub.a_key': 1}
+
+        By using the `key_mods` argument, keys can be made more readable.
+
+        >>> conf.to_dict(key_mods={"_": " "})
+        {'sub': {'my key': 'foo', 'a key': 1}}
+
+        It can also be useful if you don't like the dot-strings after flattening.
+
+        >>> conf.to_dict(flat=True, key_mods={".": "_"})
+        {'sub_my_key': 'foo', 'sub_a_key': 1}
+
+        Multiple replacements can be combined to fix multiple annoyances at once.
+
+        >>> conf.to_dict(key_mods={"_": " ", "e": "3"})
+        {'sub': {'my k3y': 'foo', 'a k3y': 1}}
+
+        Note that replacements are executed in order of length.
+
+        >>> conf.to_dict(key_mods={"my_": "A", "_": "B"})
+        {'sub': {'Akey': 'foo', 'aBkey': 1}}
+        """
         if key_mods is None:
             key_mods = {}
 

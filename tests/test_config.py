@@ -1643,6 +1643,49 @@ class Utils:
             conf = self.config_class.from_dict({"sub": {"a": 123}})
             self.assertEqual(self.config_class(sub=self.config_class(a=123)), conf)
             self.assertIsInstance(conf, self.config_class)
+            self.assertIsInstance(conf.sub, self.config_class)
+
+        def test_from_dict_key_modifiers(self):
+            conf = self.config_class.from_dict({"a": 123}, key_mods={"a": "c"})
+            self.assertEqual(self.config_class(c=123), conf)
+
+        def test_from_dict_subconfig_key_modifiers(self):
+            conf = self.config_class.from_dict({"sub": {"a": 123}}, key_mods={"a": "c"})
+            self.assertEqual(self.config_class(sub=self.config_class(c=123)), conf)
+
+        def test_from_dict_subconfig_key_modifiers_shared_pattern(self):
+            conf = self.config_class.from_dict({"sub": {"u": 123}}, key_mods={"u": "a"})
+            self.assertEqual(self.config_class(sab=self.config_class(a=123)), conf)
+
+        def test_from_dict_key_modifiers_from_dots(self):
+            conf = self.config_class.from_dict({"sub.a": 123}, key_mods={".": "_"})
+            self.assertEqual(self.config_class(sub_a=123), conf)
+
+        def test_from_dict_key_modifiers_to_dots(self):
+            conf = self.config_class.from_dict({"sub_a": 123}, key_mods={"_": "."})
+            self.assertEqual(self.config_class(sub=self.config_class(a=123)), conf)
+
+        def test_from_dict_multiple_key_modifiers(self):
+            conf = self.config_class.from_dict(
+                {"a key": 123}, key_mods={"a": "c", " ": "_"}
+            )
+            self.assertEqual(self.config_class(c_key=123), conf)
+
+        def test_from_dict_multiple_key_modifiers_overlap(self):
+            conf = self.config_class.from_dict(
+                {"key": 123}, key_mods={"key": "k", "e": "3"}
+            )
+            self.assertEqual(self.config_class(k=123), conf)
+            conf = self.config_class.from_dict(
+                {"key": 123}, key_mods={"e": "3", "key": "k"}
+            )
+            self.assertEqual(self.config_class(k=123), conf)
+
+        def test_from_dict_chain_key_modifiers(self):
+            conf = self.config_class.from_dict(
+                {"key": 123}, key_mods={"e": "3", "3": "a"}
+            )
+            self.assertEqual(self.config_class(k3y=123), conf)
 
         def test_to_dict(self):
             conf = self.config_class(a=123, b="foo")
@@ -1655,6 +1698,53 @@ class Utils:
         def test_to_dict_subconfig(self):
             conf = self.config_class(sub=self.config_class(a=123))
             self.assertDictEqual({"sub": {"a": 123}}, conf.to_dict())
+            self.assertIsInstance(conf.to_dict()["sub"], dict)
+
+        def test_to_dict_flat(self):
+            conf = self.config_class(sub=self.config_class(a=123, b="foo"))
+            self.assertDictEqual(
+                {"sub.a": 123, "sub.b": "foo"}, conf.to_dict(flat=True)
+            )
+
+        def test_to_dict_key_modifiers(self):
+            conf = self.config_class(c=123)
+            self.assertDictEqual({"a": 123}, conf.to_dict(key_mods={"c": "a"}))
+
+        def test_to_dict_subconfig_key_modifiers(self):
+            conf = self.config_class(sub=self.config_class(c=123))
+            self.assertDictEqual({"sub": {"a": 123}}, conf.to_dict(key_mods={"c": "a"}))
+
+        def test_to_dict_subconfig_key_modifiers_shared_pattern(self):
+            conf = self.config_class(sab=self.config_class(a=123))
+            self.assertDictEqual({"sub": {"u": 123}}, conf.to_dict(key_mods={"a": "u"}))
+
+        def test_to_dict_multiple_key_modifiers(self):
+            conf = self.config_class(c_key=123)
+            self.assertDictEqual(
+                {"a key": 123}, conf.to_dict(key_mods={"c": "a", "_": " "})
+            )
+
+        def test_to_dict_multiple_key_modifiers_overlap(self):
+            conf = self.config_class(key=123)
+            self.assertDictEqual(
+                {"k": 123}, conf.to_dict(key_mods={"key": "k", "e": "3"})
+            )
+            conf = self.config_class(key=123)
+            self.assertDictEqual(
+                {"k": 123}, conf.to_dict(key_mods={"e": "3", "key": "k"})
+            )
+
+        def test_to_dict_chain_key_modifiers(self):
+            conf = self.config_class(k3y=123)
+            self.assertDictEqual(
+                {"key": 123}, conf.to_dict(key_mods={"3": "e", "e": "a"})
+            )
+
+        def test_to_dict_flat_key_modifiers_from_dots(self):
+            conf = self.config_class(sub=self.config_class(a=123))
+            self.assertDictEqual(
+                {"sub_a": 123}, conf.to_dict(key_mods={".": "_"}, flat=True)
+            )
 
         # # # Class Attribute Robustness # # #
 
