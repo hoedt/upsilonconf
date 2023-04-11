@@ -16,7 +16,9 @@ class TestCarefulConfiguration(TestCase):
     def setUp(self):
         self.empty_config = CarefulConfiguration()
         self.simple_config = CarefulConfiguration(a=1, b=2, c=3)
-        self.complex_config = CarefulConfiguration(foo=69, bar="test", sub=self.simple_config)
+        self.complex_config = CarefulConfiguration(
+            foo=69, bar="test", sub=self.simple_config
+        )
 
     def test_constructor(self):
         KWARGS = {"a": 1, "b": "foo", "c": None, "d": object()}
@@ -844,7 +846,9 @@ class TestCarefulConfiguration(TestCase):
         self.assertDictEqual(d_ref, d)
 
     def test_to_dict_key_modifiers_nested(self):
-        conf = CarefulConfiguration(key_1="with space", key_2=CarefulConfiguration(key_1=1, key_2=2))
+        conf = CarefulConfiguration(
+            key_1="with space", key_2=CarefulConfiguration(key_1=1, key_2=2)
+        )
         d = conf.to_dict({"_1": " 1", "_2": "-2", "_": "0"})
         d_ref = {"key 1": "with space", "key-2": {"key 1": 1, "key-2": 2}}
         self.assertDictEqual(d_ref, d)

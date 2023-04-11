@@ -216,7 +216,10 @@ class ConfigurationBase(Mapping[str, V], ABC):
 
         kwargs = dict(self)
         kwargs.update(
-            {k: self._fix_value(v, kwargs.get(k, None)) for k, v in other.items()}
+            {
+                k: self._fix_value(v, old_val=kwargs.get(k, None))
+                for k, v in other.items()
+            }
         )
 
         return cls(**kwargs)
@@ -404,17 +407,25 @@ class ConfigurationBase(Mapping[str, V], ABC):
     @classmethod
     @overload
     def _fix_value(
-        cls: Type[Self], value: Mapping[str, Any], old_val: Any = None
+        cls: Type[Self],
+        value: Mapping[str, V],
+        wrappers: Tuple[str, ...] = (),
+        old_val: Optional[V] = None,
     ) -> Self:
         ...
 
     @classmethod
     @overload
-    def _fix_value(cls, value: Any, old_val: Any = None) -> V:
+    def _fix_value(
+        cls,
+        value: Any,
+        wrappers: Tuple[str, ...] = (),
+        old_val: Optional[V] = None,
+    ) -> V:
         ...
 
     @classmethod
-    def _fix_value(cls, value, old_val=None):
+    def _fix_value(cls, value, wrappers=(), old_val=None):
         """
         Prepare value for storage in this configuration.
 
@@ -433,6 +444,9 @@ class ConfigurationBase(Mapping[str, V], ABC):
         new_value
             The value that is ready to be stored.
         """
+        for key in wrappers:
+            value = cls(**{key: value})
+
         try:
             value = cls(**value)
             old_val |= value
@@ -694,12 +708,7 @@ class PlainConfiguration(ConfigurationBase[Any], MutableMapping[str, Any]):
 
     def __setitem__(self, key: Union[str, Tuple[str, ...]], value: Any) -> None:
         conf, key, unresolved = self._resolve_key(key)
-
-        value = self._fix_value(value)
-        for k in unresolved:
-            value = self.__class__(**{k: value})
-
-        conf.__dict__[key] = value
+        conf.__dict__[key] = self._fix_value(value, unresolved)
 
     def __delitem__(self, key: Union[str, Tuple[str, ...]]) -> None:
         conf, key, unresolved = self._resolve_key(key)
@@ -714,7 +723,7 @@ class PlainConfiguration(ConfigurationBase[Any], MutableMapping[str, Any]):
             other = self.__class__(**other)
 
         for k, v in other.items():
-            self[k] = self._fix_value(v, self.get(k, None))
+            self[k] = self._fix_value(v, old_val=self.get(k, None))
         return self
 
 
@@ -823,7 +832,7 @@ class FrozenConfiguration(ConfigurationBase[Hashable], Hashable):
     __delattr__ = __setattr__
 
     @classmethod
-    def _fix_value(cls, value, old_val=None):
+    def _fix_value(cls, value, wrappers=(), old_val=None):
         def _make_hashable(o):
             if isinstance(o, Hashable):
                 return o
@@ -834,7 +843,7 @@ class FrozenConfiguration(ConfigurationBase[Hashable], Hashable):
 
             raise TypeError(f"unhashable type: '{type(o).__name__}'")
 
-        return super()._fix_value(_make_hashable(value), old_val)
+        return super()._fix_value(_make_hashable(value), wrappers, old_val)
 
 
 class CarefulConfiguration(PlainConfiguration):
@@ -900,11 +909,7 @@ class CarefulConfiguration(PlainConfiguration):
             msg = f"key '{key}' already defined, use 'overwrite' methods instead"
             raise ValueError(msg)
 
-        value = self._fix_value(value)
-        for k in unresolved:
-            value = self.__class__(**{k: value})
-
-        root.__dict__[key] = value
+        root.__dict__[key] = self._fix_value(value, unresolved)
 
     # # # Merging # # #
 
@@ -978,15 +983,12 @@ class CarefulConfiguration(PlainConfiguration):
         --------
         overwrite_all : overwrite multiple values in one go.
         """
-        # TODO: this is practically a copy of __setitem__ now
         if not isinstance(key, str):
             key = tuple(key)
-        conf, key, unresolved = super()._resolve_key(key)
-        old_value = conf.get(key, None)
 
-        value = self._fix_value(value)
-        for k in unresolved:
-            value = self.__class__(**{k: value})
+        conf, key, unresolved = super()._resolve_key(key)
+        value = self._fix_value(value, unresolved)
+        old_value = conf.__dict__.get(key, None)
 
         try:
             sub_conf = self.__class__(**old_value)
