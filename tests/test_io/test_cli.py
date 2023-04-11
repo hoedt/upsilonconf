@@ -7,10 +7,10 @@ from upsilonconf.io.cli import *
 from upsilonconf.io.json import JSONIO
 
 
-def _as_dot_keys(config: Configuration):
+def _as_dot_keys(config: CarefulConfiguration):
     """Utility for converting config to dot-lists"""
     for k, v in config.items():
-        if isinstance(v, Configuration):
+        if isinstance(v, CarefulConfiguration):
             yield from ((".".join([k, lk]), lv) for lk, lv in _as_dot_keys(v))
         else:
             yield k, v
@@ -80,7 +80,7 @@ class TestConfigParser(TestCase):
     def test_parse_config_override(self):
         _k, _ = next(_as_dot_keys(Utils.CONFIG))
         v = "new value"
-        expected = Configuration(**Utils.CONFIG)
+        expected = CarefulConfiguration(**Utils.CONFIG)
         expected.overwrite(_k, v)
 
         cli = ConfigParser(config_io=JSONIO())
@@ -96,7 +96,7 @@ class TestConfigParser(TestCase):
     def test_parse_config_override_twice(self):
         _k, _ = next(_as_dot_keys(Utils.CONFIG))
         v = "new value"
-        expected = Configuration(**Utils.CONFIG)
+        expected = CarefulConfiguration(**Utils.CONFIG)
         expected.overwrite(_k, v)
 
         cli = ConfigParser(config_io=JSONIO())

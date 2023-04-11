@@ -10,7 +10,7 @@ from upsilonconf.io.yaml import YAMLIO
 
 
 class Utils:
-    CONFIG = Configuration(foo=1, bar="test", baz={"a": 0.1, "b": 0.2})
+    CONFIG = CarefulConfiguration(foo=1, bar="test", baz={"a": 0.1, "b": 0.2})
     DEFAULT_LINES = (
         "{",
         '  "foo": 1,',
@@ -106,7 +106,7 @@ class Utils:
                 config = self.io.load_config(self.file_path)
 
             m_open.assert_called_once_with(self.file_path, "r", encoding="utf-8")
-            self.assertIsInstance(config, Configuration)
+            self.assertIsInstance(config, CarefulConfiguration)
             self.assertEqual(Utils.CONFIG, config)
 
         def test_load_config_relative_path(self):
@@ -116,7 +116,7 @@ class Utils:
                 config = self.io.load_config(filename)
 
             m_open.assert_called_once_with(Path.cwd() / filename, "r", encoding="utf-8")
-            self.assertIsInstance(config, Configuration)
+            self.assertIsInstance(config, CarefulConfiguration)
             self.assertEqual(Utils.CONFIG, config)
 
         def test_load_config_user_path(self):
@@ -128,7 +128,7 @@ class Utils:
             m_open.assert_called_once_with(
                 Path.home() / filename, "r", encoding="utf-8"
             )
-            self.assertIsInstance(config, Configuration)
+            self.assertIsInstance(config, CarefulConfiguration)
             self.assertEqual(Utils.CONFIG, config)
 
         def test_load_config_whitespace_key(self):
@@ -150,7 +150,7 @@ class Utils:
                 config = self.io.load_config(self.file_path, key_mods={bad: good})
 
             m_open.assert_called_once_with(self.file_path, "r", encoding="utf-8")
-            self.assertIsInstance(config, Configuration)
+            self.assertIsInstance(config, CarefulConfiguration)
             self.assertEqual(Utils.CONFIG, config)
 
         def test_save_config(self):
@@ -327,7 +327,7 @@ class TestFlexibleIO(Utils.TestConfigIO):
         m_open.assert_called_once_with(
             self.file_path.with_suffix(".other"), "r", encoding="utf-8"
         )
-        self.assertIsInstance(config, Configuration)
+        self.assertIsInstance(config, CarefulConfiguration)
         self.assertEqual(Utils.CONFIG, config)
 
     def test_save_config_other_ext(self):

@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Mapping, Union, Optional
 
-from ..config import Configuration
+from ..config import CarefulConfiguration
 from ._optional_dependencies import OptionalDependencyError
 from .base import ConfigIO, FlexibleIO
 from .json import JSONIO
@@ -68,7 +68,7 @@ def load_config(
     path: Union[Path, str],
     key_mods: Optional[Mapping[str, str]] = None,
     config_io: Optional[ConfigIO] = None,
-) -> Configuration:
+) -> CarefulConfiguration:
     """
     Read configuration from disk.
 
@@ -85,7 +85,7 @@ def load_config(
 
     Returns
     -------
-    config : Configuration
+    config : CarefulConfiguration
         A configuration object with the key-value pairs as provided in the file.
     """
     if config_io is None:
@@ -95,7 +95,7 @@ def load_config(
 
 
 def save_config(
-    config: Configuration,
+    config: CarefulConfiguration,
     path: Union[Path, str],
     key_mods: Optional[Mapping[str, str]] = None,
     config_io: Optional[ConfigIO] = None,
@@ -144,7 +144,7 @@ def from_cli(args=None, parser=None, config_io=None):
 
     Returns
     -------
-    config : Configuration
+    config : CarefulConfiguration
         The configuration as specified by the command line arguments.
     ns : Namespace, optional
         The namespace with additional arguments from the command line arguments.

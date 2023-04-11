@@ -21,7 +21,7 @@ def fake_directory_structure(root, paths):
             pass
 
         def __iter__(self):
-            yield from (Configuration(name=sub) for sub in paths)
+            yield from (CarefulConfiguration(name=sub) for sub in paths)
 
     def decorator(func):
         @mock.patch("upsilonconf.io.base.Path.exists")
@@ -183,8 +183,8 @@ class TestDirectoryIO(TestCase):
             any_order=True,
         )
         self.assertEqual(3, m_open.call_count)
-        self.assertIsInstance(config, Configuration)
-        ref = Configuration(**Utils.CONFIG, sub1=Utils.CONFIG, sub2=Utils.CONFIG)
+        self.assertIsInstance(config, CarefulConfiguration)
+        ref = CarefulConfiguration(**Utils.CONFIG, sub1=Utils.CONFIG, sub2=Utils.CONFIG)
         self.assertEqual(ref, config)
 
     @fake_directory_structure(path, ["config.json", "sub1.json", "sub2.json"])
@@ -208,8 +208,8 @@ class TestDirectoryIO(TestCase):
             any_order=True,
         )
         self.assertEqual(3, m_open.call_count)
-        self.assertIsInstance(config, Configuration)
-        ref = Configuration(**Utils.CONFIG, sub1=Utils.CONFIG, sub2=Utils.CONFIG)
+        self.assertIsInstance(config, CarefulConfiguration)
+        ref = CarefulConfiguration(**Utils.CONFIG, sub1=Utils.CONFIG, sub2=Utils.CONFIG)
         self.assertEqual(ref, config)
 
     def test_write_to(self):

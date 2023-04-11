@@ -27,7 +27,7 @@ __all__ = [
     "ConfigurationBase",
     "PlainConfiguration",
     "FrozenConfiguration",
-    "Configuration",
+    "CarefulConfiguration",
     "InvalidKeyError",
 ]
 
@@ -44,7 +44,7 @@ class InvalidKeyError(ValueError):
 
 class ConfigurationBase(Mapping[str, V], ABC):
     """
-    Interface for configuration that maps variable names to their values.
+    Interface for configuration objects that map variable names to their values.
 
     A `ConfigurationBase` object can be used to represent values for various values.
     It can be interpreted in two ways:
@@ -837,23 +837,14 @@ class FrozenConfiguration(ConfigurationBase[Hashable], Hashable):
         return super()._fix_value(_make_hashable(value), old_val)
 
 
-class Configuration(PlainConfiguration):
+class CarefulConfiguration(PlainConfiguration):
     """
-    Configuration mapping (variable) names to their corresponding values.
+    Configuration with overwrite protection.
 
     A `Configuration` should provide a convenient way to store
     (hyper-)parameters for your code and/or experiments.
     Any configuration value that represents a mapping is also automagically
     converted to a `Configuration` to build arbitrary config hierarchies.
-
-    This class provides an interface that is similar to that of a dictionary.
-    Additionally, it allows to access parameters as attributes.
-    This means that you can simply use attribute syntax,
-    instead of writing brackets and strings everywhere.
-    To allow easy access to values in sub-configurations,
-    sequences of indices can be used instead of chained indexing.
-    Similarly, a string with parameter names separated by dots
-    will be automagically split in a tuple index for easy access.
 
     Additional parameter values can be added to the mapping as needed.
     However, to avoid unwanted changes to configuration values,
@@ -870,7 +861,7 @@ class Configuration(PlainConfiguration):
 
     Examples
     --------
-    >>> conf = Configuration(foo=0, bar="bar", baz={'a': 1, 'b': 2})
+    >>> conf = CarefulConfiguration(foo=0, bar="bar", baz={'a': 1, 'b': 2})
     >>> print(conf)
     {foo: 0, bar: bar, baz: {a: 1, b: 2}}
     >>> conf['bar']
@@ -903,29 +894,17 @@ class Configuration(PlainConfiguration):
     'will work'
     """
 
-    def _resolve_key(
-        self, keys: Union[str, Iterable[str]]
-    ) -> Tuple["Configuration", str, Tuple[str, ...]]:
-        if not isinstance(keys, str):
-            keys = tuple(keys)
-
-        root, key, unresolved = super()._resolve_key(keys)
-        root._validate_key(key)
-        return root, key, unresolved
-
     def __setitem__(self, key, value):
         root, key, unresolved = self._resolve_key(key)
         if key in root.__dict__:
             msg = f"key '{key}' already defined, use 'overwrite' methods instead"
             raise ValueError(msg)
 
-        if unresolved:
-            for k in (key, *unresolved[:-1]):
-                root[k] = self.__class__()
-                root = root[k]
-            key = unresolved[-1]
+        value = self._fix_value(value)
+        for k in unresolved:
+            value = self.__class__(**{k: value})
 
-        root.__dict__[key] = self._fix_value(value)
+        root.__dict__[key] = value
 
     # # # Merging # # #
 
@@ -945,6 +924,16 @@ class Configuration(PlainConfiguration):
             raise AttributeError(str(e)) from None
 
     # # # Key Magic # # #
+
+    def _resolve_key(
+        self, keys: Union[str, Iterable[str]]
+    ) -> Tuple["CarefulConfiguration", str, Tuple[str, ...]]:
+        if not isinstance(keys, str):
+            keys = tuple(keys)
+
+        root, key, unresolved = super()._resolve_key(keys)
+        root._validate_key(key)
+        return root, key, unresolved
 
     def _validate_key(self, key: str) -> bool:
         """
@@ -993,15 +982,11 @@ class Configuration(PlainConfiguration):
         if not isinstance(key, str):
             key = tuple(key)
         conf, key, unresolved = super()._resolve_key(key)
-        if unresolved:
-            for k in (key, *unresolved[:-1]):
-                conf[k] = self.__class__()
-                conf = conf[k]
-            key = unresolved[-1]
-
         old_value = conf.get(key, None)
-        if old_value is None:
-            conf._validate_key(key)
+
+        value = self._fix_value(value)
+        for k in unresolved:
+            value = self.__class__(**{k: value})
 
         try:
             sub_conf = self.__class__(**old_value)
@@ -1010,7 +995,7 @@ class Configuration(PlainConfiguration):
         except TypeError:
             pass
 
-        conf.__dict__.__setitem__(key, value)
+        conf.__dict__[key] = value
         return old_value
 
     def overwrite_all(self, other: _MappingLike = (), **kwargs) -> Mapping[str, Any]:

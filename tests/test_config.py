@@ -12,15 +12,15 @@ def load_tests(loader, tests, ignore):
     return tests
 
 
-class TestConfiguration(TestCase):
+class TestCarefulConfiguration(TestCase):
     def setUp(self):
-        self.empty_config = Configuration()
-        self.simple_config = Configuration(a=1, b=2, c=3)
-        self.complex_config = Configuration(foo=69, bar="test", sub=self.simple_config)
+        self.empty_config = CarefulConfiguration()
+        self.simple_config = CarefulConfiguration(a=1, b=2, c=3)
+        self.complex_config = CarefulConfiguration(foo=69, bar="test", sub=self.simple_config)
 
     def test_constructor(self):
         KWARGS = {"a": 1, "b": "foo", "c": None, "d": object()}
-        c = Configuration(**KWARGS)
+        c = CarefulConfiguration(**KWARGS)
 
         for k, v in KWARGS.items():
             self.assertIn(k, c.keys())
@@ -29,14 +29,14 @@ class TestConfiguration(TestCase):
 
     def test_constructor_sub(self):
         KWARGS = {"a": 1, "b": "foo", "c": None, "d": object()}
-        c = Configuration(sub=KWARGS)
+        c = CarefulConfiguration(sub=KWARGS)
 
-        self.assertIsInstance(c.sub, Configuration)
+        self.assertIsInstance(c.sub, CarefulConfiguration)
         for k, v in KWARGS.items():
             self.assertEqual(v, c.sub[k])
 
     def test_constructor_copy(self):
-        c = Configuration(**self.simple_config)
+        c = CarefulConfiguration(**self.simple_config)
 
         for k, v in self.simple_config.items():
             self.assertEqual(v, c[k])
@@ -183,7 +183,7 @@ class TestConfiguration(TestCase):
         k, v = "sub", {"a": 1, "b": 2}
         self.empty_config[k] = v
         self.assertIn(k, self.empty_config.keys())
-        self.assertIsInstance(self.empty_config[k], Configuration)
+        self.assertIsInstance(self.empty_config[k], CarefulConfiguration)
         for _k, _v in v.items():
             self.assertEqual(_v, self.empty_config[k][_k])
 
@@ -199,7 +199,7 @@ class TestConfiguration(TestCase):
 
         self.empty_config[k, k] = v
         self.assertIn(k, self.empty_config.keys())
-        self.assertIsInstance(self.empty_config[k], Configuration)
+        self.assertIsInstance(self.empty_config[k], CarefulConfiguration)
         self.assertIn(k, self.empty_config[k].keys())
         self.assertEqual(v, self.empty_config[k, k])
 
@@ -219,7 +219,7 @@ class TestConfiguration(TestCase):
 
         self.empty_config[".".join([k, k])] = v
         self.assertIn(k, self.empty_config.keys())
-        self.assertIsInstance(self.empty_config[k], Configuration)
+        self.assertIsInstance(self.empty_config[k], CarefulConfiguration)
         self.assertIn(k, self.empty_config[k].keys())
         self.assertEqual(v, self.empty_config[k, k])
 
@@ -334,14 +334,14 @@ class TestConfiguration(TestCase):
 
     def test_union_overlap(self):
         _k, _v = next(iter(self.simple_config)), []
-        other = Configuration(**{_k: _v, _k + "_duplicate": _v})
+        other = CarefulConfiguration(**{_k: _v, _k + "_duplicate": _v})
 
         with self.assertRaisesRegex(ValueError, "overwrite"):
             self.simple_config | other
 
     def test_union_subconfig(self):
         _k, _v = next(iter(self.simple_config)), []
-        other = Configuration(sub={_k: _v, _k + "_duplicate": _v})
+        other = CarefulConfiguration(sub={_k: _v, _k + "_duplicate": _v})
 
         with self.assertRaisesRegex(ValueError, "overwrite"):
             self.complex_config | other
@@ -358,7 +358,7 @@ class TestConfiguration(TestCase):
 
     def test_union_dict_dotted(self):
         other = dict({"sub.test": None})
-        expected = Configuration(**self.simple_config)
+        expected = CarefulConfiguration(**self.simple_config)
         for k, v in other.items():
             expected[k] = v
 
@@ -400,7 +400,7 @@ class TestConfiguration(TestCase):
 
     def test_union_dict_flipped_dotted(self):
         other = dict({"sub.test": None})
-        expected = Configuration(**self.simple_config)
+        expected = CarefulConfiguration(**self.simple_config)
         for k, v in other.items():
             expected[k] = v
 
@@ -592,7 +592,7 @@ class TestConfiguration(TestCase):
     def test_overwrite_all_overlap(self):
         base_config = self.simple_config
         _k, _v = next(iter(self.simple_config)), []
-        other = Configuration(**{_k: _v, _k + "_duplicate": _v})
+        other = CarefulConfiguration(**{_k: _v, _k + "_duplicate": _v})
         old_values = {k: base_config[_k] if k == _k else None for k in other}
         expected = dict(base_config)
         expected.update(**other)
@@ -604,7 +604,7 @@ class TestConfiguration(TestCase):
     def test_overwrite_all_subconfig(self):
         base_config = self.complex_config
         _k, _v = next(iter(self.simple_config)), []
-        other = Configuration(sub={_k: _v, _k + "_duplicate": _v})
+        other = CarefulConfiguration(sub={_k: _v, _k + "_duplicate": _v})
         old_values = {
             "sub": {
                 k: base_config["sub"][_k] if k == _k else None for k in other["sub"]
@@ -630,7 +630,7 @@ class TestConfiguration(TestCase):
     def test_overwrite_all_dict_dotted(self):
         base_config = self.simple_config
         other = dict({"sub.test": 0})
-        expected = Configuration(**base_config)
+        expected = CarefulConfiguration(**base_config)
         for k, v in other.items():
             expected[k] = v
 
@@ -673,7 +673,7 @@ class TestConfiguration(TestCase):
         old_values = {
             k: base_config["sub"][_k] if k.endswith(_k) else None for k in other
         }
-        expected = Configuration(**base_config)
+        expected = CarefulConfiguration(**base_config)
         for k, v in other.items():
             expected.overwrite(k, v)
 
@@ -685,97 +685,97 @@ class TestConfiguration(TestCase):
 
     def test_from_dict(self):
         d = dict(self.simple_config)
-        conf = Configuration.from_dict(d)
-        self.assertIsInstance(conf, Configuration)
+        conf = CarefulConfiguration.from_dict(d)
+        self.assertIsInstance(conf, CarefulConfiguration)
         self.assertEqual(self.simple_config, conf)
 
     def test_from_dict_empty(self):
-        conf = Configuration.from_dict({})
-        self.assertIsInstance(conf, Configuration)
+        conf = CarefulConfiguration.from_dict({})
+        self.assertIsInstance(conf, CarefulConfiguration)
         self.assertEqual(self.empty_config, conf)
 
     def test_from_dict_nested(self):
         d = dict(self.complex_config)
         d["sub"] = dict(d["sub"])
-        conf = Configuration.from_dict(d)
-        self.assertIsInstance(conf, Configuration)
+        conf = CarefulConfiguration.from_dict(d)
+        self.assertIsInstance(conf, CarefulConfiguration)
         self.assertEqual(self.complex_config, conf)
 
     def test_from_dict_key_modifiers(self):
         d = {"keyX1": "with X", "keyO2": "with O"}
         key_mods = {"X": "_", "O": "_minus_"}
-        conf = Configuration.from_dict(d, key_mods)
-        ref = Configuration(key_1="with X", key_minus_2="with O")
-        self.assertIsInstance(conf, Configuration)
+        conf = CarefulConfiguration.from_dict(d, key_mods)
+        ref = CarefulConfiguration(key_1="with X", key_minus_2="with O")
+        self.assertIsInstance(conf, CarefulConfiguration)
         self.assertEqual(ref, conf)
 
     def test_from_dict_key_modifiers_neighbours(self):
         d = {"keyX1": "with X"}
-        conf = Configuration.from_dict(d, {"X": "_", "1": "3"})
-        ref = Configuration(key_3="with X")
-        self.assertIsInstance(conf, Configuration)
+        conf = CarefulConfiguration.from_dict(d, {"X": "_", "1": "3"})
+        ref = CarefulConfiguration(key_3="with X")
+        self.assertIsInstance(conf, CarefulConfiguration)
         self.assertEqual(ref, conf)
 
-        conf = Configuration.from_dict(d, {"1": "3", "X": "_"})
-        ref = Configuration(key_3="with X")
-        self.assertIsInstance(conf, Configuration)
+        conf = CarefulConfiguration.from_dict(d, {"1": "3", "X": "_"})
+        ref = CarefulConfiguration(key_3="with X")
+        self.assertIsInstance(conf, CarefulConfiguration)
         self.assertEqual(ref, conf)
 
     def test_from_dict_key_modifiers_missing(self):
         d = {"key 1": "with space", "key-2": "with hyphen"}
         with self.assertWarns(UserWarning) as cm:
-            Configuration.from_dict(d)
+            CarefulConfiguration.from_dict(d)
 
         self.assertEqual(2, len(cm.warnings))
 
     def test_from_dict_key_modifiers_combination(self):
         d = {"keyX1": "with X", "keyO2": "with O"}
         key_mods = {"X": "_", "O": "_minus_", "k": "K"}
-        conf = Configuration.from_dict(d, key_mods)
-        ref = Configuration(Key_1="with X", Key_minus_2="with O")
-        self.assertIsInstance(conf, Configuration)
+        conf = CarefulConfiguration.from_dict(d, key_mods)
+        ref = CarefulConfiguration(Key_1="with X", Key_minus_2="with O")
+        self.assertIsInstance(conf, CarefulConfiguration)
         self.assertEqual(ref, conf)
 
     def test_from_dict_key_modifiers_order(self):
         d = {"keyX1": "with X", "keyO2": "with O"}
         key_mods = {"X": "0", "O": "_"}
-        conf = Configuration.from_dict(d, key_mods)
-        ref = Configuration(key01="with X", key_2="with O")
-        self.assertIsInstance(conf, Configuration)
+        conf = CarefulConfiguration.from_dict(d, key_mods)
+        ref = CarefulConfiguration(key01="with X", key_2="with O")
+        self.assertIsInstance(conf, CarefulConfiguration)
         self.assertEqual(ref, conf)
 
         key_mods = {"O": "_", "X": "0"}  # reversed
-        conf = Configuration.from_dict(d, key_mods)
-        ref = Configuration(key01="with X", key_2="with O")
-        self.assertIsInstance(conf, Configuration)
+        conf = CarefulConfiguration.from_dict(d, key_mods)
+        ref = CarefulConfiguration(key01="with X", key_2="with O")
+        self.assertIsInstance(conf, CarefulConfiguration)
         self.assertEqual(ref, conf)
 
     def test_from_dict_key_modifiers_order_length(self):
         d = {"keyX1": "with X", "keyO2": "with O"}
         key_mods = {"keyX": "k", "keyO": "K", " X": "_", "O": "_"}
-        conf = Configuration.from_dict(d, key_mods)
-        ref = Configuration(k1="with X", K2="with O")
-        self.assertIsInstance(conf, Configuration)
+        conf = CarefulConfiguration.from_dict(d, key_mods)
+        ref = CarefulConfiguration(k1="with X", K2="with O")
+        self.assertIsInstance(conf, CarefulConfiguration)
         self.assertEqual(ref, conf)
 
         key_mods = {"O": "_", "X": "A", "keyO": "K", "keyX": "k"}  # reversed
-        conf = Configuration.from_dict(d, key_mods)
-        ref = Configuration(k1="with X", K2="with O")
-        self.assertIsInstance(conf, Configuration)
+        conf = CarefulConfiguration.from_dict(d, key_mods)
+        ref = CarefulConfiguration(k1="with X", K2="with O")
+        self.assertIsInstance(conf, CarefulConfiguration)
         self.assertEqual(ref, conf)
 
     def test_from_dict_key_modifiers_nested(self):
         d = {"keyX1": "with X", "keyO2": {"keyO1": 1, "keyX2": 2}}
         key_mods = {"keyX": "k", "keyO": "K", " X": "_", "O": "_"}
-        conf = Configuration.from_dict(d, key_mods)
-        ref = Configuration(k1="with X", K2=Configuration(K1=1, k2=2))
-        self.assertIsInstance(conf, Configuration)
+        conf = CarefulConfiguration.from_dict(d, key_mods)
+        ref = CarefulConfiguration(k1="with X", K2=CarefulConfiguration(K1=1, k2=2))
+        self.assertIsInstance(conf, CarefulConfiguration)
         self.assertEqual(ref, conf)
 
         key_mods = {"O": "_", "X": "A", "keyO": "K", "keyX": "k"}  # reversed
-        conf = Configuration.from_dict(d, key_mods)
-        ref = Configuration(k1="with X", K2=Configuration(K1=1, k2=2))
-        self.assertIsInstance(conf, Configuration)
+        conf = CarefulConfiguration.from_dict(d, key_mods)
+        ref = CarefulConfiguration(k1="with X", K2=CarefulConfiguration(K1=1, k2=2))
+        self.assertIsInstance(conf, CarefulConfiguration)
         self.assertEqual(ref, conf)
 
     def test_to_dict(self):
@@ -802,19 +802,19 @@ class TestConfiguration(TestCase):
         self.assertDictEqual(d_ref, d)
 
     def test_to_dict_key_modifiers(self):
-        conf = Configuration(key_1="with space", key02="with hyphen")
+        conf = CarefulConfiguration(key_1="with space", key02="with hyphen")
         d = conf.to_dict({"_": " ", "0": "-"})
         d_ref = {"key 1": "with space", "key-2": "with hyphen"}
         self.assertDictEqual(d_ref, d)
 
     def test_to_dict_key_modifiers_combination(self):
-        conf = Configuration(key_1="with space", key02="with hyphen")
+        conf = CarefulConfiguration(key_1="with space", key02="with hyphen")
         d = conf.to_dict({"_": " ", "0": "-", "k": "K"})
         d_ref = {"Key 1": "with space", "Key-2": "with hyphen"}
         self.assertDictEqual(d_ref, d)
 
     def test_to_dict_key_modifiers_combination_neighbours(self):
-        conf = Configuration(key_1="with space")
+        conf = CarefulConfiguration(key_1="with space")
         d = conf.to_dict({"1": "3", "_": " "})
         d_ref = {"key 3": "with space"}
         self.assertDictEqual(d_ref, d)
@@ -824,7 +824,7 @@ class TestConfiguration(TestCase):
         self.assertDictEqual(d_ref, d)
 
     def test_to_dict_key_modifiers_order(self):
-        conf = Configuration(key_1="with space", key02="with space")
+        conf = CarefulConfiguration(key_1="with space", key02="with space")
         d = conf.to_dict({"0": "_", "_": " "})
         d_ref = {"key 1": "with space", "key_2": "with space"}
         self.assertDictEqual(d_ref, d)
@@ -834,7 +834,7 @@ class TestConfiguration(TestCase):
         self.assertDictEqual(d_ref, d)
 
     def test_to_dict_key_modifiers_order_length(self):
-        conf = Configuration(key_1="with space", key_2="with hyphen")
+        conf = CarefulConfiguration(key_1="with space", key_2="with hyphen")
         d = conf.to_dict({"_1": " 1", "_2": "-2", "_": "0"})
         d_ref = {"key 1": "with space", "key-2": "with hyphen"}
         self.assertDictEqual(d_ref, d)
@@ -844,7 +844,7 @@ class TestConfiguration(TestCase):
         self.assertDictEqual(d_ref, d)
 
     def test_to_dict_key_modifiers_nested(self):
-        conf = Configuration(key_1="with space", key_2=Configuration(key_1=1, key_2=2))
+        conf = CarefulConfiguration(key_1="with space", key_2=CarefulConfiguration(key_1=1, key_2=2))
         d = conf.to_dict({"_1": " 1", "_2": "-2", "_": "0"})
         d_ref = {"key 1": "with space", "key-2": {"key 1": 1, "key-2": 2}}
         self.assertDictEqual(d_ref, d)

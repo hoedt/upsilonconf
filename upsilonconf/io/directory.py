@@ -1,7 +1,7 @@
 from typing import Optional
 
 from .base import ConfigIO
-from ..config import Configuration
+from ..config import CarefulConfiguration
 
 
 class DirectoryIO(ConfigIO):
@@ -44,7 +44,7 @@ class DirectoryIO(ConfigIO):
     When reading this directory, we end up with the following configuration:
 
     >>> upsilonconf.load_config("examples/hparam")
-    ... Configuration(foo=1, baz=Configuration(a=0.1, b=0.2), bar='hparam')
+    ... CarefulConfiguration(foo=1, baz=CarefulConfiguration(a=0.1, b=0.2), bar='hparam')
     """
 
     DEFAULT_NAME = "config"
@@ -91,7 +91,7 @@ class DirectoryIO(ConfigIO):
                 self._file_ext = base_path.suffix
         except StopIteration:
             base_path = None
-            base_conf = Configuration()
+            base_conf = CarefulConfiguration()
 
         for sub in path.iterdir():
             if sub == base_path:

@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Mapping, Any, Union, TextIO, Sequence, Dict, Optional
 
-from ..config import Configuration
+from ..config import CarefulConfiguration
 
 
 class ConfigIO(ABC):
@@ -48,7 +48,7 @@ class ConfigIO(ABC):
 
     def load_config(
         self, path: Union[Path, str], key_mods: Optional[Mapping[str, str]] = None
-    ) -> Configuration:
+    ) -> CarefulConfiguration:
         """
         Load configuration from disk.
 
@@ -63,12 +63,12 @@ class ConfigIO(ABC):
 
         Returns
         -------
-        config : Configuration
+        config : CarefulConfiguration
             A configuration object with the values as provided in the file.
         """
         path = (Path.cwd() / Path(path).expanduser()).resolve()
         m = self.read(path)
-        return Configuration.from_dict(m, key_mods)
+        return CarefulConfiguration.from_dict(m, key_mods)
 
     @abstractmethod
     def write_to(self, stream: TextIO, conf: Mapping[str, Any]) -> None:
@@ -90,7 +90,7 @@ class ConfigIO(ABC):
 
     def save_config(
         self,
-        config: Configuration,
+        config: CarefulConfiguration,
         path: Union[Path, str],
         key_mods: Optional[Mapping[str, str]] = None,
     ) -> None:
@@ -99,7 +99,7 @@ class ConfigIO(ABC):
 
         Parameters
         ----------
-        config : Configuration
+        config : CarefulConfiguration
             The configuration object to save.
         path : Path or str
             Path to a writeable location on disk.

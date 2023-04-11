@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Tuple, Any, Sequence, Optional
 
 from .base import ConfigIO
-from ..config import Configuration
+from ..config import CarefulConfiguration
 
 
 class ConfigParser:
@@ -97,7 +97,7 @@ class ConfigParser:
 
         Returns
         -------
-        config : Configuration
+        config : CarefulConfiguration
             The configuration as specified by the command line arguments.
         ns : Namespace, optional
             The namespace with non-configuration arguments.
@@ -105,7 +105,7 @@ class ConfigParser:
         """
         ns = self._parser.parse_args(args)
         config = (
-            Configuration()
+            CarefulConfiguration()
             if self._config_io is None or ns.config is None
             else self._config_io.load_config(ns.config)
         )
