@@ -44,47 +44,23 @@ class InvalidKeyError(ValueError):
 
 class ConfigurationBase(Mapping[str, V], ABC):
     """
-    Interface for configuration objects that map variable names to their values.
+    Interface for configuration objects.
 
-    A `ConfigurationBase` object can be used to represent values for various values.
-    It can be interpreted in two ways:
+    This interface can be interpreted in essentially two ways:
 
-    - a dictionary (or more generally, a mapping) with attribute syntax, or
-    - a python object with indexing syntax.
+    - a dictionary (or mapping) with attribute syntax, or
+    - an object with indexing syntax.
 
     On top of the combined feature set of dictionaries and attributes,
-    this class introduces advanced indexing, convenient merging and `dict` conversions.
-    ``dict``-like values are automatically converted to `PlainConfiguration` objects,
+    this class provides convenient indexing, merging and conversions.
+    Values of type ``dict`` (or other mapping types) will be
+    automatically converted to configuration objects,
     giving rise to hierarchical configuration objects.
 
-    Examples
+    See Also
     --------
-    Configurations are typically constructed from keyword arguments.
-
-    >>> conf = PlainConfiguration(foo=0, bar="bar", baz={'a': 1, 'b': 2})
-    >>> print(conf)
-    {foo: 0, bar: bar, baz: {a: 1, b: 2}}
-
-    A configuration is both ``object`` and ``Mapping`` at the same time.
-
-    >>> conf['bar'] == conf.bar
-    True
-    >>> conf['baz']['a'] == conf.baz.a
-    True
-
-    Advanced indexing for convenient access to subconfigs.
-
-    >>> conf['baz', 'a']  # tuple index
-    1
-    >>> conf['baz.a']  # dot-string index
-    1
-
-    Configurations can conveniently be merged with other ``Mapping`` objects.
-
-    >>> print(conf | {"xtra": None})
-    {foo: 0, bar: bar, baz: {a: 1, b: 2}, xtra: None}
-    >>> print(conf | {"baz": {"c": 3}})
-    {foo: 0, bar: bar, baz: {a: 1, b: 2, c: 3}}
+    PlainConfiguration : implementation of mutable configuration.
+    FrozenConfiguration : implementation of immutable configuration.
     """
 
     # TODO: drop py3.6 support for proper generics?
@@ -244,21 +220,31 @@ class ConfigurationBase(Mapping[str, V], ABC):
         Parameters
         ----------
         flat : bool, optional
-            If ``True``, the view will ignore the hierarchy of this config.
-            This means that instead of returning subconfigs,
-            the subconfigs are recursively included in the view.
-            Keys of subconfigs are combined with the keys in the subconfig
-            with a ``.`` so that they are valid indices for this configuration.
-            If ``False`` (Default), a regular ``dict``-like view will be returned.
+            If ``True``, the hierarchy of this config is ignored.
+            This means that instead of including subconfigs,
+            the subconfigs are recursively flattened in the view.
+            The subconfig-key and keys in the subconfig are combined
+            using ``.``-syntax, making them valid indices for this object.
+            If ``False`` (default), a ``dict``-like view is returned.
 
         Returns
         -------
         keys_view : KeysView or FlatKeysView
             The new view on the keys in this config.
 
+        See Also
+        --------
+        values : view on values
+        items : view on key-value pairs
+
         Examples
         --------
-        >>> conf = PlainConfiguration(a=123, sub=PlainConfiguration(b="foo", c=None))
+        The examples below work for any subclass of `ConfigurationBase`.
+
+        >>> from upsilonconf import PlainConfiguration as Config
+
+
+        >>> conf = Config(a=123, sub=Config(b="foo", c=None))
         >>> list(conf.keys())
         ['a', 'sub']
         >>> list(conf.keys(flat=True))
@@ -268,46 +254,6 @@ class ConfigurationBase(Mapping[str, V], ABC):
             return self.__dict__.keys()
 
         return self.__class__.FlatKeysView(self)
-
-    @overload
-    def items(self) -> ItemsView:
-        ...
-
-    @overload
-    def items(self, flat: bool = ...) -> Union[ItemsView, FlatItemsView]:
-        ...
-
-    def items(self, flat=False):
-        """
-        Get a view of this configuration's `(key, value)` pairs.
-
-        Parameters
-        ----------
-        flat : bool, optional
-            If ``True``, the view will ignore the hierarchy of this config.
-            This means that instead of returning subconfigs,
-            the subconfigs are recursively included in the view.
-            Keys of subconfigs are combined with the keys in the subconfig
-            with a ``.`` so that they are valid indices for this configuration.
-            If ``False`` (Default), a regular ``dict``-like view will be returned.
-
-        Returns
-        -------
-        keys_view : ItemsView or FlatItemsView
-            The new view on the `(key, value)` pairs in this config.
-
-        Examples
-        --------
-        >>> conf = PlainConfiguration(a=123, sub=PlainConfiguration(b="foo", c=None))
-        >>> list(conf.items())
-        [('a', 123), ('sub', PlainConfiguration(b='foo', c=None))]
-        >>> list(conf.items(flat=True))
-        [('a', 123), ('sub.b', 'foo'), ('sub.c', None)]
-        """
-        if not flat:
-            return self.__dict__.items()
-
-        return self.__class__.FlatItemsView(self)
 
     @overload
     def values(self) -> ValuesView:
@@ -324,21 +270,31 @@ class ConfigurationBase(Mapping[str, V], ABC):
         Parameters
         ----------
         flat : bool, optional
-            If ``True``, the view will ignore the hierarchy of this config.
-            This means that instead of returning subconfigs,
-            the subconfigs are recursively included in the view.
-            Keys of subconfigs are combined with the keys in the subconfig
-            with a ``.`` so that they are valid indices for this configuration.
-            If ``False`` (Default), a regular ``dict``-like view will be returned.
+            If ``True``, the hierarchy of this config is ignored.
+            This means that instead of including subconfigs,
+            the subconfigs are recursively flattened in the view.
+            The subconfig-key and keys in the subconfig are combined
+            using ``.``-syntax, making them valid indices for this object.
+            If ``False`` (default), a ``dict``-like view is returned.
 
         Returns
         -------
-        keys_view : ValuesView or FlatValuesView
+        values_view : ValuesView or FlatValuesView
             The new view on the values in this config.
+
+        See Also
+        --------
+        keys : view on keys
+        items : view on key-value pairs
 
         Examples
         --------
-        >>> conf = PlainConfiguration(a=123, sub=PlainConfiguration(b="foo", c=None))
+        The examples below work for any subclass of `ConfigurationBase`.
+
+        >>> from upsilonconf import PlainConfiguration as Config
+
+
+        >>> conf = Config(a=123, sub=Config(b="foo", c=None))
         >>> list(conf.values())
         [123, PlainConfiguration(b='foo', c=None)]
         >>> list(conf.values(flat=True))
@@ -349,13 +305,63 @@ class ConfigurationBase(Mapping[str, V], ABC):
 
         return self.__class__.FlatValuesView(self)
 
+    @overload
+    def items(self) -> ItemsView:
+        ...
+
+    @overload
+    def items(self, flat: bool = ...) -> Union[ItemsView, FlatItemsView]:
+        ...
+
+    def items(self, flat=False):
+        """
+        Get a view of this configuration's key-value pairs.
+
+        Parameters
+        ----------
+        flat : bool, optional
+            If ``True``, the hierarchy of this config is ignored.
+            This means that instead of including subconfigs,
+            the subconfigs are recursively flattened in the view.
+            The subconfig-key and keys in the subconfig are combined
+            using ``.``-syntax, making them valid indices for this object.
+            If ``False`` (default), a ``dict``-like view is returned.
+
+        Returns
+        -------
+        items_view : ItemsView or FlatItemsView
+            The new view on the key-value pairs in this config.
+
+        See Also
+        --------
+        keys : view on keys
+        values : view on values
+
+        Examples
+        --------
+        The examples below work for any subclass of `ConfigurationBase`.
+
+        >>> from upsilonconf import PlainConfiguration as Config
+
+
+        >>> conf = Config(a=123, sub=Config(b="foo", c=None))
+        >>> list(conf.items())
+        [('a', 123), ('sub', PlainConfiguration(b='foo', c=None))]
+        >>> list(conf.items(flat=True))
+        [('a', 123), ('sub.b', 'foo'), ('sub.c', None)]
+        """
+        if not flat:
+            return self.__dict__.items()
+
+        return self.__class__.FlatItemsView(self)
+
     # # # Key Magic # # #
 
     def _resolve_key(
         self: Self, keys: Union[str, Tuple[str, ...]]
     ) -> Tuple[Self, str, Tuple[str, ...]]:
         """
-        Resolve dot-string and iterable keys in the hierarchy of this config.
+        Resolve dot-string and iterable keys in this configuration.
 
         Parameters
         ----------
@@ -367,10 +373,12 @@ class ConfigurationBase(Mapping[str, V], ABC):
         config : PlainConfiguration
             The deepest existing sub-configuration as specified by `keys`.
         op_key : str
-            The key to be used in `config` to perform the desired operation.
-            This is either the first unresolved key or the final key in the hierarchy.
+            The key to perform the desired operation on `config`.
+            This is either the first unresolved (nonexistent) key
+            or the final key in the hierarchy, which might exist.
         unresolved : tuple of str
-            The keys that could not be resolved due to the missing of `op_key`
+            The keys that could not be resolved, i.e. do not exist (yet).
+            This value does **not** include `op_key`.
 
         Raises
         ------
@@ -463,13 +471,11 @@ class ConfigurationBase(Mapping[str, V], ABC):
         key_mods: Optional[Mapping[str, str]] = None,
     ) -> Self:
         """
-        Create a configuration object from another mapping.
+        Create a configuration from another mapping.
 
         In its simplest form, this method unpacks the dictionary
         and passes the key-value pairs as arguments to the constructor.
         The `key_mods` argument additionally allows to *clean up* keys.
-        This is especially useful if keys are not valid attribute names,
-        but you wish to use the attribute syntax on the object.
 
         Parameters
         ----------
@@ -477,53 +483,58 @@ class ConfigurationBase(Mapping[str, V], ABC):
             The dictionary from which to create a configuration object.
         key_mods : Mapping[str, str], optional
             A mapping from key patterns to their respective replacement.
-            In case of multiple patterns, longer patterns are replaced first.
+            With multiple patterns, longer patterns are replaced first.
 
         Returns
         -------
         config : ConfigurationBase
             A configuration object representing the original mapping
-            where all patterns in `keys_mods` found in keys have been replaced.
+            where any occurrence of patterns in `keys_mods`
+            in the original keys has been replaced.
 
         See Also
         --------
-        __init__ : regular constructor
         to_dict : inverse conversion from config to mapping.
+        __init__ : regular constructor.
 
         Examples
         --------
+        The examples below work for any subclass of `ConfigurationBase`.
+
+        >>> from upsilonconf import PlainConfiguration as Config
+
         Without `key_mods`, the dictionary is equivalent to `__init__`.
 
         >>> d = {"my key": "foo", "a key": 1}
-        >>> conf = PlainConfiguration.from_dict(d)
+        >>> conf = Config.from_dict(d)
         >>> conf
         PlainConfiguration(my key='foo', a key=1)
         >>> conf["my key"]
         'foo'
 
-        By using the `key_mods` argument, keys can be made more accessible.
+        By using the `key_mods` argument, keys can become more accessible.
 
-        >>> conf = PlainConfiguration.from_dict(d, key_mods={" ": "_"})
+        >>> conf = Config.from_dict(d, key_mods={" ": "_"})
         >>> conf
         PlainConfiguration(my_key='foo', a_key=1)
         >>> conf.my_key
         'foo'
 
-        It can also be used to convert flat ``dict``s to a hierarchical config.
+        Flat ``dict``s can also be converted to a hierarchical config.
 
-        >>> conf = PlainConfiguration.from_dict(d, key_mods={" ": "."})
+        >>> conf = Config.from_dict(d, key_mods={" ": "."})
         >>> conf
         PlainConfiguration(my=PlainConfiguration(key='foo'), a=PlainConfiguration(key=1))
 
-        Multiple replacements can be combined to fix multiple issues at once.
+        Multiple replacements can be combined in a single call.
 
-        >>> conf = PlainConfiguration.from_dict(d, key_mods={" ": "_", "e": "3"})
+        >>> conf = Config.from_dict(d, key_mods={" ": "_", "e": "3"})
         >>> conf
         PlainConfiguration(my_k3y='foo', a_k3y=1)
 
         Note that replacements are executed in order of length.
 
-        >>> conf = PlainConfiguration.from_dict(d, key_mods={"my ": "A", " ": "B"})
+        >>> conf = Config.from_dict(d, key_mods={"my ": "A", " ": "B"})
         >>> conf
         PlainConfiguration(Akey='foo', aBkey=1)
         """
@@ -536,54 +547,60 @@ class ConfigurationBase(Mapping[str, V], ABC):
         self, key_mods: Optional[Mapping[str, str]] = None, flat: bool = False
     ) -> Dict[str, V]:
         """
-        Convert this configuration object to a dictionary.
+        Convert this configuration to a dictionary.
 
-        This method transfers the key-value pairs in this configuration object
-        to a dictionary in a recursive manner (for hierarchical configurations).
+        This method transfers the key-value pairs in this configuratio
+        to a dictionary recursively (for hierarchical configurations).
         The `key_mods` argument additionally allows to modify keys.
-        This is especially useful if you wish to make keys more readable
-        than what the Python attribute syntax allows.
         The `flat` argument allows to flatten hierarchical configurations.
 
         Parameters
         ----------
         key_mods : Mapping[str, str], optional
             A mapping from key patterns to their respective replacement.
-            In case of multiple patterns, longer patterns are replaced first.
+            With multiple patterns, longer patterns are replaced first.
         flat : bool, optional
             Discard the hierarchy in this configuration object.
             When ``True``, keys in subconfigurations are converted to
-            the dot-string that can be used to index its corresponding value.
+            dot-strings that are valid indices for this configuration.
 
         Returns
         -------
         mapping : dict[str, V]
-            A configuration object representing the original mapping
-            where all patterns in `keys_mods` found in keys have been replaced.
+            A ``dict`` representing this configuration
+            where any occurrence of patterns in `keys_mods`
+            in the original keys has been replaced.
 
         See Also
         --------
-        dict : convert mapping to dictionary
         from_dict : inverse conversion from mapping to config.
+        items : iterate over (flattened) key-value pairs.
 
         Examples
         --------
-        For flat configurations, this method has the same effect as calling ``dict``.
+        The examples below work for any subclass of `ConfigurationBase`.
 
-        >>> conf = PlainConfiguration(my_key="foo", a_key=1)
+        >>> from upsilonconf import PlainConfiguration as Config
+
+        For configurations without hierarchy,
+        this method has the same effect as calling ``dict``.
+
+        >>> conf = Config(my_key="foo", a_key=1)
         >>> dict(conf)
         {'my_key': 'foo', 'a_key': 1}
         >>> conf.to_dict()
         {'my_key': 'foo', 'a_key': 1}
 
-        For hierarchical configurations, the conversion is applied recursively.
-        >>> conf = PlainConfiguration(sub=conf)
+        For hierarchical configurations,
+        the conversion is applied recursively.
+
+        >>> conf = Config(sub=conf)
         >>> dict(conf)
         {'sub': PlainConfiguration(my_key='foo', a_key=1)}
         >>> conf.to_dict()
         {'sub': {'my_key': 'foo', 'a_key': 1}}
 
-        It is also possible to discard the hierarchy using the `flat` argument.
+        The hierarchy can also be discarded using the `flat` argument.
 
         >>> conf.to_dict(flat=True)
         {'sub.my_key': 'foo', 'sub.a_key': 1}
@@ -593,12 +610,12 @@ class ConfigurationBase(Mapping[str, V], ABC):
         >>> conf.to_dict(key_mods={"_": " "})
         {'sub': {'my key': 'foo', 'a key': 1}}
 
-        It can also be useful if you don't like the dot-strings after flattening.
+        Also, dot-strings from flattening can be replaced.
 
         >>> conf.to_dict(flat=True, key_mods={".": "_"})
         {'sub_my_key': 'foo', 'sub_a_key': 1}
 
-        Multiple replacements can be combined to fix multiple annoyances at once.
+        Multiple replacements can be combined in a single call.
 
         >>> conf.to_dict(key_mods={"_": " ", "e": "3"})
         {'sub': {'my k3y': 'foo', 'a k3y': 1}}
@@ -618,20 +635,16 @@ class PlainConfiguration(ConfigurationBase[Any], MutableMapping[str, Any]):
     """
     Freely mutable configuration.
 
-    A `PlainConfiguration` object is a mutable implementation of a `ConfigurationBase`.
-    This means that you can add, change and/or delete values in this object.
-    Moreover, there are no limitations to the changes you can make.
-    Concretely, you are able to:
-        - overwrite values without warnings or errors,
-        - use variable names that are not valid attribute names,
-        - use attribute or method names as keys.
+    `PlainConfiguration` is a mutable `ConfigurationBase` implementation.
+    This means that values can be added, changed and/or deleted.
 
     See Also
     --------
-    FrozenConfiguration: an immutable configuration.
+    ConfigurationBase : the configuration interface.
+    FrozenConfiguration : an immutable configuration.
 
-    Notes
-    -----
+    Warnings
+    --------
     In the current implementation, using method names as keys is possible,
 
     >>> conf = PlainConfiguration()
@@ -670,7 +683,8 @@ class PlainConfiguration(ConfigurationBase[Any], MutableMapping[str, Any]):
     >>> print(conf)
     {foo: 0, bar: bar, baz: {b: 2}, surprise: []}
 
-    Creating a single value in a subconfig is only possible using indexing syntax.
+    Creating a single value in a subconfig is possible,
+    but only using indexing syntax, not with attribute syntax.
 
     >>> conf.sub.val = 0
     Traceback (most recent call last):
@@ -731,17 +745,19 @@ class FrozenConfiguration(ConfigurationBase[Hashable], Hashable):
     """
     Immutable configuration.
 
-    A `FrozenConfiguration` object is an immutable implementation of a `ConfigurationBase`.
-    This means that you can **not** add, change and/or delete anything in this object.
-    Because of this immutability, `FrozenConfiguration` is a `Hashable` type,
-    which means that they can be used in ``set``s and serve as keys in a ``dict``.
+    `FrozenConfiguration` is an immutable `ConfigurationBase` implementation.
+    This means that values can **not** be added, changed and/or deleted.
+    As a result, `FrozenConfiguration` is a `Hashable` type,
+    which means that they can be used in a ``set``
+    or serve as keys in a ``dict``.
 
     See Also
     --------
-    PlainConfiguration: a mutable configuration.
+    ConfigurationBase : the configuration interface.
+    PlainConfiguration : a mutable configuration.
 
-    Notes
-    -----
+    Warnings
+    --------
     In the current implementation, using method names as keys is possible,
 
     >>> conf = FrozenConfiguration()
@@ -783,7 +799,8 @@ class FrozenConfiguration(ConfigurationBase[Hashable], Hashable):
         ...
     AttributeError: 'FrozenConfiguration' object attribute 'a' is read-only
 
-    Values are converted to hashable types if possible.
+    Values should be of hashable types,
+    but non-hashable types are converted if possible.
 
     >>> print(FrozenConfiguration(value=[1, 2, 3]))
     {value: (1, 2, 3)}
@@ -792,7 +809,7 @@ class FrozenConfiguration(ConfigurationBase[Hashable], Hashable):
         ...
     TypeError: unhashable type: 'slice'
 
-    The main feature is that frozen configurations can be used as ``dict`` keys.
+    Frozen configurations can be used keys in a ``dict``.
 
     >>> results = {
     ...     FrozenConfiguration(option=1): 0.1,
