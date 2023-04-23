@@ -149,8 +149,9 @@ class ConfigurationBase(Mapping[str, V], ABC):
         def __iter__(self) -> Iterator[Any]:
             yield from (v for _, v in self._flat_iter())
 
+    @abstractmethod
     def __init__(self, **kwargs: V):
-        pass
+        ...
 
     def __repr__(self) -> str:
         kwargs = ["=".join([k, f"{v!r}"]) for k, v in self.__dict__.items()]
@@ -823,10 +824,7 @@ class FrozenConfiguration(ConfigurationBase[Hashable], Hashable):
         super().__init__()
         for k, v in kwargs.items():
             conf, key, unresolved = self._resolve_key(k)
-            v = self._fix_value(v)
-            for k_sub in unresolved:
-                v = self.__class__(**{k_sub: v})
-            conf.__dict__[key] = v
+            conf.__dict__[key] = self._fix_value(v, unresolved)
 
     def __hash__(self) -> int:
         # inspired by https://stackoverflow.com/questions/20832279
