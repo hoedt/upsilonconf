@@ -57,6 +57,8 @@ class ConfigurationBase(Mapping[str, V], ABC):
     automatically converted to configuration objects,
     giving rise to hierarchical configuration objects.
 
+    .. versionadded:: 0.7.0
+
     See Also
     --------
     PlainConfiguration : implementation of mutable configuration.
@@ -634,10 +636,12 @@ class ConfigurationBase(Mapping[str, V], ABC):
 
 class PlainConfiguration(ConfigurationBase[Any], MutableMapping[str, Any]):
     """
-    Freely mutable configuration.
+    Mutable configuration.
 
     `PlainConfiguration` is a mutable `ConfigurationBase` implementation.
     This means that values can be added, changed and/or deleted.
+
+    .. versionadded:: 0.7.0
 
     See Also
     --------
@@ -751,6 +755,8 @@ class FrozenConfiguration(ConfigurationBase[Hashable], Hashable):
     As a result, `FrozenConfiguration` is a `Hashable` type,
     which means that they can be used in a ``set``
     or serve as keys in a ``dict``.
+
+    .. versionadded:: 0.7.0
 
     See Also
     --------
