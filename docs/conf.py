@@ -15,16 +15,17 @@ from datetime import date
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath('..'))
+sys.path.insert(0, os.path.abspath(".."))
 
 # -- Project information -----------------------------------------------------
 
-project = 'UpsilonConf'
-copyright = f'2022-{date.today().year}, Pieter-Jan Hoedt'
-author = 'Pieter-Jan Hoedt'
+project = "UpsilonConf"
+copyright = f"2022-{date.today().year}, Pieter-Jan Hoedt"
+author = "Pieter-Jan Hoedt"
 
 # The full version, including alpha/beta/rc tags
 import upsilonconf
+
 release = upsilonconf.__version__
 
 
@@ -39,13 +40,17 @@ extensions = [
     "numpydoc",
 ]
 
+autodoc_member_order = "bysource"
+numpydoc_show_class_members = False
+numpydoc_class_members_toctree = False
+
 # Add any paths that contain templates here, relative to this directory.
-templates_path = []  # ['_templates']
+templates_path = ["_templates"]
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -53,7 +58,7 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'alabaster'
+html_theme = "alabaster"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
