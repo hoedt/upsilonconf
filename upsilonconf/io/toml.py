@@ -6,7 +6,11 @@ from .base import ConfigIO
 
 
 class TOMLIO(ConfigIO):
-    """IO for reading/writing TOML files."""
+    """
+    IO for reading/writing TOML files.
+
+    .. versionadded:: 0.6.0
+    """
 
     @property
     def extensions(self):

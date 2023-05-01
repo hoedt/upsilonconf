@@ -17,6 +17,16 @@ class DirectoryIO(ConfigIO):
         for an existing(!) key in the base config.
         Therefore, the filename must match one of the keys in the base config.
 
+    .. versionadded:: 0.5.0
+
+    Parameters
+    ----------
+    config_io : ConfigIO
+        The io to use to read/write files in each directory.
+    main_file : str, optional
+        The filename that specifies the main config file when reading
+        or the filename for the file that is created when writing.
+
     Examples
     --------
     Consider a directory with structure::
@@ -43,21 +53,12 @@ class DirectoryIO(ConfigIO):
     When reading this directory, we end up with the following configuration:
 
     >>> upsilonconf.load_config("examples/hparam")
-    ... PlainConfiguration(foo=1, baz=PlainConfiguration(a=0.1, b=0.2), bar='hparam')
+    PlainConfiguration(foo=1, baz=PlainConfiguration(a=0.1, b=0.2), bar='hparam')
     """
 
     DEFAULT_NAME = "config"
 
     def __init__(self, config_io: ConfigIO, main_file: Optional[str] = None):
-        """
-        Parameters
-        ----------
-        config_io : ConfigIO
-            The io to use to read/write files in each directory.
-        main_file : str, optional
-            The filename that specifies the main config file when reading
-            or the filename for the file that is created when writing.
-        """
         if main_file is None:
             main_file = self.DEFAULT_NAME
 

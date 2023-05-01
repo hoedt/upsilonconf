@@ -2,17 +2,20 @@ from .base import ConfigIO
 
 
 class JSONIO(ConfigIO):
-    """IO for reading/writing JSON files."""
+    """
+    IO for reading/writing JSON files.
+
+    .. versionadded:: 0.5.0
+
+    Parameters
+    ----------
+    indent : int, optional
+        The number of spaces to use for indentation in the output file.
+    sort_keys : bool, optional
+        Whether keys should be sorted before writing to the output file.
+    """
 
     def __init__(self, indent: int = 2, sort_keys: bool = False):
-        """
-        Parameters
-        ----------
-        indent : int, optional
-            The number of spaces to use for indentation in the output file.
-        sort_keys : bool, optional
-            Whether keys should be sorted before writing to the output file.
-        """
         self._encoder = None
         self._encode_kwargs = {
             "indent": indent,

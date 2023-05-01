@@ -61,23 +61,28 @@ def load_config(
     config_io: Optional[ConfigIO] = None,
 ) -> ConfigurationBase:
     """
-    Read configuration data from disk.
+    Load configuration from a file.
 
     Parameters
     ----------
     path : Path or str
-        Path to a readable location on disk.
+        Path to a readable text file on disk.
     key_mods : dict, optional
         A dictionary mapping key substrings to replacement patterns.
         This allows to modify keys with invalid characters for config keys.
     config_io : ConfigIO, optional
         The IO to use for reading the file.
-        By default, the IO will be inferred from the file extension.
+        If not specified, the default IO will be used.
 
     Returns
     -------
     config : CarefulConfiguration
         A configuration object with the key-value pairs as provided in the file.
+
+    See Also
+    --------
+    io.get_default_io : retrieve the default IO.
+    io.ConfigIO.load_config : implementation of functionality.
     """
     if config_io is None:
         config_io = get_default_io()
@@ -97,16 +102,22 @@ def save_config(
     Parameters
     ----------
     path : Path or str
-        Path to a writeable location on disk.
+        Path to a writeable text file on disk.
     key_mods : dict, optional
         A dictionary mapping key substrings to replacement patterns.
         This allows to modify keys with invalid characters for config keys.
     config_io : ConfigIO, optional
         The IO to use for writing the file.
-        By default, the IO will be inferred from the file extension.
+        If not specified, the default IO will be used.
+
+    See Also
+    --------
+    io.get_default_io : retrieve the default IO.
+    io.ConfigIO.save_config : implementation of functionality.
     """
     if config_io is None:
         config_io = get_default_io()
+
     config_io.save_config(config, path, key_mods)
 
 
@@ -135,7 +146,7 @@ def from_cli(args=None, parser=None, config_io=None):
 
     Returns
     -------
-    config : CarefulConfiguration
+    config : ConfigurationBase
         The configuration as specified by the command line arguments.
     ns : Namespace, optional
         The namespace with additional arguments from the command line arguments.

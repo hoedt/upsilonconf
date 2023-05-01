@@ -15,6 +15,22 @@ class ConfigParser:
     Additionally, a ``--config`` option is added if an IO has been specified.
     The ``--config`` option takes a filename as argument
     from which a base configuration can be loaded.
+
+    .. versionadded:: 0.5.0
+
+    Parameters
+    ----------
+    config_io : ConfigIO
+        Specifies how configuration files are read.
+    parser : ArgumentParser, optional
+        The CLI parser to use as a base for retrieving configuration options.
+        The parser can not (already) expect a variable number of positional args.
+        Moreover, the parser should not already use the names *config* or *overrides*.
+        If not specified, an empty parser will be created.
+    return_ns : bool, optional
+        If ``True``, `parse_config` will also return the namespace.
+        If ``False``, it will only return the configuration.
+        By default, `return_ns` is set to ``True`` if `parser` is not ``None``.
     """
 
     @staticmethod
@@ -36,21 +52,6 @@ class ConfigParser:
         config_io: Optional[ConfigIO] = None,
         return_ns: Optional[bool] = None,
     ):
-        """
-        Parameters
-        ----------
-        config_io : ConfigIO
-            Specifies how configuration files are read.
-        parser : ArgumentParser, optional
-            The CLI parser to use as a base for retrieving configuration options.
-            The parser can not (already) expect a variable number of positional args.
-            Moreover, the parser should not already use the names *config* or *overrides*.
-            If not specified, an empty parser will be created.
-        return_ns : bool, optional
-            If ``True``, `parse_config` will also return the namespace.
-            If ``False``, it will only return the configuration.
-            By default, `return_ns` is set to ``True`` if `parser` is not ``None``.
-        """
         if return_ns is None:
             return_ns = parser is not None
 
