@@ -16,6 +16,7 @@ A few handy tools to help with IO are also included.
 
    usage
    api
+   about
 
 Some Features
 -------------
@@ -39,13 +40,13 @@ Furthermore, the included I/O tools should enable:
  - reading configuration directories
  - retrieving configs from the command line
 
-If you think a particular feature is missing, feel free to `let me know`_.
+If you think a particular feature is missing or something is not work as expected,
+feel free to let me know by `creating an issue`_.
 
-.. _let me know: https://github.com/hoedt/upsilonconf/issues
+.. _creating an issue: https://github.com/hoedt/upsilonconf/issues
 
 Indices and tables
 ==================
 
 * :ref:`genindex`
-* :ref:`modindex`
 * :ref:`search`
