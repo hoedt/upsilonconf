@@ -357,6 +357,25 @@ class TestExtensionIO(Utils.TestConfigIO):
         for ext in iter(self.io):
             self.assertIsNotNone(self.io[ext])
 
+    def test_default_ext_setter(self):
+        for ext in self.io.extensions:
+            self.io.default_ext = ext
+            self.assertEqual(ext, self.io.default_ext)
+
+    def test_default_ext_capitalised(self):
+        for ext in self.io.extensions:
+            self.io.default_ext = ext.upper()
+            self.assertEqual(ext, self.io.default_ext)
+
+    def test_default_ext_no_dot(self):
+        for ext in self.io.extensions:
+            self.io.default_ext = ext.lstrip(".")
+            self.assertEqual(ext, self.io.default_ext)
+
+    def test_default_ext_bad_ext(self):
+        with self.assertRaises(ValueError):
+            self.io.default_ext = ".invalid"
+
     def test_read_from(self):
         buffer = StringIO(self.file_contents)
         with self.assertRaises(TypeError):

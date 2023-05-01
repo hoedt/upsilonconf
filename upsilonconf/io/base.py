@@ -216,17 +216,9 @@ class ExtensionIO(ConfigIO, MutableMapping[str, ConfigIO]):
     def __init__(
         self, io: ConfigIO, *more_ios: ConfigIO, default_ext: Optional[str] = None
     ):
-        ext2io = {ext: io for io in (io,) + more_ios for ext in io.extensions}
-        default_ext = self._canonical_extension(
-            io.default_ext if default_ext is None else default_ext
-        )
-
-        if default_ext not in ext2io:
-            msg = f"default extension '{default_ext}' not supported by provided IOs"
-            raise ValueError(msg)
-
-        self._ext2io = ext2io
-        self._default_ext = default_ext
+        self._default_ext = None
+        self._ext2io = {ext: io for io in (io,) + more_ios for ext in io.extensions}
+        self.default_ext = io.default_ext if default_ext is None else default_ext
 
     def __getitem__(self, ext: str):
         return self._ext2io[self._canonical_extension(ext)]
@@ -245,12 +237,24 @@ class ExtensionIO(ConfigIO, MutableMapping[str, ConfigIO]):
         return len(self._ext2io)
 
     def __iter__(self):
-        yield self._default_ext
-        yield from (k for k in self._ext2io if k != self._default_ext)
+        yield from self._ext2io
 
     @property
     def extensions(self):
         return tuple(iter(self))
+
+    @property
+    def default_ext(self):
+        return self._default_ext
+
+    @default_ext.setter
+    def default_ext(self, ext: str):
+        ext = self._canonical_extension(ext)
+        if ext not in self._ext2io:
+            msg = f"default extension '{ext}' not supported by provided IOs"
+            raise ValueError(msg)
+
+        self._default_ext = ext
 
     def read_from(self, stream):
         cls_name = self.__class__.__name__
