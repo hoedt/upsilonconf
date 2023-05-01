@@ -3,7 +3,7 @@ from typing import Mapping, Union, Optional
 
 from ..config import ConfigurationBase
 from ._optional_dependencies import OptionalDependencyError
-from .base import ConfigIO, ExtensionIO
+from .base import ConfigIO, ExtensionIO, FlexibleIO
 from .json import JSONIO
 from .yaml import YAMLIO
 from .toml import TOMLIO
@@ -45,10 +45,6 @@ def get_default_io(default_ext: Optional[str] = None) -> ConfigIO:
     ------
     ValueError
         If there is no (known) IO for the value passed for `default_ext`.
-
-    See Also
-    --------
-    FlexibleIO : IO to map extensions to other IOs.
     """
     global _default_io
     if _default_io is not None:
