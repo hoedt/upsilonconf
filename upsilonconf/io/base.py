@@ -6,7 +6,11 @@ from ..config import ConfigurationBase, PlainConfiguration, FrozenConfiguration
 
 
 class ConfigIO(ABC):
-    """Interface for reading/writing configurations to/from files."""
+    """
+    Interface for reading/writing configurations to/from files.
+
+    .. versionadded:: 0.5.0
+    """
 
     @property
     @abstractmethod
@@ -160,32 +164,49 @@ class ExtensionIO(ConfigIO, MutableMapping[str, ConfigIO]):
     """
     IO for selecting IOs based on file extensions.
 
-    This IO keeps a mapping from file extensions to their corresponding IOs.
-    Whenever a file needs to be read/written, the file extension is used
-    to retrieve the correct IO and forward the read/write operation.
+    This IO is a mapping from file extensions to other IO objects.
+    Whenever a file is to be read/written,
+    the correct IO is chosen based on the file extension.
+
+    .. versionadded:: 0.7.0
+
+    Parameters
+    ----------
+    io : ConfigIO
+        One of the IO objects to be included.
+        Extensions of this IO will be extracted automatically.
+    *more_ios : ConfigIO
+        Other IO objects to be included.
+        Extensions of these IOs will be extracted automatically.
+    default_ext : str, optional
+        The extension to use when the file-extension is unknown.
+        E.g. when reading from a file-like object.
+        If not specified, the default extension of `io` is used.
     """
 
     @staticmethod
-    def _canonical_extension(ext: str):
+    def _canonical_extension(ext: str) -> str:
+        """
+        Transform a string to a canonical form for extensions.
+
+        Parameters
+        ----------
+        ext : str
+            Sequence of characters that should represent an extension.
+
+        Returns
+        -------
+        canonical_ext : str
+            The canonical extension (with leading period).
+        """
         if len(ext) > 0 and not ext.startswith("."):
             ext = f".{ext}"
 
-        return ext.lower()
+        return ext.lower().strip()
 
     def __init__(
         self, io: ConfigIO, *more_ios: ConfigIO, default_ext: Optional[str] = None
     ):
-        """
-        Parameters
-        ----------
-        ext_io_map : Mapping[str, ConfigIO]
-            A ``dict``-like object mapping extensions to the corresponding IO.
-            The file extension should include the starting period (``.``).
-        default_ext : str, optional
-            The extension (and corresponding IO) to use
-            when no information on the file-extension is available.
-            If not specified, the first key in `ext_io_map` is used.
-        """
         ext2io = {ext: io for io in (io,) + more_ios for ext in io.extensions}
         default_ext = self._canonical_extension(
             io.default_ext if default_ext is None else default_ext
