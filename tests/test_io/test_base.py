@@ -3,7 +3,6 @@ from io import StringIO
 from typing import Iterable
 from unittest import TestCase, mock
 
-from upsilonconf.config import InvalidKeyError
 from upsilonconf.io.base import *
 from upsilonconf.io.json import JSONIO
 from upsilonconf.io.yaml import YAMLIO
@@ -242,7 +241,6 @@ class TestExtensionIO(Utils.TestConfigIO):
         json_io, yaml_io = JSONIO(), YAMLIO()
         io = ExtensionIO(json_io, yaml_io)
         self.assertEqual(".json", io.default_ext)
-        self.assertIs(json_io, io.default_io)
         self.assertIn(".json", io.extensions)
         self.assertIn(".yaml", io.extensions)
         self.assertIn(".yml", io.extensions)
@@ -251,7 +249,6 @@ class TestExtensionIO(Utils.TestConfigIO):
         json_io, yaml_io = JSONIO(), YAMLIO()
         io = ExtensionIO(json_io, yaml_io, default_ext=".yml")
         self.assertEqual(".yml", io.default_ext)
-        self.assertIs(yaml_io, io.default_io)
         self.assertIn(".json", io.extensions)
         self.assertIn(".yaml", io.extensions)
         self.assertIn(".yml", io.extensions)
@@ -310,7 +307,7 @@ class TestExtensionIO(Utils.TestConfigIO):
     def test_delitem(self):
         expected_length = len(self.io.extensions) - 1
         del self.io[".yaml"]
-        self.assertEqual(len(self.io.extensions), expected_length)
+        self.assertEqual(expected_length, len(self.io.extensions))
         self.assertNotIn(".yaml", self.io.extensions)
         self.assertIn(".json", self.io.extensions)
         self.assertIn(".yml", self.io.extensions)
@@ -318,7 +315,7 @@ class TestExtensionIO(Utils.TestConfigIO):
     def test_delitem_capitalised(self):
         expected_length = len(self.io.extensions) - 1
         del self.io[".YAML"]
-        self.assertEqual(len(self.io.extensions), expected_length)
+        self.assertEqual(expected_length, len(self.io.extensions))
         self.assertNotIn(".yaml", self.io.extensions)
         self.assertIn(".json", self.io.extensions)
         self.assertIn(".yml", self.io.extensions)
@@ -326,7 +323,7 @@ class TestExtensionIO(Utils.TestConfigIO):
     def test_delitem_no_dot(self):
         expected_length = len(self.io.extensions) - 1
         del self.io["yaml"]
-        self.assertEqual(len(self.io.extensions), expected_length)
+        self.assertEqual(expected_length, len(self.io.extensions))
         self.assertNotIn(".yaml", self.io.extensions)
         self.assertIn(".json", self.io.extensions)
         self.assertIn(".yml", self.io.extensions)
@@ -337,16 +334,16 @@ class TestExtensionIO(Utils.TestConfigIO):
 
     def test_delitem_default(self):
         default_ext = self.io.default_ext
-        expected_length = len(self.io.extensions) - 1
-        del self.io[default_ext]
-        self.assertEqual(len(self.io.extensions), expected_length)
-        self.assertNotIn(default_ext, self.io.extensions)
-        self.assertNotEqual(default_ext, self.io.default_ext)
+        expected_length = len(self.io.extensions)
+        with self.assertRaises(ValueError):
+            del self.io[default_ext]
+        self.assertEqual(expected_length, len(self.io.extensions))
 
     def test_delitem_all(self):
-        with self.assertRaisesRegex(ValueError, "final extension"):
+        with self.assertRaises(ValueError):
             for ext in self.io.extensions:
                 del self.io[ext]
+        self.assertGreaterEqual(len(self.io.extensions), 1)
 
     def test_length(self):
         io1 = ExtensionIO(JSONIO())
@@ -359,9 +356,6 @@ class TestExtensionIO(Utils.TestConfigIO):
     def test_iter(self):
         for ext in iter(self.io):
             self.assertIsNotNone(self.io[ext])
-
-    def test_default_io(self):
-        self.assertIs(self.io[self.io.default_ext], self.io.default_io)
 
     def test_read_from(self):
         buffer = StringIO(self.file_contents)

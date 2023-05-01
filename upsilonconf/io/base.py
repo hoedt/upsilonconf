@@ -16,9 +16,7 @@ class ConfigIO(ABC):
     @property
     @abstractmethod
     def extensions(self) -> Sequence[str]:
-        """
-        Collection of extensions that are supported by this IO.
-        """
+        """Collection of extensions that are supported by this IO."""
         ...
 
     @property
@@ -238,11 +236,8 @@ class ExtensionIO(ConfigIO, MutableMapping[str, ConfigIO]):
 
     def __delitem__(self, ext: str):
         ext = self._canonical_extension(ext)
-        try:
-            if ext == self.default_ext:
-                self._default_ext = self.extensions[1]  # take next in row
-        except IndexError:
-            raise ValueError("final extension can not be deleted") from None
+        if ext == self.default_ext:
+            raise ValueError("default extension can not be deleted")
 
         del self._ext2io[ext]
 
@@ -256,11 +251,6 @@ class ExtensionIO(ConfigIO, MutableMapping[str, ConfigIO]):
     @property
     def extensions(self):
         return tuple(iter(self))
-
-    @property
-    def default_io(self) -> ConfigIO:
-        """IO corresponding to the default extension."""
-        return self._ext2io[self._default_ext]
 
     def read_from(self, stream):
         cls_name = self.__class__.__name__

@@ -1,7 +1,6 @@
 from io import StringIO
 from unittest import mock
 
-from upsilonconf.config import InvalidKeyError
 from upsilonconf.io.toml import *
 from .test_base import Utils
 
