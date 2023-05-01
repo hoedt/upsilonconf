@@ -81,7 +81,8 @@ class DirectoryIO(ConfigIO):
         return self._file_name + ext
 
     def read_from(self, stream):
-        raise TypeError("directory IO does not support streams")
+        cls_name = self.__class__.__name__
+        raise TypeError(f"{cls_name} does not support reading from stream")
 
     def read(self, path, encoding="utf-8"):
         try:
@@ -118,4 +119,5 @@ class DirectoryIO(ConfigIO):
         self.config_io.write(conf, file_path, encoding)
 
     def write_to(self, stream, config):
-        raise TypeError("directory IO does not support streams")
+        cls_name = self.__class__.__name__
+        raise TypeError(f"{cls_name} does not support writing to stream")

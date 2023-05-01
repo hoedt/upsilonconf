@@ -363,9 +363,34 @@ class TestExtensionIO(Utils.TestConfigIO):
     def test_default_io(self):
         self.assertIs(self.io[self.io.default_ext], self.io.default_io)
 
+    def test_read_from(self):
+        buffer = StringIO(self.file_contents)
+        with self.assertRaises(TypeError):
+            self.io.read_from(buffer)
+
+    def test_read_from_whitespace_key(self):
+        buffer = StringIO(self.file_contents)
+        with self.assertRaises(TypeError):
+            self.io.read_from(buffer)
+
     def test_read_unknown_ext(self):
         with self.assertRaisesRegex(ValueError, "extension"):
             self.io.read(self.file_path.with_suffix(".invalid"))
+
+    def test_write_to(self):
+        buffer = StringIO()
+        with self.assertRaises(TypeError):
+            self.io.write_to(buffer, Utils.CONFIG.to_dict())
+
+    def test_write_to_whitespace_key(self):
+        buffer = StringIO()
+        with self.assertRaises(TypeError):
+            self.io.write_to(buffer, Utils.CONFIG.to_dict())
+
+    def test_write_to_config(self):
+        buffer = StringIO()
+        with self.assertRaises(TypeError):
+            self.io.write_to(buffer, Utils.CONFIG)
 
     def test_write_unknown_ext(self):
         with self.assertRaisesRegex(ValueError, "extension"):

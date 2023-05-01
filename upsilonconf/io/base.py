@@ -40,6 +40,11 @@ class ConfigIO(ABC):
         -------
         config : dict
             A dictionary representing the configuration in the stream.
+
+        Raises
+        ------
+        TypeError
+            If the implementation does not support reading from a stream.
         """
         ...
 
@@ -112,6 +117,11 @@ class ConfigIO(ABC):
             Writeable character stream (file-like object).
         conf : Mapping
             A dictionary representing the configuration to be written.
+
+        Raises
+        ------
+        TypeError
+            If the implementation does not support writing to a stream.
         """
         ...
 
@@ -253,7 +263,8 @@ class ExtensionIO(ConfigIO, MutableMapping[str, ConfigIO]):
         return self._ext2io[self._default_ext]
 
     def read_from(self, stream):
-        return self.default_io.read_from(stream)
+        cls_name = self.__class__.__name__
+        raise TypeError(f"{cls_name} does not support reading from stream")
 
     def read(self, path, encoding="utf-8"):
         try:
@@ -263,7 +274,8 @@ class ExtensionIO(ConfigIO, MutableMapping[str, ConfigIO]):
             raise ValueError(msg) from None
 
     def write_to(self, stream, config):
-        self.default_io.write_to(stream, config)
+        cls_name = self.__class__.__name__
+        raise TypeError(f"{cls_name} does not support writing to stream")
 
     def write(self, config, path, encoding="utf-8"):
         try:
