@@ -26,22 +26,19 @@ class TestTOMLIO(Utils.TestConfigIO):
     def test_load_config_whitespace_key(self):
         file_contents = self.file_contents.replace("foo", "'space foo'")
         m_open = mock.mock_open(read_data=file_contents)
-        with self.assertWarns(UserWarning):
-            with mock.patch("upsilonconf.io.base.open", m_open):
-                self.io.load_config(self.file_path)
+        with mock.patch("upsilonconf.io.base.open", m_open):
+            self.io.load_config(self.file_path)
 
     def test_read_from_whitespace_key(self):
         buffer = StringIO(self.file_contents.replace("foo", "'space foo'"))
         data = self.io.read_from(buffer)
-        ref = {("space " + k if k == "foo" else k): v for k, v in Utils.CONFIG.items()}
+        ref = Utils.CONFIG.to_dict(key_mods={"foo": "space foo"})
         self.assertDictEqual(ref, dict(data))
 
     def test_write_to_whitespace_key(self):
         buffer = StringIO()
-        self.io.write_to(
-            buffer,
-            {("space " + k if k == "foo" else k): v for k, v in Utils.CONFIG.items()},
-        )
+        d = Utils.CONFIG.to_dict(key_mods={"foo": "space foo"})
+        self.io.write_to(buffer, d)
         buffer.seek(0)
         ref = self.file_contents.replace("foo", '"space foo"')
         self.assertMultiLineEqual(ref, buffer.getvalue().rstrip())

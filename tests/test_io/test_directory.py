@@ -3,6 +3,7 @@ from io import StringIO
 from pathlib import Path
 from unittest import TestCase, mock
 
+from upsilonconf import ConfigurationBase, PlainConfiguration
 from upsilonconf.io.directory import *
 from upsilonconf.io.json import JSONIO
 from upsilonconf.io.yaml import YAMLIO
@@ -21,7 +22,7 @@ def fake_directory_structure(root, paths):
             pass
 
         def __iter__(self):
-            yield from (CarefulConfiguration(name=sub) for sub in paths)
+            yield from (PlainConfiguration(name=sub) for sub in paths)
 
     def decorator(func):
         @mock.patch("upsilonconf.io.base.Path.exists")
@@ -183,8 +184,8 @@ class TestDirectoryIO(TestCase):
             any_order=True,
         )
         self.assertEqual(3, m_open.call_count)
-        self.assertIsInstance(config, CarefulConfiguration)
-        ref = CarefulConfiguration(**Utils.CONFIG, sub1=Utils.CONFIG, sub2=Utils.CONFIG)
+        self.assertIsInstance(config, ConfigurationBase)
+        ref = PlainConfiguration(**Utils.CONFIG, sub1=Utils.CONFIG, sub2=Utils.CONFIG)
         self.assertEqual(ref, config)
 
     @fake_directory_structure(path, ["config.json", "sub1.json", "sub2.json"])
@@ -208,8 +209,8 @@ class TestDirectoryIO(TestCase):
             any_order=True,
         )
         self.assertEqual(3, m_open.call_count)
-        self.assertIsInstance(config, CarefulConfiguration)
-        ref = CarefulConfiguration(**Utils.CONFIG, sub1=Utils.CONFIG, sub2=Utils.CONFIG)
+        self.assertIsInstance(config, ConfigurationBase)
+        ref = PlainConfiguration(**Utils.CONFIG, sub1=Utils.CONFIG, sub2=Utils.CONFIG)
         self.assertEqual(ref, config)
 
     def test_write_to(self):

@@ -10,7 +10,7 @@ from upsilonconf.io.yaml import YAMLIO
 
 
 class Utils:
-    CONFIG = CarefulConfiguration(foo=1, bar="test", baz={"a": 0.1, "b": 0.2})
+    CONFIG = PlainConfiguration(foo=1, bar="test", baz={"a": 0.1, "b": 0.2})
     DEFAULT_LINES = (
         "{",
         '  "foo": 1,',
@@ -45,14 +45,12 @@ class Utils:
         def test_read_from(self):
             buffer = StringIO(self.file_contents)
             data = self.io.read_from(buffer)
-            self.assertDictEqual(dict(Utils.CONFIG), dict(data))
+            self.assertDictEqual(Utils.CONFIG.to_dict(), dict(data))
 
         def test_read_from_whitespace_key(self):
             buffer = StringIO(self.file_contents.replace("foo", "space foo"))
             data = self.io.read_from(buffer)
-            ref = {
-                ("space " + k if k == "foo" else k): v for k, v in Utils.CONFIG.items()
-            }
+            ref = Utils.CONFIG.to_dict(key_mods={"foo": "space foo"})
             self.assertDictEqual(ref, dict(data))
 
         def test_read(self):
@@ -61,23 +59,26 @@ class Utils:
                 data = self.io.read(self.file_path)
 
             m_open.assert_called_once_with(self.file_path, "r", encoding="utf-8")
-            self.assertDictEqual(dict(Utils.CONFIG), dict(data))
+            self.assertDictEqual(Utils.CONFIG.to_dict(), dict(data))
+
+        def test_read_encoding(self):
+            m_open = mock.mock_open(read_data=self.file_contents)
+            with mock.patch("upsilonconf.io.base.open", m_open):
+                data = self.io.read(self.file_path, encoding="ascii")
+
+            m_open.assert_called_once_with(self.file_path, "r", encoding="ascii")
+            self.assertDictEqual(Utils.CONFIG.to_dict(), dict(data))
 
         def test_write_to(self):
             buffer = StringIO()
-            self.io.write_to(buffer, dict(Utils.CONFIG))
+            self.io.write_to(buffer, Utils.CONFIG.to_dict())
             buffer.seek(0)
             self.assertMultiLineEqual(self.file_contents, buffer.getvalue().rstrip())
 
         def test_write_to_whitespace_key(self):
             buffer = StringIO()
-            self.io.write_to(
-                buffer,
-                {
-                    ("space " + k if k == "foo" else k): v
-                    for k, v in Utils.CONFIG.items()
-                },
-            )
+            d = Utils.CONFIG.to_dict(key_mods={"foo": "space foo"})
+            self.io.write_to(buffer, d)
             buffer.seek(0)
             ref = self.file_contents.replace("foo", "space foo")
             self.assertMultiLineEqual(ref, buffer.getvalue().rstrip())
@@ -93,9 +94,21 @@ class Utils:
             buffer = StringIO()
             m_open.return_value.__enter__.side_effect = [buffer]
             with mock.patch("upsilonconf.io.base.open", m_open):
-                self.io.write(dict(Utils.CONFIG), self.file_path)
+                self.io.write(Utils.CONFIG.to_dict(), self.file_path)
 
             m_open.assert_called_once_with(self.file_path, "w", encoding="utf-8")
+            buffer.seek(0)
+            for expected in self.generate_file_content():
+                self.assertEqual(expected, next(buffer).rstrip())
+
+        def test_write_encoding(self):
+            m_open = mock.mock_open()
+            buffer = StringIO()
+            m_open.return_value.__enter__.side_effect = [buffer]
+            with mock.patch("upsilonconf.io.base.open", m_open):
+                self.io.write(Utils.CONFIG.to_dict(), self.file_path, encoding="ascii")
+
+            m_open.assert_called_once_with(self.file_path, "w", encoding="ascii")
             buffer.seek(0)
             for expected in self.generate_file_content():
                 self.assertEqual(expected, next(buffer).rstrip())
@@ -106,7 +119,7 @@ class Utils:
                 config = self.io.load_config(self.file_path)
 
             m_open.assert_called_once_with(self.file_path, "r", encoding="utf-8")
-            self.assertIsInstance(config, CarefulConfiguration)
+            self.assertIsInstance(config, ConfigurationBase)
             self.assertEqual(Utils.CONFIG, config)
 
         def test_load_config_relative_path(self):
@@ -116,7 +129,7 @@ class Utils:
                 config = self.io.load_config(filename)
 
             m_open.assert_called_once_with(Path.cwd() / filename, "r", encoding="utf-8")
-            self.assertIsInstance(config, CarefulConfiguration)
+            self.assertIsInstance(config, ConfigurationBase)
             self.assertEqual(Utils.CONFIG, config)
 
         def test_load_config_user_path(self):
@@ -128,15 +141,14 @@ class Utils:
             m_open.assert_called_once_with(
                 Path.home() / filename, "r", encoding="utf-8"
             )
-            self.assertIsInstance(config, CarefulConfiguration)
+            self.assertIsInstance(config, ConfigurationBase)
             self.assertEqual(Utils.CONFIG, config)
 
         def test_load_config_whitespace_key(self):
             file_contents = self.file_contents.replace("foo", "space foo")
             m_open = mock.mock_open(read_data=file_contents)
-            with self.assertWarns(UserWarning):
-                with mock.patch("upsilonconf.io.base.open", m_open):
-                    self.io.load_config(self.file_path)
+            with mock.patch("upsilonconf.io.base.open", m_open):
+                self.io.load_config(self.file_path)
 
         def test_load_config_key_mods(self):
             good, bad = "a", "A"
@@ -150,7 +162,7 @@ class Utils:
                 config = self.io.load_config(self.file_path, key_mods={bad: good})
 
             m_open.assert_called_once_with(self.file_path, "r", encoding="utf-8")
-            self.assertIsInstance(config, CarefulConfiguration)
+            self.assertIsInstance(config, ConfigurationBase)
             self.assertEqual(Utils.CONFIG, config)
 
         def test_save_config(self):
@@ -327,7 +339,7 @@ class TestFlexibleIO(Utils.TestConfigIO):
         m_open.assert_called_once_with(
             self.file_path.with_suffix(".other"), "r", encoding="utf-8"
         )
-        self.assertIsInstance(config, CarefulConfiguration)
+        self.assertIsInstance(config, ConfigurationBase)
         self.assertEqual(Utils.CONFIG, config)
 
     def test_save_config_other_ext(self):

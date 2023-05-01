@@ -1,7 +1,6 @@
 from typing import Optional
 
 from .base import ConfigIO
-from ..config import CarefulConfiguration
 
 
 class DirectoryIO(ConfigIO):
@@ -44,7 +43,7 @@ class DirectoryIO(ConfigIO):
     When reading this directory, we end up with the following configuration:
 
     >>> upsilonconf.load_config("examples/hparam")
-    ... CarefulConfiguration(foo=1, baz=CarefulConfiguration(a=0.1, b=0.2), bar='hparam')
+    ... PlainConfiguration(foo=1, baz=PlainConfiguration(a=0.1, b=0.2), bar='hparam')
     """
 
     DEFAULT_NAME = "config"
@@ -83,15 +82,15 @@ class DirectoryIO(ConfigIO):
     def read_from(self, stream):
         raise TypeError("directory IO does not support streams")
 
-    def read(self, path):
+    def read(self, path, encoding="utf-8"):
         try:
             base_path = next(path.glob(f"{self._file_name}.*"))
-            base_conf = self.config_io.read(base_path)
+            base_conf = self.config_io.read(base_path, encoding)
             if self._file_ext is None:
                 self._file_ext = base_path.suffix
         except StopIteration:
             base_path = None
-            base_conf = CarefulConfiguration()
+            base_conf = {}
 
         for sub in path.iterdir():
             if sub == base_path:
@@ -112,10 +111,10 @@ class DirectoryIO(ConfigIO):
 
         return base_conf
 
-    def write(self, conf, path):
+    def write(self, conf, path, encoding="utf-8"):
         file_path = path / self.file_name
         path.mkdir(exist_ok=True)
-        self.config_io.write(conf, file_path)
+        self.config_io.write(conf, file_path, encoding)
 
     def write_to(self, stream, config):
         raise TypeError("directory IO does not support streams")

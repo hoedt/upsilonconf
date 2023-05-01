@@ -97,7 +97,7 @@ class ConfigParser:
 
         Returns
         -------
-        config : CarefulConfiguration
+        config : ConfigurationBase
             The configuration as specified by the command line arguments.
         ns : Namespace, optional
             The namespace with non-configuration arguments.
@@ -109,7 +109,7 @@ class ConfigParser:
             if self._config_io is None or ns.config is None
             else self._config_io.load_config(ns.config)
         )
-        config.overwrite_all(ns.overrides)
+        config |= dict(ns.overrides)
         if not self.return_ns:
             return config
 

@@ -5,12 +5,13 @@ from unittest import TestCase, mock
 from .test_base import Utils
 from upsilonconf.io.cli import *
 from upsilonconf.io.json import JSONIO
+from upsilonconf.config import ConfigurationBase
 
 
-def _as_dot_keys(config: CarefulConfiguration):
+def _as_dot_keys(config: ConfigurationBase):
     """Utility for converting config to dot-lists"""
     for k, v in config.items():
-        if isinstance(v, CarefulConfiguration):
+        if isinstance(v, ConfigurationBase):
             yield from ((".".join([k, lk]), lv) for lk, lv in _as_dot_keys(v))
         else:
             yield k, v
