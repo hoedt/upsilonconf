@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Mapping, Any, Union, TextIO, Sequence, Dict, Optional
+from typing import Mapping, Any, Union, TextIO, Sequence, Dict, Optional, MutableMapping
 
 from ..config import ConfigurationBase, PlainConfiguration, FrozenConfiguration
 
@@ -13,7 +13,6 @@ class ConfigIO(ABC):
     def extensions(self) -> Sequence[str]:
         """
         Collection of extensions that are supported by this IO.
-        First entry corresponds to the default extension.
         """
         ...
 
@@ -39,7 +38,9 @@ class ConfigIO(ABC):
         """
         ...
 
-    def read(self, path: Union[Path, str], encoding: str = "utf-8") -> Mapping[str, Any]:
+    def read(
+        self, path: Union[Path, str], encoding: str = "utf-8"
+    ) -> Mapping[str, Any]:
         """
         Read configuration from a file.
 
@@ -109,7 +110,9 @@ class ConfigIO(ABC):
         """
         ...
 
-    def write(self, conf: Mapping[str, Any], path: Union[Path, str], encoding: str = "utf-8") -> None:
+    def write(
+        self, conf: Mapping[str, Any], path: Union[Path, str], encoding: str = "utf-8"
+    ) -> None:
         """
         Write configuration to a file.
 
@@ -153,7 +156,7 @@ class ConfigIO(ABC):
         return self.write(m, path)
 
 
-class FlexibleIO(ConfigIO):
+class ExtensionIO(ConfigIO, MutableMapping[str, ConfigIO]):
     """
     IO for selecting IOs based on file extensions.
 
@@ -162,8 +165,15 @@ class FlexibleIO(ConfigIO):
     to retrieve the correct IO and forward the read/write operation.
     """
 
+    @staticmethod
+    def _canonical_extension(ext: str):
+        if len(ext) > 0 and not ext.startswith("."):
+            ext = f".{ext}"
+
+        return ext.lower()
+
     def __init__(
-        self, ext_io_map: Mapping[str, ConfigIO], default_ext: Optional[str] = None
+        self, io: ConfigIO, *more_ios: ConfigIO, default_ext: Optional[str] = None
     ):
         """
         Parameters
@@ -176,85 +186,66 @@ class FlexibleIO(ConfigIO):
             when no information on the file-extension is available.
             If not specified, the first key in `ext_io_map` is used.
         """
-        if len(ext_io_map) == 0:
-            raise ValueError("at least one extension-IO pair is required")
+        ext2io = {ext: io for io in (io,) + more_ios for ext in io.extensions}
+        default_ext = self._canonical_extension(
+            io.default_ext if default_ext is None else default_ext
+        )
 
-        self._ext_io_map: Dict[str, ConfigIO] = {}
-        ext_io_map = dict(ext_io_map)
+        if default_ext not in ext2io:
+            msg = f"default extension '{default_ext}' not supported by provided IOs"
+            raise ValueError(msg)
 
+        self._ext2io = ext2io
+        self._default_ext = default_ext
+
+    def __getitem__(self, ext: str):
+        return self._ext2io[self._canonical_extension(ext)]
+
+    def __setitem__(self, ext: str, io: ConfigIO):
+        self._ext2io[self._canonical_extension(ext)] = io
+
+    def __delitem__(self, ext: str):
+        ext = self._canonical_extension(ext)
         try:
-            if default_ext is not None:
-                self.update(default_ext, ext_io_map.pop(default_ext))
-        except KeyError:
-            raise ValueError(
-                f"no IO registered for extension '{default_ext}'"
-            ) from None
+            if ext == self.default_ext:
+                self._default_ext = self.extensions[1]  # take next in row
+        except IndexError:
+            raise ValueError("final extension can not be deleted") from None
 
-        for ext, io in ext_io_map.items():
-            self.update(ext, io)
+        del self._ext2io[ext]
 
-    def _retrieve_io(self, path: Optional[Path] = None) -> ConfigIO:
-        """
-        Retrieve IO to read/write config files given a path.
+    def __len__(self):
+        return len(self._ext2io)
 
-        Parameters
-        ----------
-        path: Path, optional
-            Path to infer the file format from.
-            If not specified, the IO corresponding to
-            the default extension is returned.
-
-        Returns
-        -------
-        config_io : ConfigIO
-            Object for reading/writing config files from/to `path`.
-        """
-        ext = self.default_ext if path is None else path.suffix.lower()
-        try:
-            config_io = self._ext_io_map[ext]
-            return config_io
-        except KeyError:
-            raise ValueError(f"unknown config file extension: '{ext}'") from None
+    def __iter__(self):
+        yield self._default_ext
+        yield from (k for k in self._ext2io if k != self._default_ext)
 
     @property
     def extensions(self):
-        return tuple(self._ext_io_map.keys())
+        return tuple(iter(self))
 
     @property
     def default_io(self) -> ConfigIO:
         """IO corresponding to the default extension."""
-        return self._retrieve_io()
-
-    def update(self, ext: str, config_io: ConfigIO) -> None:
-        """
-        Add or update the IO for an extension.
-
-        Parameters
-        ----------
-        ext : str
-            The file extension to add IO for.
-            Extensions should include the starting period (``.``).
-        config_io : ConfigIO
-            The IO to use for files with extension `ext`.
-
-        Raises
-        ------
-        ValueError
-            If `ext` does not start with a period (``.``).
-        """
-        if len(ext) > 0 and not ext.startswith("."):
-            raise ValueError(f"extension '{ext}' does not start with a period")
-
-        self._ext_io_map[ext.lower()] = config_io
+        return self._ext2io[self._default_ext]
 
     def read_from(self, stream):
         return self.default_io.read_from(stream)
 
     def read(self, path, encoding="utf-8"):
-        return self._retrieve_io(path).read(path, encoding)
+        try:
+            return self[path.suffix].read(path, encoding)
+        except KeyError:
+            msg = f"unsupported config file extension: '{path.suffix}'"
+            raise ValueError(msg) from None
 
     def write_to(self, stream, config):
         self.default_io.write_to(stream, config)
 
     def write(self, config, path, encoding="utf-8"):
-        return self._retrieve_io(path).write(config, path, encoding)
+        try:
+            return self[path.suffix].write(config, path, encoding)
+        except KeyError:
+            msg = f"unsupported config file extension: '{path.suffix}'"
+            raise ValueError(msg) from None

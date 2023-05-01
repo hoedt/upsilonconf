@@ -1,20 +1,22 @@
 from pathlib import Path
 from typing import Mapping, Union, Optional
 
-from ..config import CarefulConfiguration
+from ..config import ConfigurationBase
 from ._optional_dependencies import OptionalDependencyError
-from .base import ConfigIO, FlexibleIO
+from .base import ConfigIO, ExtensionIO
 from .json import JSONIO
 from .yaml import YAMLIO
+from .toml import TOMLIO
 from .directory import DirectoryIO
 
 
 __all__ = [
     "OptionalDependencyError",
     "ConfigIO",
-    "FlexibleIO",
+    "ExtensionIO",
     "JSONIO",
     "YAMLIO",
+    "TOMLIO",
     "DirectoryIO",
     "load_config",
     "save_config",
@@ -26,6 +28,8 @@ _default_io = None
 
 def get_default_io(default_ext: Optional[str] = None) -> ConfigIO:
     """
+    Get the default I/O setup.
+
     Parameters
     ----------
     default_ext : str, optional
@@ -50,17 +54,8 @@ def get_default_io(default_ext: Optional[str] = None) -> ConfigIO:
     if _default_io is not None:
         return _default_io
 
-    json_io = JSONIO()
-    yaml_io = YAMLIO()
-    _default_io = FlexibleIO(
-        {
-            ".json": json_io,  # default format
-            ".yaml": yaml_io,
-            ".yml": yaml_io,
-        },
-        default_ext=default_ext,
-    )
-    _default_io.update("", DirectoryIO(_default_io))
+    _default_io = ExtensionIO(JSONIO(), YAMLIO(), TOMLIO(), default_ext=default_ext)
+    _default_io[""] = DirectoryIO(_default_io)
     return _default_io
 
 
@@ -68,9 +63,9 @@ def load_config(
     path: Union[Path, str],
     key_mods: Optional[Mapping[str, str]] = None,
     config_io: Optional[ConfigIO] = None,
-) -> CarefulConfiguration:
+) -> ConfigurationBase:
     """
-    Read configuration from disk.
+    Read configuration data from disk.
 
     Parameters
     ----------
@@ -95,13 +90,13 @@ def load_config(
 
 
 def save_config(
-    config: CarefulConfiguration,
+    config: ConfigurationBase,
     path: Union[Path, str],
     key_mods: Optional[Mapping[str, str]] = None,
     config_io: Optional[ConfigIO] = None,
 ) -> None:
     """
-    Write a configuration to disk.
+    Write a configuration data to disk.
 
     Parameters
     ----------

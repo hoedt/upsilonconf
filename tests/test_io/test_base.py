@@ -33,14 +33,11 @@ class Utils:
 
         @classmethod
         def setUpClass(cls):
-            cls.file_path = Path.home() / "config.test"
+            cls.file_path = Path.home() / "config.json"
             cls.file_contents = "\n".join(cls.generate_file_content())
 
         def setUp(self) -> None:
             self.io = self.default_io()
-
-        def test_default_ext(self):
-            self.assertEqual(self.io.default_ext, self.io.extensions[0])
 
         def test_read_from(self):
             buffer = StringIO(self.file_contents)
@@ -224,19 +221,14 @@ class Utils:
                 self.assertEqual(expected.replace(good, bad), next(buffer).rstrip())
 
 
-class TestFlexibleIO(Utils.TestConfigIO):
+class TestExtensionIO(Utils.TestConfigIO):
     @staticmethod
     def generate_file_content():
         yield from Utils.DEFAULT_LINES
 
     @staticmethod
     def default_io():
-        return FlexibleIO(
-            {
-                ".test": JSONIO(),
-                ".other": YAMLIO(),
-            }
-        )
+        return ExtensionIO(JSONIO(), YAMLIO())
 
     @staticmethod
     def generate_other_content():
@@ -247,48 +239,129 @@ class TestFlexibleIO(Utils.TestConfigIO):
         yield "  b: 0.2"
 
     def test_constructor(self):
-        default_io = JSONIO()
-        io = FlexibleIO({".json": default_io, ".jason": JSONIO()})
-        self.assertIs(default_io, io.default_io)
+        json_io, yaml_io = JSONIO(), YAMLIO()
+        io = ExtensionIO(json_io, yaml_io)
+        self.assertEqual(".json", io.default_ext)
+        self.assertIs(json_io, io.default_io)
         self.assertIn(".json", io.extensions)
-        self.assertIn(".jason", io.extensions)
+        self.assertIn(".yaml", io.extensions)
+        self.assertIn(".yml", io.extensions)
 
     def test_constructor_default_ext(self):
-        default_io = JSONIO()
-        io = FlexibleIO({".json": JSONIO(), ".jason": default_io}, default_ext=".jason")
-        self.assertIs(default_io, io.default_io)
+        json_io, yaml_io = JSONIO(), YAMLIO()
+        io = ExtensionIO(json_io, yaml_io, default_ext=".yml")
+        self.assertEqual(".yml", io.default_ext)
+        self.assertIs(yaml_io, io.default_io)
         self.assertIn(".json", io.extensions)
-        self.assertIn(".jason", io.extensions)
+        self.assertIn(".yaml", io.extensions)
+        self.assertIn(".yml", io.extensions)
 
     def test_constructor_empty(self):
-        with self.assertRaises(ValueError):
-            FlexibleIO({})
-
-    def test_constructor_ext_without_period(self):
-        with self.assertRaisesRegex(ValueError, "extension .* period"):
-            FlexibleIO({"json": JSONIO()})
+        with self.assertRaises(TypeError):
+            ExtensionIO()
 
     def test_constructor_default_ext_without_period(self):
-        with self.assertRaisesRegex(ValueError, "no IO"):
-            FlexibleIO({".json": JSONIO()}, default_ext="json")
+        io = ExtensionIO(JSONIO(), default_ext="json")
+        self.assertEqual(".json", io.default_ext)
 
     def test_constructor_default_ext_not_registered(self):
-        with self.assertRaisesRegex(ValueError, "no IO"):
-            FlexibleIO({".json": JSONIO()}, default_ext=".yaml")
+        with self.assertRaisesRegex(ValueError, "not supported"):
+            ExtensionIO(JSONIO(), default_ext=".yaml")
 
-    def test_update(self):
-        self.io.update(".added", self.io)
-        self.assertIn(".added", self.io._ext_io_map)
-        self.assertIs(self.io._ext_io_map[".added"], self.io)
+    def test_getitem(self):
+        self.assertIsInstance(self.io[".json"], JSONIO)
+        self.assertIsInstance(self.io[".yaml"], YAMLIO)
 
-    def test_update_overwrite(self):
+    def test_getitem_capitalised(self):
+        self.assertIsInstance(self.io[".JSON"], JSONIO)
+        self.assertIsInstance(self.io[".YAML"], YAMLIO)
+
+    def test_getitem_no_dot(self):
+        self.assertIsInstance(self.io["json"], JSONIO)
+        self.assertIsInstance(self.io["yaml"], YAMLIO)
+
+    def test_getitem_bad_key(self):
+        with self.assertRaisesRegex(KeyError, ".invalid"):
+            _ = self.io[".invalid"]
+
+    def test_setitem(self):
         new_io = JSONIO()
-        self.io.update(".other", new_io)
-        self.assertIs(self.io._ext_io_map[".other"], new_io)
+        self.io[".jason"] = new_io
+        self.assertIn(".jason", self.io.extensions)
+        self.assertIs(new_io, self.io[".jason"])
 
-    def test_update_bad_ext(self):
-        with self.assertRaisesRegex(ValueError, "extension"):
-            self.io.update("added", JSONIO())
+    def test_setitem_capitalised(self):
+        new_io = JSONIO()
+        self.io[".JASON"] = new_io
+        self.assertIn(".jason", self.io.extensions)
+        self.assertIs(new_io, self.io[".jason"])
+
+    def test_setitem_no_dot(self):
+        new_io = JSONIO()
+        self.io["jason"] = new_io
+        self.assertIn(".jason", self.io.extensions)
+        self.assertIs(new_io, self.io[".jason"])
+
+    def test_setitem_overwrite(self):
+        new_io = JSONIO()
+        self.io[".json"] = new_io
+        self.assertIs(new_io, self.io[".json"])
+
+    def test_delitem(self):
+        expected_length = len(self.io.extensions) - 1
+        del self.io[".yaml"]
+        self.assertEqual(len(self.io.extensions), expected_length)
+        self.assertNotIn(".yaml", self.io.extensions)
+        self.assertIn(".json", self.io.extensions)
+        self.assertIn(".yml", self.io.extensions)
+
+    def test_delitem_capitalised(self):
+        expected_length = len(self.io.extensions) - 1
+        del self.io[".YAML"]
+        self.assertEqual(len(self.io.extensions), expected_length)
+        self.assertNotIn(".yaml", self.io.extensions)
+        self.assertIn(".json", self.io.extensions)
+        self.assertIn(".yml", self.io.extensions)
+
+    def test_delitem_no_dot(self):
+        expected_length = len(self.io.extensions) - 1
+        del self.io["yaml"]
+        self.assertEqual(len(self.io.extensions), expected_length)
+        self.assertNotIn(".yaml", self.io.extensions)
+        self.assertIn(".json", self.io.extensions)
+        self.assertIn(".yml", self.io.extensions)
+
+    def test_delitem_bad_key(self):
+        with self.assertRaisesRegex(KeyError, ".invalid"):
+            del self.io[".invalid"]
+
+    def test_delitem_default(self):
+        default_ext = self.io.default_ext
+        expected_length = len(self.io.extensions) - 1
+        del self.io[default_ext]
+        self.assertEqual(len(self.io.extensions), expected_length)
+        self.assertNotIn(default_ext, self.io.extensions)
+        self.assertNotEqual(default_ext, self.io.default_ext)
+
+    def test_delitem_all(self):
+        with self.assertRaisesRegex(ValueError, "final extension"):
+            for ext in self.io.extensions:
+                del self.io[ext]
+
+    def test_length(self):
+        io1 = ExtensionIO(JSONIO())
+        self.assertEqual(1, len(io1))
+        io2 = ExtensionIO(YAMLIO())
+        self.assertEqual(2, len(io2))
+        io3 = ExtensionIO(JSONIO(), YAMLIO())
+        self.assertEqual(3, len(io3))
+
+    def test_iter(self):
+        for ext in iter(self.io):
+            self.assertIsNotNone(self.io[ext])
+
+    def test_default_io(self):
+        self.assertIs(self.io[self.io.default_ext], self.io.default_io)
 
     def test_read_unknown_ext(self):
         with self.assertRaisesRegex(ValueError, "extension"):
@@ -306,19 +379,19 @@ class TestFlexibleIO(Utils.TestConfigIO):
         with self.assertRaisesRegex(ValueError, "extension"):
             self.io.save_config(Utils.CONFIG, self.file_path.with_suffix(".invalid"))
 
-    def test_read_other_ext(self):
+    def test_read_non_default_ext(self):
         file_contents = os.linesep.join(self.generate_other_content())
         m_open = mock.mock_open(read_data=file_contents)
         with mock.patch(f"upsilonconf.io.base.open", m_open):
-            data = self.io.read(self.file_path.with_suffix(".other"))
+            data = self.io.read(self.file_path.with_suffix(".yml"))
 
         m_open.assert_called_once_with(
-            self.file_path.with_suffix(".other"), "r", encoding="utf-8"
+            self.file_path.with_suffix(".yml"), "r", encoding="utf-8"
         )
         self.assertDictEqual(dict(Utils.CONFIG), dict(data))
 
-    def test_write_other_ext(self):
-        file_path = self.file_path.with_suffix(".other")
+    def test_write_non_default_ext(self):
+        file_path = self.file_path.with_suffix(".yml")
         m_open = mock.mock_open()
         buffer = StringIO()
         m_open.return_value.__enter__.side_effect = [buffer]
@@ -330,20 +403,20 @@ class TestFlexibleIO(Utils.TestConfigIO):
         for expected in self.generate_other_content():
             self.assertEqual(expected, next(buffer).rstrip())
 
-    def test_load_config_other_ext(self):
+    def test_load_config_non_default_ext(self):
         file_contents = os.linesep.join(self.generate_other_content())
         m_open = mock.mock_open(read_data=file_contents)
         with mock.patch(f"upsilonconf.io.base.open", m_open):
-            config = self.io.load_config(self.file_path.with_suffix(".other"))
+            config = self.io.load_config(self.file_path.with_suffix(".yml"))
 
         m_open.assert_called_once_with(
-            self.file_path.with_suffix(".other"), "r", encoding="utf-8"
+            self.file_path.with_suffix(".yml"), "r", encoding="utf-8"
         )
         self.assertIsInstance(config, ConfigurationBase)
         self.assertEqual(Utils.CONFIG, config)
 
-    def test_save_config_other_ext(self):
-        file_path = self.file_path.with_suffix(".other")
+    def test_save_config_non_default_ext(self):
+        file_path = self.file_path.with_suffix(".yml")
         m_open = mock.mock_open()
         buffer = StringIO()
         m_open.return_value.__enter__.side_effect = [buffer]

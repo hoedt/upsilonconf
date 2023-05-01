@@ -7,7 +7,7 @@ from upsilonconf import ConfigurationBase, PlainConfiguration
 from upsilonconf.io.directory import *
 from upsilonconf.io.json import JSONIO
 from upsilonconf.io.yaml import YAMLIO
-from upsilonconf.io.base import FlexibleIO
+from upsilonconf.io.base import ExtensionIO
 from .test_base import Utils
 
 
@@ -98,7 +98,7 @@ class TestDirectoryIO(TestCase):
 
     @fake_directory_structure(path, ["config.yaml"])
     def test_read_non_default(self):
-        io = DirectoryIO(FlexibleIO({".json": JSONIO(), ".yaml": YAMLIO()}))
+        io = DirectoryIO(ExtensionIO(JSONIO(), YAMLIO()))
         assert io.config_io.default_ext == ".json", "invalid test setup"
 
         m_open = mock.mock_open(read_data=self.file_contents)
