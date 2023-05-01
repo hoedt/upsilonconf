@@ -4,6 +4,15 @@ API Reference
 
 .. currentmodule:: upsilonconf
 
+The API of upsilonconf consists of mainly two parts.
+The first part make up the main functionality:
+configuration objects with a convenient interface.
+The second part can be seen as the *included batteries*:
+functions for conveniently storing and retrieving configuration objects.
+
+.. contents::
+    :local:
+
 Configuration Objects
 ---------------------
 
@@ -164,6 +173,16 @@ Overview
 I/O Utilities
 -------------
 
+Configurations are commonly saved in some file to make them accessible outside of the program.
+Therefore, upsilonconf provides some convenience function for reading and writing files.
+These functions are :func:`load_config` and :func:`save_config`.
+These functions make use of a simple, but extensible I/O system
+that is built on top of the :class:`io.ConfigIO` interface.
+There is also :func:`config_from_cli` to collect configuration values from the CLI.
+
+Convenience Functions
+^^^^^^^^^^^^^^^^^^^^^
+
 .. autosummary::
     :toctree: generated
     :nosignatures:
@@ -171,3 +190,18 @@ I/O Utilities
     load_config
     save_config
     config_from_cli
+
+I/O System
+^^^^^^^^^^
+
+.. autosummary::
+    :toctree: generated
+    :nosignatures:
+
+    io.ConfigIO
+    io.JSONIO
+    io.YAMLIO
+    io.TOMLIO
+    io.DirectoryIO
+    io.ExtensionIO
+    io.FlexibleIO
