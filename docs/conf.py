@@ -38,6 +38,7 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.doctest",
     "numpydoc",
+    "sphinx.ext.viewcode",
 ]
 
 autodoc_member_order = "bysource"
@@ -59,6 +60,9 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 # a list of builtin themes.
 #
 html_theme = "alabaster"
+html_theme_options = {
+    "page_width": "80em"
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
