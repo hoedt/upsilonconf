@@ -10,6 +10,14 @@ configuration objects with a convenient interface.
 The second part can be seen as the *included batteries*:
 functions for conveniently storing and retrieving configuration objects.
 
+This package is very much a work in progress.
+I have a general idea of what the main interface could look like.
+The I/O functionality is more of a first draft at this point.
+This documentation also serves as a tool to guide the interface design.
+Therefore, I am open to any `comments or suggestions`_ to improve the interface.
+
+.. _comments or suggestions: https://github.com/hoedt/upsilonconf/issues
+
 .. contents::
     :local:
 

@@ -40,7 +40,7 @@ Furthermore, the included I/O tools should enable:
  - reading configuration directories
  - retrieving configs from the command line
 
-If you think a particular feature is missing or something is not work as expected,
+If you think a particular feature is missing or something is not working as expected,
 feel free to let me know by `creating an issue`_.
 
 .. _creating an issue: https://github.com/hoedt/upsilonconf/issues
