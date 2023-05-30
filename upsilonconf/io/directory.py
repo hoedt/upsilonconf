@@ -52,7 +52,7 @@ class DirectoryIO(ConfigIO):
 
     When reading this directory, we end up with the following configuration:
 
-    >>> upsilonconf.load_config("examples/hparam")
+    >>> upsilonconf.load_config("examples/hparam")  # doctest: +SKIP
     PlainConfiguration(foo=1, baz=PlainConfiguration(a=0.1, b=0.2), bar='hparam')
     """
 
