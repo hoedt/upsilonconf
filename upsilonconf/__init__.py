@@ -3,7 +3,7 @@
 from .config import *
 from .io import *
 
-__version__ = "0.6.0"
+__version__ = "0.7.0"
 __all__ = config.__all__ + [  # type: ignore  # https://github.com/python/mypy/issues/10967
     "OptionalDependencyError",
     "load_config",
