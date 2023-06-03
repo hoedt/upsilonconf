@@ -61,7 +61,7 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 #
 html_theme = "alabaster"
 html_theme_options = {
-    "page_width": "80em"
+    "page_width": "80em",
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,

@@ -29,6 +29,7 @@ __all__ = [
     "FrozenConfiguration",
     "CarefulConfiguration",
     "InvalidKeyError",
+    "Configuration",
 ]
 
 V = TypeVar("V", covariant=True)
@@ -1144,3 +1145,20 @@ def __modify_keys(
         dictionary[key] = value
 
     return dictionary
+
+
+class Configuration(CarefulConfiguration):
+    """
+    Temporary alias for CarefulConfiguration.
+
+    .. deprecated:: 0.7.0
+        Configuration has been renamed to CarefulConfiguration
+    """
+
+    def __init__(self, **kwargs):
+        warnings.warn(
+            "Configuration has been renamed to CarefulConfiguration",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(**kwargs)

@@ -858,6 +858,12 @@ class TestCarefulConfiguration(TestCase):
         self.assertEqual(d_ref, d)
 
 
+class TestConfiguration(TestCase):
+    def test_deprecation(self):
+        with self.assertWarns(DeprecationWarning):
+            Configuration()
+
+
 class Utils:
     class TestConfigurationBase(TestCase):
         @property
