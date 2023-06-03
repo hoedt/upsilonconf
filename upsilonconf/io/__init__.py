@@ -76,7 +76,7 @@ def load_config(
 
     Returns
     -------
-    config : CarefulConfiguration
+    config : ConfigurationBase
         A configuration object with the key-value pairs as provided in the file.
 
     See Also
@@ -101,6 +101,8 @@ def save_config(
 
     Parameters
     ----------
+    config : ConfigurationBase
+        The configuration object to save.
     path : Path or str
         Path to a writeable text file on disk.
     key_mods : dict, optional
