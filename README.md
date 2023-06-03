@@ -1,40 +1,38 @@
 # UpsilonConf
 
 UpsilonConf is a simple configuration library written in Python.
-It might not be really obvious, but this library is inspired by the great [OmegaConf](https://github.com/omry/omegaconf) library.
-OmegaConf is also the backbone for the more advanced [Hydra](https://hydra.cc/) framework.
-Concretely, the idea of this library is to provide an alternative to OmegaConf without the overhead of the variable interpolation (especially the `antlr` dependency).
-It is also very similar to the (discontinued) [AttrDict](https://github.com/bcj/AttrDict) library.
-In the meantime, there is also the [ml_collections](https://github.com/google/ml_collections) library, which seems to build on similar ideas as this project.
 
-Nevertheless, I decided to release upsilonconf because there might be a few features that people might find interesting/useful:
+A few features that you might find interesting/useful:
  - dict-like configuration object with attribute access (cf. `attrdict`)
  - hierarchical indexing by means of tuples or *dot-strings* (cf. `omegaconf`)
- - overwriting protection to prevent unexplainable bugs
  - read from/write to various file formats
  - use hierarchical configs with options (cf. config groups in `hydra`)
  - retrieve and manipulate config using CLI (cf. `omegaconf`)
  - minimal dependencies (cf. `attrdict`)
+ - configs with overwriting protection to prevent unexplainable bugs
 
-The name is inspired by OmegaConf.
-I decided to go for the Greek letter [Upsilon](https://en.wikipedia.org/wiki/Upsilon) because it is the first letter of [ὑπέρ (hupér)](https://en.wiktionary.org/wiki/ὑπέρ).
-This again comes from the fact that this library should mainly help me with managing _hyper_-parameters in neural networks.
+[![pypi badge](https://img.shields.io/pypi/v/upsilonconf?label=PyPI)](https://pypi.org/project/upsilonconf)
+[![conda badge](https://img.shields.io/conda/v/hoedt/upsilonconf)](https://anaconda.org/hoedt/upsilonconf)
+[![docs badge](https://img.shields.io/github/actions/workflow/status/hoedt/upsilonconf/sphinx.yml?branch=main&label=docs&logo=github)](https://hoedt.github.io/upsilonconf)
+[![licencse badge](https://img.shields.io/github/license/hoedt/upsilonconf)](https://github.com/hoedt/upsilonconf/blob/main/LICENSE)
+
+---
 
 ### How to install
 
-Using `pip` to install from [PyPI](https://pypi.org/project/upsilonconf/):
+Using `pip` to install from PyPI:
 
 ```shell
 python -m pip install upsilonconf
 ```
 
-or, to install the (optional) dependencies (`pyyaml`) for YAML IO
+Optional dependencies (e.g. `pyyaml`) can be included using
 
 ```shell
 python -m pip install upsilonconf[YAML]
 ```
 
-Using `conda` to install from [Anaconda](https://anaconda.org/hoedt/upsilonconf):
+Using `conda` to install from Anaconda:
 
 ```shell
 conda install hoedt::upsilonconf
@@ -47,127 +45,149 @@ Optional dependencies (e.g. `pyyaml`) have to be installed separately.
 ### How to Use
 
 ```python
-import upsilonconf
+>>> import upsilonconf
+>>> from upsilonconf import PlainConfiguration as Configuration
 ```
 
-###### creation
+###### Creation
+
+load config from file
 
 ```python
-conf1 = upsilonconf.load("config.yaml")  # from config file
-conf2 = upsilonconf.Configuration(key1="value1", key2=2)  # direct
-dictionary = {"sub": conf2}  # sub-configs allowed!
-conf3 = upsilonconf.Configuration(**dictionary)  # from dict
-free_dict = {"a key": "with whitespace"}
-confX = upsilonconf.Configuration.from_dict(free_dict, key_mods={" ": "_"})
-conf = conf1 | conf2 | conf3  # from other configurations
+>>> conf = upsilonconf.load("my_config.yml")
 ```
 
-###### indexing
+or directly create config object
 
 ```python
-# getters
-conf["key1"] == conf.key1
-conf.key2 == conf["sub", "key2"]
-conf["sub", "key1"] == conf["sub.key1"]
-conf["sub.key2"] == conf.sub.key2
-
-# setters
-conf["new_key"] = "new_value"
-conf.other_key = "other_value"
-conf.sub2 = {"a": .1, "b": 2}
-conf["sub2", "c"] = 3.
-conf["sub2.d"] = -4
-
-# and deleters...
-del conf["sub2.c"]
+>>> conf = Configuration(key1="value1", sub={"key1": 1, "key2": 2})
 ```
 
-###### overwrite protection
+###### Indexing
+
+Access values the way you like
 
 ```python
-try:
-    conf["key1"] = "overwrite1"
-except ValueError:
-    print("overwriting")
-    conf.overwrite("key1", "overwrite1")
-
-try:
-    conf.key1 = "overwrite2"
-except AttributeError:
-    print("overwriting")
-    conf.overwrite("key1", "overwrite2")
-
-try:
-    conf.update(key1="overwrite3")
-except ValueError:
-    print("overwriting")
-    conf.overwrite_all(key1="overwrite3")
+>>> assert conf["key1"] == conf.key1
+>>> assert conf.sub.key2 == conf["sub", "key2"]
+>>> assert conf["sub", "key1"] == conf["sub.key1"]
+>>> assert conf["sub.key2"] == conf.sub.key2
 ```
+
+###### Cool Tricks
+
+unpack configurations to function arguments
+
+```python
+>>> def test(key1, key2):
+...    return key1 + key2
+>>> test(**conf.sub)
+3
+```
+
+convert config to flat `dict`
+
+```python
+>>> conf.to_dict(flat=True)
+{'key1': 'value1', 'sub.key1': 1, 'sub.key2': 2}
+```
+
+merge configurations with `|`
+
+```python
+>>> merged = conf | {"sub.key2": 3, "sub.key3": 2}
+>>> merged.sub.key2
+3
+>>> merged.sub.key3
+2
+```
+
+More details can be found in the [documentation](https://hoedt.github.io/upsilonconf)
 
 ###### flexible I/O
 
-```python
-# different file formats (with optional requirements)
-conf = upsilonconf.load("config.yaml")  # with patched float parsing
-upsilonconf.save(conf, "config.json")  # with indentation by default
-```
+support for different file formats
 
 ```python
-# fix invalid keys in files on-the-fly
-conf = upsilonconf.load("config.yaml", key_mods={" ": "_"})
-upsilonconf.save(conf, "config.json", key_mods={"_": " "})
+>>> conf = upsilonconf.load("config.yaml")  # with patched float parsing
+>>> upsilonconf.save(conf, "config.json")  # with indentation by default
 ```
 
-```python
-# organise hierarchical configs in directories
-upsilonconf.save({"key": "option1"}, "config_dir/config.json")
-upsilonconf.save({"foo": 1, "bar": 2}, "config_dir/key/option1.json")
-upsilonconf.save({"foo": 2, "baz": 3}, "config_dir/key/option2.json")
-```
+transform non-identifier keys in files on-the-fly
 
 ```python
-# load arbitrary parts of hierarchy
-conf = upsilonconf.load("config_dir/key")
-conf == upsilonconf.Configuration(
-    option1={"foo": 1, "bar": 2}, 
-    option2={"foo": 2, "baz": 3}
-)
+>>> conf = upsilonconf.load("config.yaml", key_mods={" ": "_"})
+>>> upsilonconf.save(conf, "config.json", key_mods={"_": " "})
 ```
 
-```python
-# hierarchies enable option feature
-conf = upsilonconf.load("config_dir")
-conf == upsilonconf.Configuration(key={"foo": 1, "bar": 2})
-```
+organise hierarchical configs in directories
 
 ```python
-# store hierarchy to default file in specified directory
-upsilonconf.save(conf, "backup")
+>>> upsilonconf.save({"key": "option1"}, "config_dir/config.json")
+>>> upsilonconf.save({"foo": 1, "bar": 2}, "config_dir/key/option1.json")
+>>> upsilonconf.save({"foo": 2, "baz": 3}, "config_dir/key/option2.json")
+```
+
+load arbitrary parts of hierarchy
+
+```python
+>>> conf = upsilonconf.load("config_dir/key")
+>>> conf == Configuration(
+...     option1={"foo": 1, "bar": 2},
+...     option2={"foo": 2, "baz": 3}
+... )
+```
+
+hierarchies enable option feature
+
+```python
+>>> conf = upsilonconf.load("config_dir")
+>>> conf == Configuration(key={"foo": 1, "bar": 2})
+```
+
+store hierarchy to directory with a default file format
+
+```python
+>>> upsilonconf.save(conf, "backup")
 ```
 
 ###### CLI helper
 
-```python
-# read command-line arguments (from sys.argv)
-conf = upsilonconf.from_cli()
-
-# parse arbitrary arguments to construct config
-conf = upsilonconf.from_cli(["key=1", "sub.test=2"])
-conf == upsilonconf.Configuration(key=1, sub={"test": 2})
-```
+read command-line arguments
 
 ```python
-# use file as base config
-conf = upsilonconf.from_cli(["--config", "config.yaml", "key=1", "sub.test=2"])
-result = upsilonconf.load("config.yaml")
-result.overwrite_all(key=1, sub={"test": 2})
-conf == result
+>>> conf = upsilonconf.from_cli()
 ```
 
+parse arbitrary arguments to construct config
+
 ```python
-# enhance existing argparser
-from argparse import ArgumentParser
-parser = ArgumentParser()
-# add other arguments...
-conf, args = upsilonconf.from_cli(parser=parser)
+>>> conf = upsilonconf.from_cli(["key=1", "sub.test=2"])
+>>> assert conf == Configuration(key=1, sub={"test": 2})
 ```
+
+use file as base config
+
+```python
+>>> conf = upsilonconf.from_cli(["--config", "config.yaml", "key=1", "sub.test=2"])
+>>> result = upsilonconf.load("config.yaml")
+>>> result.overwrite_all(key=1, sub={"test": 2})
+>>> assert conf == result
+```
+
+enhance existing argparser
+
+```python
+>>> from argparse import ArgumentParser
+>>> parser = ArgumentParser()
+>>> # add other arguments...
+>>> conf, args = upsilonconf.from_cli(parser=parser)
+```
+
+### Feedback
+
+This library is very much a work in progress.
+I welcome any feedback, especially in shaping the interface.
+Of course, also bug reports and feature requests are very useful feedback.
+Just create an [issue](https://github.com/hoedt/upsilonconf/issues) on github.
+
