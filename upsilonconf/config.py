@@ -481,6 +481,8 @@ class ConfigurationBase(Mapping[str, V], ABC):
         """
         Load configuration from a file.
 
+        .. versionadded:: 0.8.0
+
         Parameters
         ----------
         path : Path or str
@@ -516,6 +518,8 @@ class ConfigurationBase(Mapping[str, V], ABC):
     ):
         """
         Save configuration to a file.
+
+        .. versionadded:: 0.8.0
 
         Parameters
         ----------
