@@ -1,9 +1,20 @@
 import warnings
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Mapping, Any, Union, TextIO, Sequence, Dict, Optional, MutableMapping
+from typing import (
+    Mapping,
+    Any,
+    Union,
+    TextIO,
+    Sequence,
+    Dict,
+    Optional,
+    MutableMapping,
+    TYPE_CHECKING,
+)
 
-from ..config import ConfigurationBase, PlainConfiguration, FrozenConfiguration
+if TYPE_CHECKING:
+    from ..config import ConfigurationBase
 
 
 class ConfigIO(ABC):
@@ -64,6 +75,7 @@ class ConfigIO(ABC):
         config : dict
             A dictionary representing the configuration in the file.
         """
+        path = Path(path).expanduser().resolve()
         with open(path, "r", encoding=encoding) as fp:
             return self.read_from(fp)
 
@@ -72,7 +84,7 @@ class ConfigIO(ABC):
         path: Union[Path, str],
         key_mods: Optional[Mapping[str, str]] = None,
         frozen: bool = False,
-    ) -> ConfigurationBase:
+    ) -> "ConfigurationBase":
         """
         Load configuration from a file.
 
@@ -98,11 +110,10 @@ class ConfigIO(ABC):
         PlainConfiguration : mutable configuration type
         FrozenConfiguration : immutable configuration type
         """
-        path = (Path.cwd() / Path(path).expanduser()).resolve()
-        m = self.read(path)
+        from ..config import FrozenConfiguration, PlainConfiguration
 
         Config = FrozenConfiguration if frozen else PlainConfiguration
-        return Config.from_dict(m, key_mods)
+        return Config.load(path, key_mods, io=self)
 
     @abstractmethod
     def write_to(self, stream: TextIO, conf: Mapping[str, Any]) -> None:
@@ -138,12 +149,13 @@ class ConfigIO(ABC):
         encoding : str, optional
             The character encoding to use for the given file.
         """
+        path = Path(path).expanduser().resolve()
         with open(path, "w", encoding=encoding) as fp:
             self.write_to(fp, conf)
 
     def save_config(
         self,
-        config: ConfigurationBase,
+        config: "ConfigurationBase",
         path: Union[Path, str],
         key_mods: Optional[Mapping[str, str]] = None,
     ) -> None:
@@ -164,9 +176,7 @@ class ConfigIO(ABC):
         --------
         ConfigurationBase.to_dict : method used for key modifications
         """
-        path = (Path.cwd() / Path(path).expanduser()).resolve()
-        m = config.to_dict(key_mods)
-        return self.write(m, path)
+        return config.save(path, key_mods, io=self)
 
 
 class ExtensionIO(ConfigIO, MutableMapping[str, ConfigIO]):
@@ -261,6 +271,7 @@ class ExtensionIO(ConfigIO, MutableMapping[str, ConfigIO]):
         raise TypeError(f"{cls_name} does not support reading from stream")
 
     def read(self, path, encoding="utf-8"):
+        path = Path(path)
         try:
             return self[path.suffix].read(path, encoding)
         except KeyError:
@@ -272,6 +283,7 @@ class ExtensionIO(ConfigIO, MutableMapping[str, ConfigIO]):
         raise TypeError(f"{cls_name} does not support writing to stream")
 
     def write(self, config, path, encoding="utf-8"):
+        path = Path(path)
         try:
             return self[path.suffix].write(config, path, encoding)
         except KeyError:

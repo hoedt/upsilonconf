@@ -6,6 +6,7 @@ from unittest import TestCase, mock
 from upsilonconf.io.base import *
 from upsilonconf.io.json import JSONIO
 from upsilonconf.io.yaml import YAMLIO
+from upsilonconf.config import ConfigurationBase, PlainConfiguration
 
 
 class Utils:

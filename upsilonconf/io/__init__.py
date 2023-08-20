@@ -1,7 +1,6 @@
 from pathlib import Path
-from typing import Mapping, Union, Optional
+from typing import Mapping, Union, Optional, TYPE_CHECKING
 
-from ..config import ConfigurationBase
 from ._optional_dependencies import OptionalDependencyError
 from .base import ConfigIO, ExtensionIO, FlexibleIO
 from .json import JSONIO
@@ -9,6 +8,8 @@ from .yaml import YAMLIO
 from .toml import TOMLIO
 from .directory import DirectoryIO
 
+if TYPE_CHECKING:
+    from ..config import ConfigurationBase
 
 __all__ = [
     "OptionalDependencyError",
@@ -21,6 +22,7 @@ __all__ = [
     "load_config",
     "save_config",
     "from_cli",
+    "get_default_io",
 ]
 
 _default_io = None
@@ -59,7 +61,7 @@ def load_config(
     path: Union[Path, str],
     key_mods: Optional[Mapping[str, str]] = None,
     config_io: Optional[ConfigIO] = None,
-) -> ConfigurationBase:
+) -> "ConfigurationBase":
     """
     Load configuration from a file.
 
@@ -91,7 +93,7 @@ def load_config(
 
 
 def save_config(
-    config: ConfigurationBase,
+    config: "ConfigurationBase",
     path: Union[Path, str],
     key_mods: Optional[Mapping[str, str]] = None,
     config_io: Optional[ConfigIO] = None,
