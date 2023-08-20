@@ -2,6 +2,7 @@ import keyword
 import re
 import warnings
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import (
     TypeVar,
     MutableMapping,
@@ -22,6 +23,8 @@ from typing import (
     Collection,
     Hashable,
 )
+
+from .io import ConfigIO, get_default_io
 
 __all__ = [
     "ConfigurationBase",
@@ -465,6 +468,76 @@ class ConfigurationBase(Mapping[str, V], ABC):
             return old_val
         except TypeError:
             return value
+
+    # # # File Interactions # # #
+
+    @classmethod
+    def load(
+        cls,
+        path: Union[Path, str],
+        key_mods: Mapping[str, str] = None,
+        io: ConfigIO = None,
+    ):
+        """
+        Load configuration from a file.
+
+        Parameters
+        ----------
+        path : Path or str
+            Path to a readable text file on disk.
+        key_mods : dict, optional
+            A mapping from key patterns to their respective replacement.
+            With multiple patterns, longer patterns are replaced first.
+        io : ConfigIO, optional
+            The IO used for parsing the configuration file to a dictionary.
+            If not specified, the default IO will be used.
+
+        Returns
+        -------
+        config : ConfigurationBase
+            A configuration object with the values as provided in the file.
+
+        See Also
+        --------
+        from_dict : method used for key modifications
+        ConfigIO.read : read configuration file
+        """
+        if io is None:
+            io = get_default_io()
+
+        m = io.read(path)
+        return cls.from_dict(m, key_mods)
+
+    def save(
+        self,
+        path: Union[Path, str],
+        key_mods: Mapping[str, str] = None,
+        io: ConfigIO = None,
+    ):
+        """
+        Save configuration to a file.
+
+        Parameters
+        ----------
+        path : Path or str
+            Path to a writeable location on disk.
+        key_mods : dict, optional
+            A mapping from key patterns to their respective replacement.
+            With multiple patterns, longer patterns are replaced first.
+        io : ConfigIO, optional
+            The IO used for writing a dictionary to the configuration file.
+            If not specified, the default IO will be used.
+
+        See Also
+        --------
+        to_dict : method used for key modifications
+        ConfigIO.write : write configuration file
+        """
+        if io is None:
+            io = get_default_io()
+
+        m = self.to_dict(key_mods)
+        io.write(m, path)
 
     # # # Dict Conversion # # #
 
