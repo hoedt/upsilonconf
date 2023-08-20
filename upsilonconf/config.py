@@ -475,8 +475,8 @@ class ConfigurationBase(Mapping[str, V], ABC):
     def load(
         cls,
         path: Union[Path, str],
-        key_mods: Mapping[str, str] = None,
-        io: ConfigIO = None,
+        key_mods: Optional[Mapping[str, str]] = None,
+        io: Optional[ConfigIO] = None,
     ):
         """
         Load configuration from a file.
@@ -513,8 +513,8 @@ class ConfigurationBase(Mapping[str, V], ABC):
     def save(
         self,
         path: Union[Path, str],
-        key_mods: Mapping[str, str] = None,
-        io: ConfigIO = None,
+        key_mods: Optional[Mapping[str, str]] = None,
+        io: Optional[ConfigIO] = None,
     ):
         """
         Save configuration to a file.
