@@ -75,7 +75,8 @@ class ConfigIO(ABC):
         config : dict
             A dictionary representing the configuration in the file.
         """
-        path = Path(path).expanduser().resolve()
+        # add cwd for correct behaviour on Windows
+        path = Path.resolve(Path.cwd() / Path(path).expanduser())
         with open(path, "r", encoding=encoding) as fp:
             return self.read_from(fp)
 
@@ -158,7 +159,8 @@ class ConfigIO(ABC):
         encoding : str, optional
             The character encoding to use for the given file.
         """
-        path = Path(path).expanduser().resolve()
+        # add cwd for correct behaviour on Windows
+        path = Path.resolve(Path.cwd() / Path(path).expanduser())
         with open(path, "w", encoding=encoding) as fp:
             self.write_to(fp, conf)
 

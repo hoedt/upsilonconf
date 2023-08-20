@@ -1641,12 +1641,12 @@ class Utils:
         # # # File Interactions # # #
 
         def test_load(self):
-            file_path = "/tmp/config.json"
+            file_path = Path.home() / "config.json"
             m_open = mock.mock_open(read_data='{"key": 0.01}')
             with mock.patch("upsilonconf.io.base.open", m_open):
                 config = self.config_class.load(file_path)
 
-            m_open.assert_called_once_with(Path(file_path), "r", encoding="utf-8")
+            m_open.assert_called_once_with(file_path, "r", encoding="utf-8")
             self.assertIsInstance(config, self.config_class)
             self.assertDictEqual({"key": 0.01}, config.to_dict())
 
@@ -1675,41 +1675,41 @@ class Utils:
             self.assertDictEqual({"key": 0.01}, config.to_dict())
 
         def test_load_whitespace_key(self):
-            file_path = "/tmp/config.json"
+            file_path = Path.home() / "config.json"
             m_open = mock.mock_open(read_data='{"my key": 0.01}')
             with mock.patch("upsilonconf.io.base.open", m_open):
                 config = self.config_class.load(file_path)
 
-            m_open.assert_called_once_with(Path(file_path), "r", encoding="utf-8")
+            m_open.assert_called_once_with(file_path, "r", encoding="utf-8")
             self.assertIsInstance(config, self.config_class)
             self.assertDictEqual({"my key": 0.01}, config.to_dict())
 
         def test_load_key_mods(self):
-            file_path = "/tmp/config.json"
+            file_path = Path.home() / "config.json"
             m_open = mock.mock_open(read_data='{"key": 0.01}')
             with mock.patch("upsilonconf.io.base.open", m_open):
                 config = self.config_class.load(file_path, key_mods={"key": "k"})
 
-            m_open.assert_called_once_with(Path(file_path), "r", encoding="utf-8")
+            m_open.assert_called_once_with(file_path, "r", encoding="utf-8")
             self.assertIsInstance(config, self.config_class)
             self.assertDictEqual({"k": 0.01}, config.to_dict())
 
         def test_load_io(self):
             from upsilonconf.io import YAMLIO
 
-            file_path = "/tmp/config.yaml"
+            file_path = Path.home() / "config.yaml"
             m_open = mock.mock_open(read_data="key: 0.01")
             with mock.patch("upsilonconf.io.base.open", m_open):
                 config = self.config_class.load(file_path, io=YAMLIO())
 
-            m_open.assert_called_once_with(Path(file_path), "r", encoding="utf-8")
+            m_open.assert_called_once_with(file_path, "r", encoding="utf-8")
             self.assertIsInstance(config, self.config_class)
             self.assertDictEqual({"key": 0.01}, config.to_dict())
 
         def test_save(self):
             from io import StringIO
 
-            file_path = "/tmp/config.json"
+            file_path = Path.home() / "config.json"
             config = self.config_class(key=0.01)
 
             m_open = mock.mock_open()
@@ -1761,7 +1761,7 @@ class Utils:
         def test_save_key_mods(self):
             from io import StringIO
 
-            file_path = "/tmp/config.json"
+            file_path = Path.home() / "config.json"
             config = self.config_class(key=0.01)
 
             m_open = mock.mock_open()
@@ -1778,7 +1778,7 @@ class Utils:
             from io import StringIO
             from upsilonconf.io import YAMLIO
 
-            file_path = "/tmp/config.json"
+            file_path = Path.home() / "config.json"
             config = self.config_class(key=0.01)
 
             m_open = mock.mock_open()
