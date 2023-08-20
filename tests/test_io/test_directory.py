@@ -8,7 +8,7 @@ from upsilonconf.io.directory import *
 from upsilonconf.io.json import JSONIO
 from upsilonconf.io.yaml import YAMLIO
 from upsilonconf.io.base import ExtensionIO
-from .test_base import Utils
+from .test_base import Utils, deprecated
 
 
 def fake_directory_structure(root, paths):
@@ -169,6 +169,7 @@ class TestDirectoryIO(TestCase):
             with mock.patch("upsilonconf.io.base.open", m_open):
                 self.io.read(self.path)
 
+    @deprecated
     @fake_directory_structure(path, ["config.json", "sub1.json", "sub2.json"])
     def test_load_config(self):
         m_open = mock.mock_open(read_data=self.file_contents)
@@ -188,6 +189,7 @@ class TestDirectoryIO(TestCase):
         ref = PlainConfiguration(**Utils.CONFIG, sub1=Utils.CONFIG, sub2=Utils.CONFIG)
         self.assertEqual(ref, config)
 
+    @deprecated
     @fake_directory_structure(path, ["config.json", "sub1.json", "sub2.json"])
     def test_load_config_key_mods(self):
         good, bad = "a", "A"
@@ -241,6 +243,7 @@ class TestDirectoryIO(TestCase):
         for expected in self.main_file_content():
             self.assertEqual(expected, next(buffer).rstrip())
 
+    @deprecated
     def test_save_config(self):
         m_open = mock.mock_open()
         buffer = StringIO()
@@ -253,6 +256,7 @@ class TestDirectoryIO(TestCase):
         for expected in self.main_file_content():
             self.assertEqual(expected, next(buffer).rstrip())
 
+    @deprecated
     def test_save_config_key_mods(self):
         good, bad = "a", "A"
         assert any(good in k for k in Utils.CONFIG.keys()), "invalid test setup"

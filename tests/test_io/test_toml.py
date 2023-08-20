@@ -2,7 +2,7 @@ from io import StringIO
 from unittest import mock
 
 from upsilonconf.io.toml import *
-from .test_base import Utils
+from .test_base import Utils, deprecated
 
 
 class TestTOMLIO(Utils.TestConfigIO):
@@ -22,6 +22,7 @@ class TestTOMLIO(Utils.TestConfigIO):
     def test_extensions(self):
         self.assertIn(".toml", self.io.extensions)
 
+    @deprecated
     def test_load_config_whitespace_key(self):
         file_contents = self.file_contents.replace("foo", "'space foo'")
         m_open = mock.mock_open(read_data=file_contents)

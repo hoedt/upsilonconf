@@ -1706,6 +1706,11 @@ class Utils:
             self.assertIsInstance(config, self.config_class)
             self.assertDictEqual({"key": 0.01}, config.to_dict())
 
+        def test_load_unknown_ext(self):
+            file_path = Path.home() / "config.invalid"
+            with self.assertRaisesRegex(ValueError, "extension"):
+                self.config_class.load(file_path)
+
         def test_save(self):
             from io import StringIO
 
@@ -1790,6 +1795,11 @@ class Utils:
             m_open.assert_called_once_with(Path(file_path), "w", encoding="utf-8")
             buffer.seek(0)
             self.assertEqual("key: 0.01", buffer.read().rstrip())
+
+        def test_save_unknown_ext(self):
+            file_path = Path.home() / "config.invalid"
+            with self.assertRaisesRegex(ValueError, "extension"):
+                self.config_class(key=0.01).save(file_path)
 
         # # # Conversions # # #
 

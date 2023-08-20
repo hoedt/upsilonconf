@@ -427,10 +427,12 @@ class TestExtensionIO(Utils.TestConfigIO):
         with self.assertRaisesRegex(ValueError, "extension"):
             self.io.write(Utils.CONFIG, self.file_path.with_suffix(".invalid"))
 
+    @deprecated
     def test_load_config_unknown_ext(self):
         with self.assertRaisesRegex(ValueError, "extension"):
             self.io.load_config(self.file_path.with_suffix(".invalid"))
 
+    @deprecated
     def test_save_config_unknown_ext(self):
         with self.assertRaisesRegex(ValueError, "extension"):
             self.io.save_config(Utils.CONFIG, self.file_path.with_suffix(".invalid"))
@@ -459,6 +461,7 @@ class TestExtensionIO(Utils.TestConfigIO):
         for expected in self.generate_other_content():
             self.assertEqual(expected, next(buffer).rstrip())
 
+    @deprecated
     def test_load_config_non_default_ext(self):
         file_contents = os.linesep.join(self.generate_other_content())
         m_open = mock.mock_open(read_data=file_contents)
@@ -471,6 +474,7 @@ class TestExtensionIO(Utils.TestConfigIO):
         self.assertIsInstance(config, ConfigurationBase)
         self.assertEqual(Utils.CONFIG, config)
 
+    @deprecated
     def test_save_config_non_default_ext(self):
         file_path = self.file_path.with_suffix(".yml")
         m_open = mock.mock_open()
