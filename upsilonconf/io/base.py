@@ -88,6 +88,9 @@ class ConfigIO(ABC):
         """
         Load configuration from a file.
 
+        .. deprecated:: 0.8.0
+            ConfigIO.load_config will be replaced by ConfigurationBase.load
+
         Parameters
         ----------
         path : Path or str
@@ -111,6 +114,12 @@ class ConfigIO(ABC):
         FrozenConfiguration : immutable configuration type
         """
         from ..config import FrozenConfiguration, PlainConfiguration
+
+        warnings.warn(
+            "ConfigIO.load_config will be replaced by ConfigurationBase.load",
+            DeprecationWarning,
+            stacklevel=2,
+        )
 
         Config = FrozenConfiguration if frozen else PlainConfiguration
         return Config.load(path, key_mods, io=self)
@@ -162,6 +171,9 @@ class ConfigIO(ABC):
         """
         Save configuration to a file.
 
+        .. deprecated:: 0.8.0
+            ConfigIO.save_config will be replaced by ConfigurationBase.save
+
         Parameters
         ----------
         config : ConfigurationBase
@@ -176,6 +188,12 @@ class ConfigIO(ABC):
         --------
         ConfigurationBase.to_dict : method used for key modifications
         """
+        warnings.warn(
+            "ConfigIO.save_config will be replaced by ConfigurationBase.save",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
         return config.save(path, key_mods, io=self)
 
 

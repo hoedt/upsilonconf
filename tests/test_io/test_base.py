@@ -9,6 +9,14 @@ from upsilonconf.io.yaml import YAMLIO
 from upsilonconf.config import ConfigurationBase, PlainConfiguration
 
 
+def deprecated(test):
+    def wrapped_test(self):
+        with self.assertWarns(DeprecationWarning):
+            test(self)
+
+    return wrapped_test
+
+
 class Utils:
     CONFIG = PlainConfiguration(foo=1, bar="test", baz={"a": 0.1, "b": 0.2})
     DEFAULT_LINES = (
@@ -110,6 +118,7 @@ class Utils:
             for expected in self.generate_file_content():
                 self.assertEqual(expected, next(buffer).rstrip())
 
+        @deprecated
         def test_load_config(self):
             m_open = mock.mock_open(read_data=self.file_contents)
             with mock.patch("upsilonconf.io.base.open", m_open):
@@ -119,6 +128,7 @@ class Utils:
             self.assertIsInstance(config, ConfigurationBase)
             self.assertEqual(Utils.CONFIG, config)
 
+        @deprecated
         def test_load_config_relative_path(self):
             filename = self.file_path.name
             m_open = mock.mock_open(read_data=self.file_contents)
@@ -129,6 +139,7 @@ class Utils:
             self.assertIsInstance(config, ConfigurationBase)
             self.assertEqual(Utils.CONFIG, config)
 
+        @deprecated
         def test_load_config_user_path(self):
             filename = self.file_path.name
             m_open = mock.mock_open(read_data=self.file_contents)
@@ -141,12 +152,14 @@ class Utils:
             self.assertIsInstance(config, ConfigurationBase)
             self.assertEqual(Utils.CONFIG, config)
 
+        @deprecated
         def test_load_config_whitespace_key(self):
             file_contents = self.file_contents.replace("foo", "space foo")
             m_open = mock.mock_open(read_data=file_contents)
             with mock.patch("upsilonconf.io.base.open", m_open):
                 self.io.load_config(self.file_path)
 
+        @deprecated
         def test_load_config_key_mods(self):
             good, bad = "a", "A"
             assert any(good in k for k in Utils.CONFIG.keys()), "invalid test setup"
@@ -162,6 +175,7 @@ class Utils:
             self.assertIsInstance(config, ConfigurationBase)
             self.assertEqual(Utils.CONFIG, config)
 
+        @deprecated
         def test_save_config(self):
             m_open = mock.mock_open()
             buffer = StringIO()
@@ -174,6 +188,7 @@ class Utils:
             for expected in self.generate_file_content():
                 self.assertEqual(expected, next(buffer).rstrip())
 
+        @deprecated
         def test_save_config_relative_path(self):
             filename = self.file_path.name
             m_open = mock.mock_open()
@@ -187,6 +202,7 @@ class Utils:
             for expected in self.generate_file_content():
                 self.assertEqual(expected, next(buffer).rstrip())
 
+        @deprecated
         def test_save_config_user_path(self):
             filename = self.file_path.name
             m_open = mock.mock_open()
@@ -202,6 +218,7 @@ class Utils:
             for expected in self.generate_file_content():
                 self.assertEqual(expected, next(buffer).rstrip())
 
+        @deprecated
         def test_save_config_key_mods(self):
             good, bad = "a", "A"
             assert any(good in k for k in Utils.CONFIG.keys()), "invalid test setup"
