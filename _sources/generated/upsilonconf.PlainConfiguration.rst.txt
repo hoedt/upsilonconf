@@ -1,0 +1,12 @@
+﻿.. currentmodule:: upsilonconf
+
+.. testsetup::
+
+    from upsilonconf import *
+
+
+PlainConfiguration
+==================
+
+.. autoclass:: PlainConfiguration
+    :members:

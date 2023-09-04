@@ -1,0 +1,12 @@
+﻿.. currentmodule:: upsilonconf.io
+
+.. testsetup::
+
+    from upsilonconf import *
+
+
+DirectoryIO
+===========
+
+.. autoclass:: DirectoryIO
+    :members:

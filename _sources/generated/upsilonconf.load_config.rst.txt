@@ -1,0 +1,6 @@
+﻿upsilonconf.load\_config
+========================
+
+.. currentmodule:: upsilonconf
+
+.. autofunction:: load_config

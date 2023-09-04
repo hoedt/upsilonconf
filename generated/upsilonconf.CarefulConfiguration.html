@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>CarefulConfiguration &#8212; UpsilonConf 0.7.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=4f649999" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=2f1b7ae6" />
+    <script src="../_static/documentation_options.js?v=fe7df9b0"></script>
+    <script src="../_static/doctools.js?v=888ff710"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="author" title="About these documents" href="../about.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="upsilonconf.load_config" href="upsilonconf.load_config.html" />
+    <link rel="prev" title="FrozenConfiguration" href="upsilonconf.FrozenConfiguration.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="carefulconfiguration">
+<h1>CarefulConfiguration<a class="headerlink" href="#carefulconfiguration" title="Link to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="upsilonconf.CarefulConfiguration">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">upsilonconf.</span></span><span class="sig-name descname"><span class="pre">CarefulConfiguration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/upsilonconf/config.html#CarefulConfiguration"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#upsilonconf.CarefulConfiguration" title="Link to this definition">¶</a></dt>
+<dd><p>Configuration with overwrite protection.</p>
+<p>A <cite>Configuration</cite> should provide a convenient way to store
+(hyper-)parameters for your code and/or experiments.
+Any configuration value that represents a mapping is also automagically
+converted to a <cite>Configuration</cite> to build arbitrary config hierarchies.</p>
+<p>Additional parameter values can be added to the mapping as needed.
+However, to avoid unwanted changes to configuration values,
+it is not possible to directly set the value for existing parameters.
+If you deliberately wish to set the value for existing parameters,
+you should use the <cite>overwrite</cite> method instead.</p>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span> <span class="o">=</span> <span class="n">CarefulConfiguration</span><span class="p">(</span><span class="n">foo</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">bar</span><span class="o">=</span><span class="s2">&quot;bar&quot;</span><span class="p">,</span> <span class="n">baz</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;a&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;b&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">conf</span><span class="p">)</span>
+<span class="go">{foo: 0, bar: bar, baz: {a: 1, b: 2}}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span><span class="p">[</span><span class="s1">&#39;bar&#39;</span><span class="p">]</span>
+<span class="go">&#39;bar&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span><span class="p">[</span><span class="s1">&#39;baz&#39;</span><span class="p">][</span><span class="s1">&#39;a&#39;</span><span class="p">]</span>
+<span class="go">1</span>
+</pre></div>
+</div>
+<p>Values can also be accessed as attributes, tuples or a string with dots</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span><span class="o">.</span><span class="n">bar</span>
+<span class="go">&#39;bar&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span><span class="o">.</span><span class="n">baz</span><span class="o">.</span><span class="n">a</span>
+<span class="go">1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span><span class="p">[</span><span class="s1">&#39;baz&#39;</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">]</span>
+<span class="go">1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span><span class="p">[</span><span class="s1">&#39;baz.a&#39;</span><span class="p">]</span>
+<span class="go">1</span>
+</pre></div>
+</div>
+<p>Values for new parameters can be added directly.
+To avoid inadvertadly overwriting values, the <cite>overwrite</cite> method must be used.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span><span class="o">.</span><span class="n">new</span> <span class="o">=</span> <span class="s2">&quot;works&quot;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span><span class="p">[</span><span class="s1">&#39;new&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;won&#39;t work&quot;</span>
+<span class="gt">Traceback (most recent call last):</span>
+<span class="w">    </span><span class="o">...</span>
+<span class="gr">ValueError</span>: <span class="n">key &#39;new&#39; already defined, use &#39;overwrite&#39; methods instead</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span><span class="o">.</span><span class="n">overwrite</span><span class="p">(</span><span class="s1">&#39;new&#39;</span><span class="p">,</span> <span class="s2">&quot;will work&quot;</span><span class="p">)</span>
+<span class="go">&#39;works&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span><span class="o">.</span><span class="n">new</span>
+<span class="go">&#39;will work&#39;</span>
+</pre></div>
+</div>
+<p class="rubric">Methods</p>
+<table class="docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><strong>overwrite(key, value)</strong></p></td>
+<td><p>Explicitly overwrite an existing parameter value in the configuration.</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>overwrite_all(m, **kwargs)</strong></p></td>
+<td><p>Explicitly overwrite multiple existing parameter values in the configuration.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="upsilonconf.CarefulConfiguration.overwrite">
+<span class="sig-name descname"><span class="pre">overwrite</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="reference internal" href="../_modules/upsilonconf/config.html#CarefulConfiguration.overwrite"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#upsilonconf.CarefulConfiguration.overwrite" title="Link to this definition">¶</a></dt>
+<dd><p>Overwrite a possibly existing parameter value in the configuration.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>key</strong><span class="classifier">str</span></dt><dd><p>The parameter name to overwrite the value for.</p>
+</dd>
+<dt><strong>value</strong></dt><dd><p>The new value for the parameter.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt>old_value</dt><dd><p>The value that has been overwritten
+or <code class="docutils literal notranslate"><span class="pre">None</span></code> if no value was present.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#upsilonconf.CarefulConfiguration.overwrite_all" title="upsilonconf.CarefulConfiguration.overwrite_all"><code class="xref py py-obj docutils literal notranslate"><span class="pre">overwrite_all</span></code></a></dt><dd><p>overwrite multiple values in one go.</p>
+</dd>
+</dl>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="upsilonconf.CarefulConfiguration.overwrite_all">
+<span class="sig-name descname"><span class="pre">overwrite_all</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/upsilonconf/config.html#CarefulConfiguration.overwrite_all"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#upsilonconf.CarefulConfiguration.overwrite_all" title="Link to this definition">¶</a></dt>
+<dd><p>Overwrite multiple possibly existing parameter value in this configuration.</p>
+<p>This method makes it possible to overwrite multiple values in one go.
+It should produce the same results as calling <cite>update</cite>
+when none of the keys are already contained in this configuration.
+Unlike <cite>update</cite>, however, this method will not raise an error
+if one or more of the keys already exist.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>other</strong><span class="classifier">Mapping or iterable of tuples</span></dt><dd><p>Dictionary-like object with values to overwrite.</p>
+</dd>
+<dt><strong>**kwargs</strong></dt><dd><p>Additional key-value pairs for overwrites.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>old_values</strong><span class="classifier">Mapping</span></dt><dd><p>Mapping from keys to the values that have been overwritten.
+If the key did not exist, the corresponding value is <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#upsilonconf.CarefulConfiguration.overwrite" title="upsilonconf.CarefulConfiguration.overwrite"><code class="xref py py-obj docutils literal notranslate"><span class="pre">overwrite</span></code></a></dt><dd><p>overwrite single values.</p>
+</dd>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">update</span></code></dt><dd><p>same functionality, but raises errors for duplicate keys.</p>
+</dd>
+</dl>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">UpsilonConf</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">Getting Started</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../api.html#configuration-objects">Configuration Objects</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api.html#i-o-utilities">I/O Utilities</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../about.html">Fun Facts</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="../api.html">API Reference</a><ul>
+      <li>Previous: <a href="upsilonconf.FrozenConfiguration.html" title="previous chapter">FrozenConfiguration</a></li>
+      <li>Next: <a href="upsilonconf.load_config.html" title="next chapter">upsilonconf.load_config</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2022-2023, Pieter-Jan Hoedt.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.2.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      
+      |
+      <a href="../_sources/generated/upsilonconf.CarefulConfiguration.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,12 @@
+﻿.. currentmodule:: upsilonconf.io
+
+.. testsetup::
+
+    from upsilonconf import *
+
+
+YAMLIO
+======
+
+.. autoclass:: YAMLIO
+    :members:

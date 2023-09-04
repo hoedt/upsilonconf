@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>PlainConfiguration &#8212; UpsilonConf 0.7.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=4f649999" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=2f1b7ae6" />
+    <script src="../_static/documentation_options.js?v=fe7df9b0"></script>
+    <script src="../_static/doctools.js?v=888ff710"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="author" title="About these documents" href="../about.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="FrozenConfiguration" href="upsilonconf.FrozenConfiguration.html" />
+    <link rel="prev" title="ConfigurationBase" href="upsilonconf.ConfigurationBase.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="plainconfiguration">
+<h1>PlainConfiguration<a class="headerlink" href="#plainconfiguration" title="Link to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="upsilonconf.PlainConfiguration">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">upsilonconf.</span></span><span class="sig-name descname"><span class="pre">PlainConfiguration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/upsilonconf/config.html#PlainConfiguration"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#upsilonconf.PlainConfiguration" title="Link to this definition">¶</a></dt>
+<dd><p>Mutable configuration.</p>
+<p><cite>PlainConfiguration</cite> is a mutable <cite>ConfigurationBase</cite> implementation.
+This means that values can be added, changed and/or deleted.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version 0.7.0.</span></p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>In the current implementation, using method names as keys is possible,</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span> <span class="o">=</span> <span class="n">PlainConfiguration</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">conf</span><span class="o">.</span><span class="n">items</span><span class="p">)</span>
+<span class="go">&lt;bound method ConfigurationBase.items of PlainConfiguration()&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span><span class="p">[</span><span class="s2">&quot;items&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">123</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">conf</span><span class="o">.</span><span class="n">items</span><span class="p">)</span>
+<span class="go">123</span>
+</pre></div>
+</div>
+<p>but it can lead to some unexpected behaviour.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">conf</span><span class="p">)</span>
+<span class="go">{items: 123}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span> <span class="o">==</span> <span class="p">{</span><span class="s2">&quot;items&quot;</span><span class="p">:</span> <span class="mi">123</span><span class="p">}</span>
+<span class="gt">Traceback (most recent call last):</span>
+<span class="w">    </span><span class="o">...</span>
+<span class="gr">TypeError</span>: <span class="n">&#39;int&#39; object is not callable</span>
+</pre></div>
+</div>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="upsilonconf.ConfigurationBase.html#upsilonconf.ConfigurationBase" title="upsilonconf.ConfigurationBase"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ConfigurationBase</span></code></a></dt><dd><p>the configuration interface.</p>
+</dd>
+<dt><a class="reference internal" href="upsilonconf.FrozenConfiguration.html#upsilonconf.FrozenConfiguration" title="upsilonconf.FrozenConfiguration"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FrozenConfiguration</span></code></a></dt><dd><p>an immutable configuration.</p>
+</dd>
+</dl>
+</div>
+<p class="rubric">Examples</p>
+<p>Starting with a simple configuration.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span> <span class="o">=</span> <span class="n">PlainConfiguration</span><span class="p">(</span><span class="n">foo</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">bar</span><span class="o">=</span><span class="s2">&quot;bar&quot;</span><span class="p">,</span> <span class="n">baz</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;a&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;b&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">conf</span><span class="p">)</span>
+<span class="go">{foo: 0, bar: bar, baz: {a: 1, b: 2}}</span>
+</pre></div>
+</div>
+<p>Variables can be added, changed or removed as desired.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span><span class="o">.</span><span class="n">surprise</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">conf</span><span class="p">)</span>
+<span class="go">{foo: 0, bar: bar, baz: {a: 1, b: 2}, surprise: None}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span><span class="p">[</span><span class="s2">&quot;surprise&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">conf</span><span class="p">)</span>
+<span class="go">{foo: 0, bar: bar, baz: {a: 1, b: 2}, surprise: []}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">del</span> <span class="n">conf</span><span class="o">.</span><span class="n">baz</span><span class="o">.</span><span class="n">a</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">conf</span><span class="p">)</span>
+<span class="go">{foo: 0, bar: bar, baz: {b: 2}, surprise: []}</span>
+</pre></div>
+</div>
+<p>Creating a single value in a subconfig is possible,
+but only using indexing syntax, not with attribute syntax.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span><span class="o">.</span><span class="n">sub</span><span class="o">.</span><span class="n">val</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="gt">Traceback (most recent call last):</span>
+<span class="w">    </span><span class="o">...</span>
+<span class="gr">AttributeError</span>: <span class="n">&#39;PlainConfiguration&#39; object has no attribute &#39;sub&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span><span class="p">[</span><span class="s2">&quot;sub&quot;</span><span class="p">,</span> <span class="s2">&quot;val&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">conf</span><span class="p">)</span>
+<span class="go">{foo: 0, bar: bar, baz: {b: 2}, surprise: [], sub: {val: -1}}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span><span class="p">[</span><span class="s1">&#39;surprise&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;val&quot;</span><span class="p">:</span> <span class="s2">&quot;tada&quot;</span><span class="p">}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">conf</span><span class="p">)</span>
+<span class="go">{foo: 0, bar: bar, baz: {b: 2}, surprise: {val: tada}, sub: {val: -1}}</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">UpsilonConf</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">Getting Started</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../api.html#configuration-objects">Configuration Objects</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api.html#i-o-utilities">I/O Utilities</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../about.html">Fun Facts</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="../api.html">API Reference</a><ul>
+      <li>Previous: <a href="upsilonconf.ConfigurationBase.html" title="previous chapter">ConfigurationBase</a></li>
+      <li>Next: <a href="upsilonconf.FrozenConfiguration.html" title="next chapter">FrozenConfiguration</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2022-2023, Pieter-Jan Hoedt.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.2.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      
+      |
+      <a href="../_sources/generated/upsilonconf.PlainConfiguration.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

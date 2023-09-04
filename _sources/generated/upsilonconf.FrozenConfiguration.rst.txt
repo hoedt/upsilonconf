@@ -1,0 +1,12 @@
+﻿.. currentmodule:: upsilonconf
+
+.. testsetup::
+
+    from upsilonconf import *
+
+
+FrozenConfiguration
+===================
+
+.. autoclass:: FrozenConfiguration
+    :members:

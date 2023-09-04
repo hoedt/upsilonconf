@@ -1,0 +1,6 @@
+﻿upsilonconf.save\_config
+========================
+
+.. currentmodule:: upsilonconf
+
+.. autofunction:: save_config

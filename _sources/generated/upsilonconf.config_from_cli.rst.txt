@@ -1,0 +1,6 @@
+﻿upsilonconf.config\_from\_cli
+=============================
+
+.. currentmodule:: upsilonconf
+
+.. autofunction:: config_from_cli

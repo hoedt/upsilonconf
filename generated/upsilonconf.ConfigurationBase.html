@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>ConfigurationBase &#8212; UpsilonConf 0.7.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=4f649999" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=2f1b7ae6" />
+    <script src="../_static/documentation_options.js?v=fe7df9b0"></script>
+    <script src="../_static/doctools.js?v=888ff710"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="author" title="About these documents" href="../about.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="PlainConfiguration" href="upsilonconf.PlainConfiguration.html" />
+    <link rel="prev" title="API Reference" href="../api.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="configurationbase">
+<h1>ConfigurationBase<a class="headerlink" href="#configurationbase" title="Link to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="upsilonconf.ConfigurationBase">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">upsilonconf.</span></span><span class="sig-name descname"><span class="pre">ConfigurationBase</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">V</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/upsilonconf/config.html#ConfigurationBase"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#upsilonconf.ConfigurationBase" title="Link to this definition">¶</a></dt>
+<dd><p>Interface for configuration objects.</p>
+<p>This interface can be interpreted in essentially two ways:</p>
+<ul class="simple">
+<li><p>a dictionary (or mapping) with attribute syntax, or</p></li>
+<li><p>an object with indexing syntax.</p></li>
+</ul>
+<p>On top of the combined feature set of dictionaries and attributes,
+this class provides convenient indexing, merging and conversions.
+Values of type <code class="docutils literal notranslate"><span class="pre">dict</span></code> (or other mapping types) will be
+automatically converted to configuration objects,
+giving rise to hierarchical configuration objects.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version 0.7.0.</span></p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="upsilonconf.PlainConfiguration.html#upsilonconf.PlainConfiguration" title="upsilonconf.PlainConfiguration"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PlainConfiguration</span></code></a></dt><dd><p>implementation of mutable configuration.</p>
+</dd>
+<dt><a class="reference internal" href="upsilonconf.FrozenConfiguration.html#upsilonconf.FrozenConfiguration" title="upsilonconf.FrozenConfiguration"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FrozenConfiguration</span></code></a></dt><dd><p>implementation of immutable configuration.</p>
+</dd>
+</dl>
+</div>
+<dl class="py class">
+<dt class="sig sig-object py" id="upsilonconf.ConfigurationBase.FlatConfigView">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">FlatConfigView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#upsilonconf.ConfigurationBase" title="upsilonconf.config.ConfigurationBase"><span class="pre">ConfigurationBase</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/upsilonconf/config.html#ConfigurationBase.FlatConfigView"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#upsilonconf.ConfigurationBase.FlatConfigView" title="Link to this definition">¶</a></dt>
+<dd><p>Flat view of configuration object.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="upsilonconf.ConfigurationBase.FlatItemsView">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">FlatItemsView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#upsilonconf.ConfigurationBase" title="upsilonconf.config.ConfigurationBase"><span class="pre">ConfigurationBase</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/upsilonconf/config.html#ConfigurationBase.FlatItemsView"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#upsilonconf.ConfigurationBase.FlatItemsView" title="Link to this definition">¶</a></dt>
+<dd><p>Flat view of key-value pairs in configuration.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="upsilonconf.ConfigurationBase.FlatKeysView">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">FlatKeysView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#upsilonconf.ConfigurationBase" title="upsilonconf.config.ConfigurationBase"><span class="pre">ConfigurationBase</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/upsilonconf/config.html#ConfigurationBase.FlatKeysView"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#upsilonconf.ConfigurationBase.FlatKeysView" title="Link to this definition">¶</a></dt>
+<dd><p>Flat view of keys in configuration.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="upsilonconf.ConfigurationBase.FlatValuesView">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">FlatValuesView</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#upsilonconf.ConfigurationBase" title="upsilonconf.config.ConfigurationBase"><span class="pre">ConfigurationBase</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/upsilonconf/config.html#ConfigurationBase.FlatValuesView"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#upsilonconf.ConfigurationBase.FlatValuesView" title="Link to this definition">¶</a></dt>
+<dd><p>Flat view of values in configuration.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="upsilonconf.ConfigurationBase.keys">
+<span class="sig-name descname"><span class="pre">keys</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">KeysView</span></span></span><a class="reference internal" href="../_modules/upsilonconf/config.html#ConfigurationBase.keys"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#upsilonconf.ConfigurationBase.keys" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">keys</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">flat</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">KeysView</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="#upsilonconf.ConfigurationBase.FlatKeysView" title="upsilonconf.ConfigurationBase.FlatKeysView"><span class="pre">FlatKeysView</span></a></span></span></dt>
+<dd><p>Get a view of this configuration’s keys.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>flat</strong><span class="classifier">bool, optional</span></dt><dd><p>If <code class="docutils literal notranslate"><span class="pre">True</span></code>, the hierarchy of this config is ignored.
+This means that instead of including subconfigs,
+the subconfigs are recursively flattened in the view.
+The subconfig-key and keys in the subconfig are combined
+using <code class="docutils literal notranslate"><span class="pre">.</span></code>-syntax, making them valid indices for this object.
+If <code class="docutils literal notranslate"><span class="pre">False</span></code> (default), a <code class="docutils literal notranslate"><span class="pre">dict</span></code>-like view is returned.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>keys_view</strong><span class="classifier">KeysView or FlatKeysView</span></dt><dd><p>The new view on the keys in this config.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#upsilonconf.ConfigurationBase.values" title="upsilonconf.ConfigurationBase.values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">values</span></code></a></dt><dd><p>view on values</p>
+</dd>
+<dt><a class="reference internal" href="#upsilonconf.ConfigurationBase.items" title="upsilonconf.ConfigurationBase.items"><code class="xref py py-obj docutils literal notranslate"><span class="pre">items</span></code></a></dt><dd><p>view on key-value pairs</p>
+</dd>
+</dl>
+</div>
+<p class="rubric">Examples</p>
+<p>The examples below work for any subclass of <cite>ConfigurationBase</cite>.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">upsilonconf</span> <span class="kn">import</span> <span class="n">PlainConfiguration</span> <span class="k">as</span> <span class="n">Config</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span> <span class="o">=</span> <span class="n">Config</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="mi">123</span><span class="p">,</span> <span class="n">sub</span><span class="o">=</span><span class="n">Config</span><span class="p">(</span><span class="n">b</span><span class="o">=</span><span class="s2">&quot;foo&quot;</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="kc">None</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="n">conf</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+<span class="go">[&#39;a&#39;, &#39;sub&#39;]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="n">conf</span><span class="o">.</span><span class="n">keys</span><span class="p">(</span><span class="n">flat</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+<span class="go">[&#39;a&#39;, &#39;sub.b&#39;, &#39;sub.c&#39;]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="upsilonconf.ConfigurationBase.values">
+<span class="sig-name descname"><span class="pre">values</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ValuesView</span></span></span><a class="reference internal" href="../_modules/upsilonconf/config.html#ConfigurationBase.values"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#upsilonconf.ConfigurationBase.values" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">values</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">flat</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ValuesView</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="#upsilonconf.ConfigurationBase.FlatValuesView" title="upsilonconf.ConfigurationBase.FlatValuesView"><span class="pre">FlatValuesView</span></a></span></span></dt>
+<dd><p>Get a view of this configuration’s values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>flat</strong><span class="classifier">bool, optional</span></dt><dd><p>If <code class="docutils literal notranslate"><span class="pre">True</span></code>, the hierarchy of this config is ignored.
+This means that instead of including subconfigs,
+the subconfigs are recursively flattened in the view.
+The subconfig-key and keys in the subconfig are combined
+using <code class="docutils literal notranslate"><span class="pre">.</span></code>-syntax, making them valid indices for this object.
+If <code class="docutils literal notranslate"><span class="pre">False</span></code> (default), a <code class="docutils literal notranslate"><span class="pre">dict</span></code>-like view is returned.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>values_view</strong><span class="classifier">ValuesView or FlatValuesView</span></dt><dd><p>The new view on the values in this config.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#upsilonconf.ConfigurationBase.keys" title="upsilonconf.ConfigurationBase.keys"><code class="xref py py-obj docutils literal notranslate"><span class="pre">keys</span></code></a></dt><dd><p>view on keys</p>
+</dd>
+<dt><a class="reference internal" href="#upsilonconf.ConfigurationBase.items" title="upsilonconf.ConfigurationBase.items"><code class="xref py py-obj docutils literal notranslate"><span class="pre">items</span></code></a></dt><dd><p>view on key-value pairs</p>
+</dd>
+</dl>
+</div>
+<p class="rubric">Examples</p>
+<p>The examples below work for any subclass of <cite>ConfigurationBase</cite>.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">upsilonconf</span> <span class="kn">import</span> <span class="n">PlainConfiguration</span> <span class="k">as</span> <span class="n">Config</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span> <span class="o">=</span> <span class="n">Config</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="mi">123</span><span class="p">,</span> <span class="n">sub</span><span class="o">=</span><span class="n">Config</span><span class="p">(</span><span class="n">b</span><span class="o">=</span><span class="s2">&quot;foo&quot;</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="kc">None</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="n">conf</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+<span class="go">[123, PlainConfiguration(b=&#39;foo&#39;, c=None)]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="n">conf</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">flat</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+<span class="go">[123, &#39;foo&#39;, None]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="upsilonconf.ConfigurationBase.items">
+<span class="sig-name descname"><span class="pre">items</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ItemsView</span></span></span><a class="reference internal" href="../_modules/upsilonconf/config.html#ConfigurationBase.items"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#upsilonconf.ConfigurationBase.items" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">items</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">flat</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ItemsView</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="#upsilonconf.ConfigurationBase.FlatItemsView" title="upsilonconf.ConfigurationBase.FlatItemsView"><span class="pre">FlatItemsView</span></a></span></span></dt>
+<dd><p>Get a view of this configuration’s key-value pairs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>flat</strong><span class="classifier">bool, optional</span></dt><dd><p>If <code class="docutils literal notranslate"><span class="pre">True</span></code>, the hierarchy of this config is ignored.
+This means that instead of including subconfigs,
+the subconfigs are recursively flattened in the view.
+The subconfig-key and keys in the subconfig are combined
+using <code class="docutils literal notranslate"><span class="pre">.</span></code>-syntax, making them valid indices for this object.
+If <code class="docutils literal notranslate"><span class="pre">False</span></code> (default), a <code class="docutils literal notranslate"><span class="pre">dict</span></code>-like view is returned.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>items_view</strong><span class="classifier">ItemsView or FlatItemsView</span></dt><dd><p>The new view on the key-value pairs in this config.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#upsilonconf.ConfigurationBase.keys" title="upsilonconf.ConfigurationBase.keys"><code class="xref py py-obj docutils literal notranslate"><span class="pre">keys</span></code></a></dt><dd><p>view on keys</p>
+</dd>
+<dt><a class="reference internal" href="#upsilonconf.ConfigurationBase.values" title="upsilonconf.ConfigurationBase.values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">values</span></code></a></dt><dd><p>view on values</p>
+</dd>
+</dl>
+</div>
+<p class="rubric">Examples</p>
+<p>The examples below work for any subclass of <cite>ConfigurationBase</cite>.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">upsilonconf</span> <span class="kn">import</span> <span class="n">PlainConfiguration</span> <span class="k">as</span> <span class="n">Config</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span> <span class="o">=</span> <span class="n">Config</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="mi">123</span><span class="p">,</span> <span class="n">sub</span><span class="o">=</span><span class="n">Config</span><span class="p">(</span><span class="n">b</span><span class="o">=</span><span class="s2">&quot;foo&quot;</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="kc">None</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="n">conf</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+<span class="go">[(&#39;a&#39;, 123), (&#39;sub&#39;, PlainConfiguration(b=&#39;foo&#39;, c=None))]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="n">conf</span><span class="o">.</span><span class="n">items</span><span class="p">(</span><span class="n">flat</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+<span class="go">[(&#39;a&#39;, 123), (&#39;sub.b&#39;, &#39;foo&#39;), (&#39;sub.c&#39;, None)]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="upsilonconf.ConfigurationBase.load">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key_mods</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">io</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="upsilonconf.io.ConfigIO.html#upsilonconf.io.ConfigIO" title="upsilonconf.io.base.ConfigIO"><span class="pre">ConfigIO</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/upsilonconf/config.html#ConfigurationBase.load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#upsilonconf.ConfigurationBase.load" title="Link to this definition">¶</a></dt>
+<dd><p>Load configuration from a file.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version 0.8.0.</span></p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>path</strong><span class="classifier">Path or str</span></dt><dd><p>Path to a readable text file on disk.</p>
+</dd>
+<dt><strong>key_mods</strong><span class="classifier">dict, optional</span></dt><dd><p>A mapping from key patterns to their respective replacement.
+With multiple patterns, longer patterns are replaced first.</p>
+</dd>
+<dt><strong>io</strong><span class="classifier">ConfigIO, optional</span></dt><dd><p>The IO used for parsing the configuration file to a dictionary.
+If not specified, the default IO will be used.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>config</strong><span class="classifier">ConfigurationBase</span></dt><dd><p>A configuration object with the values as provided in the file.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#upsilonconf.ConfigurationBase.from_dict" title="upsilonconf.ConfigurationBase.from_dict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_dict</span></code></a></dt><dd><p>method used for key modifications</p>
+</dd>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">ConfigIO.read</span></code></dt><dd><p>read configuration file</p>
+</dd>
+</dl>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="upsilonconf.ConfigurationBase.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key_mods</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">io</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="upsilonconf.io.ConfigIO.html#upsilonconf.io.ConfigIO" title="upsilonconf.io.base.ConfigIO"><span class="pre">ConfigIO</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/upsilonconf/config.html#ConfigurationBase.save"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#upsilonconf.ConfigurationBase.save" title="Link to this definition">¶</a></dt>
+<dd><p>Save configuration to a file.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version 0.8.0.</span></p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>path</strong><span class="classifier">Path or str</span></dt><dd><p>Path to a writeable location on disk.</p>
+</dd>
+<dt><strong>key_mods</strong><span class="classifier">dict, optional</span></dt><dd><p>A mapping from key patterns to their respective replacement.
+With multiple patterns, longer patterns are replaced first.</p>
+</dd>
+<dt><strong>io</strong><span class="classifier">ConfigIO, optional</span></dt><dd><p>The IO used for writing a dictionary to the configuration file.
+If not specified, the default IO will be used.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#upsilonconf.ConfigurationBase.to_dict" title="upsilonconf.ConfigurationBase.to_dict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_dict</span></code></a></dt><dd><p>method used for key modifications</p>
+</dd>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">ConfigIO.write</span></code></dt><dd><p>write configuration file</p>
+</dd>
+</dl>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="upsilonconf.ConfigurationBase.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mapping</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">V</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key_mods</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="reference internal" href="../_modules/upsilonconf/config.html#ConfigurationBase.from_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#upsilonconf.ConfigurationBase.from_dict" title="Link to this definition">¶</a></dt>
+<dd><p>Create a configuration from another mapping.</p>
+<p>In its simplest form, this method unpacks the dictionary
+and passes the key-value pairs as arguments to the constructor.
+The <cite>key_mods</cite> argument additionally allows to <em>clean up</em> keys.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>mapping</strong><span class="classifier">Mapping[str, V]</span></dt><dd><p>The dictionary from which to create a configuration object.</p>
+</dd>
+<dt><strong>key_mods</strong><span class="classifier">Mapping[str, str], optional</span></dt><dd><p>A mapping from key patterns to their respective replacement.
+With multiple patterns, longer patterns are replaced first.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>config</strong><span class="classifier">ConfigurationBase</span></dt><dd><p>A configuration object representing the original mapping
+where any occurrence of patterns in <cite>keys_mods</cite>
+in the original keys has been replaced.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#upsilonconf.ConfigurationBase.to_dict" title="upsilonconf.ConfigurationBase.to_dict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_dict</span></code></a></dt><dd><p>inverse conversion from config to mapping.</p>
+</dd>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></dt><dd><p>regular constructor.</p>
+</dd>
+</dl>
+</div>
+<p class="rubric">Examples</p>
+<p>The examples below work for any subclass of <cite>ConfigurationBase</cite>.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">upsilonconf</span> <span class="kn">import</span> <span class="n">PlainConfiguration</span> <span class="k">as</span> <span class="n">Config</span>
+</pre></div>
+</div>
+<p>Without <cite>key_mods</cite>, the dictionary is equivalent to <cite>__init__</cite>.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">d</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;my key&quot;</span><span class="p">:</span> <span class="s2">&quot;foo&quot;</span><span class="p">,</span> <span class="s2">&quot;a key&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span> <span class="o">=</span> <span class="n">Config</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span>
+<span class="go">PlainConfiguration(my key=&#39;foo&#39;, a key=1)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span><span class="p">[</span><span class="s2">&quot;my key&quot;</span><span class="p">]</span>
+<span class="go">&#39;foo&#39;</span>
+</pre></div>
+</div>
+<p>By using the <cite>key_mods</cite> argument, keys can become more accessible.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span> <span class="o">=</span> <span class="n">Config</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">key_mods</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot; &quot;</span><span class="p">:</span> <span class="s2">&quot;_&quot;</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span>
+<span class="go">PlainConfiguration(my_key=&#39;foo&#39;, a_key=1)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span><span class="o">.</span><span class="n">my_key</span>
+<span class="go">&#39;foo&#39;</span>
+</pre></div>
+</div>
+<p>Flat <a href="#id1"><span class="problematic" id="id2">``</span></a>dict``s can also be converted to a hierarchical config.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span> <span class="o">=</span> <span class="n">Config</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">key_mods</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot; &quot;</span><span class="p">:</span> <span class="s2">&quot;.&quot;</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span>
+<span class="go">PlainConfiguration(my=PlainConfiguration(key=&#39;foo&#39;), a=PlainConfiguration(key=1))</span>
+</pre></div>
+</div>
+<p>Multiple replacements can be combined in a single call.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span> <span class="o">=</span> <span class="n">Config</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">key_mods</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot; &quot;</span><span class="p">:</span> <span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="s2">&quot;e&quot;</span><span class="p">:</span> <span class="s2">&quot;3&quot;</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span>
+<span class="go">PlainConfiguration(my_k3y=&#39;foo&#39;, a_k3y=1)</span>
+</pre></div>
+</div>
+<p>Note that replacements are executed in order of length.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span> <span class="o">=</span> <span class="n">Config</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">key_mods</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;my &quot;</span><span class="p">:</span> <span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">:</span> <span class="s2">&quot;B&quot;</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span>
+<span class="go">PlainConfiguration(Akey=&#39;foo&#39;, aBkey=1)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="upsilonconf.ConfigurationBase.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key_mods</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flat</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">V</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/upsilonconf/config.html#ConfigurationBase.to_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#upsilonconf.ConfigurationBase.to_dict" title="Link to this definition">¶</a></dt>
+<dd><p>Convert this configuration to a dictionary.</p>
+<p>This method transfers the key-value pairs in this configuratio
+to a dictionary recursively (for hierarchical configurations).
+The <cite>key_mods</cite> argument additionally allows to modify keys.
+The <cite>flat</cite> argument allows to flatten hierarchical configurations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>key_mods</strong><span class="classifier">Mapping[str, str], optional</span></dt><dd><p>A mapping from key patterns to their respective replacement.
+With multiple patterns, longer patterns are replaced first.</p>
+</dd>
+<dt><strong>flat</strong><span class="classifier">bool, optional</span></dt><dd><p>Discard the hierarchy in this configuration object.
+When <code class="docutils literal notranslate"><span class="pre">True</span></code>, keys in subconfigurations are converted to
+dot-strings that are valid indices for this configuration.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>mapping</strong><span class="classifier">dict[str, V]</span></dt><dd><p>A <code class="docutils literal notranslate"><span class="pre">dict</span></code> representing this configuration
+where any occurrence of patterns in <cite>keys_mods</cite>
+in the original keys has been replaced.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#upsilonconf.ConfigurationBase.from_dict" title="upsilonconf.ConfigurationBase.from_dict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_dict</span></code></a></dt><dd><p>inverse conversion from mapping to config.</p>
+</dd>
+<dt><a class="reference internal" href="#upsilonconf.ConfigurationBase.items" title="upsilonconf.ConfigurationBase.items"><code class="xref py py-obj docutils literal notranslate"><span class="pre">items</span></code></a></dt><dd><p>iterate over (flattened) key-value pairs.</p>
+</dd>
+</dl>
+</div>
+<p class="rubric">Examples</p>
+<p>The examples below work for any subclass of <cite>ConfigurationBase</cite>.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">upsilonconf</span> <span class="kn">import</span> <span class="n">PlainConfiguration</span> <span class="k">as</span> <span class="n">Config</span>
+</pre></div>
+</div>
+<p>For configurations without hierarchy,
+this method has the same effect as calling <code class="docutils literal notranslate"><span class="pre">dict</span></code>.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span> <span class="o">=</span> <span class="n">Config</span><span class="p">(</span><span class="n">my_key</span><span class="o">=</span><span class="s2">&quot;foo&quot;</span><span class="p">,</span> <span class="n">a_key</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">dict</span><span class="p">(</span><span class="n">conf</span><span class="p">)</span>
+<span class="go">{&#39;my_key&#39;: &#39;foo&#39;, &#39;a_key&#39;: 1}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+<span class="go">{&#39;my_key&#39;: &#39;foo&#39;, &#39;a_key&#39;: 1}</span>
+</pre></div>
+</div>
+<p>For hierarchical configurations,
+the conversion is applied recursively.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span> <span class="o">=</span> <span class="n">Config</span><span class="p">(</span><span class="n">sub</span><span class="o">=</span><span class="n">conf</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">dict</span><span class="p">(</span><span class="n">conf</span><span class="p">)</span>
+<span class="go">{&#39;sub&#39;: PlainConfiguration(my_key=&#39;foo&#39;, a_key=1)}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+<span class="go">{&#39;sub&#39;: {&#39;my_key&#39;: &#39;foo&#39;, &#39;a_key&#39;: 1}}</span>
+</pre></div>
+</div>
+<p>The hierarchy can also be discarded using the <cite>flat</cite> argument.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="n">flat</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="go">{&#39;sub.my_key&#39;: &#39;foo&#39;, &#39;sub.a_key&#39;: 1}</span>
+</pre></div>
+</div>
+<p>By using the <cite>key_mods</cite> argument, keys can be made more readable.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="n">key_mods</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;_&quot;</span><span class="p">:</span> <span class="s2">&quot; &quot;</span><span class="p">})</span>
+<span class="go">{&#39;sub&#39;: {&#39;my key&#39;: &#39;foo&#39;, &#39;a key&#39;: 1}}</span>
+</pre></div>
+</div>
+<p>Also, dot-strings from flattening can be replaced.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="n">flat</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">key_mods</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;.&quot;</span><span class="p">:</span> <span class="s2">&quot;_&quot;</span><span class="p">})</span>
+<span class="go">{&#39;sub_my_key&#39;: &#39;foo&#39;, &#39;sub_a_key&#39;: 1}</span>
+</pre></div>
+</div>
+<p>Multiple replacements can be combined in a single call.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="n">key_mods</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;_&quot;</span><span class="p">:</span> <span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="s2">&quot;e&quot;</span><span class="p">:</span> <span class="s2">&quot;3&quot;</span><span class="p">})</span>
+<span class="go">{&#39;sub&#39;: {&#39;my k3y&#39;: &#39;foo&#39;, &#39;a k3y&#39;: 1}}</span>
+</pre></div>
+</div>
+<p>Note that replacements are executed in order of length.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">conf</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="n">key_mods</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;my_&quot;</span><span class="p">:</span> <span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">:</span> <span class="s2">&quot;B&quot;</span><span class="p">})</span>
+<span class="go">{&#39;sub&#39;: {&#39;Akey&#39;: &#39;foo&#39;, &#39;aBkey&#39;: 1}}</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">UpsilonConf</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">Getting Started</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../api.html#configuration-objects">Configuration Objects</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api.html#i-o-utilities">I/O Utilities</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../about.html">Fun Facts</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="../api.html">API Reference</a><ul>
+      <li>Previous: <a href="../api.html" title="previous chapter">API Reference</a></li>
+      <li>Next: <a href="upsilonconf.PlainConfiguration.html" title="next chapter">PlainConfiguration</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2022-2023, Pieter-Jan Hoedt.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.2.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      
+      |
+      <a href="../_sources/generated/upsilonconf.ConfigurationBase.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
