@@ -64,7 +64,8 @@ class ConfigParser:
             """Parse simple assignment expression argument."""
             key, val = s.split("=", maxsplit=1)
             try:
-                val = self._config_io.read_from(StringIO(val))
+                new_val = self._config_io.read_from(StringIO(val))
+                return key, new_val
             except ValueError:
                 pass
 
@@ -115,7 +116,7 @@ class ConfigParser:
         """
         ns = self._parser.parse_args(args)
         result = {} if ns.config is None else self._config_io.read(ns.config)
-        result.update(ns.overrides)
+        result |= dict(ns.overrides)
         if not self.return_ns:
             return result
 
@@ -153,7 +154,7 @@ class ConfigParser:
         )
 
         out = self.parse_cli(args)
-        if not self.return_ns:
+        if not isinstance(out, tuple):
             return CarefulConfiguration.from_dict(out)
 
         return CarefulConfiguration.from_dict(out[0]), out[1]
