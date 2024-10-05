@@ -1,9 +1,12 @@
-from argparse import ArgumentParser
+import warnings
 from pathlib import Path
-from typing import Tuple, Any, Sequence, Optional
+from io import StringIO
+from argparse import ArgumentParser, Namespace
+from typing import Tuple, Any, Sequence, Optional, Union, Mapping
 
 from .base import ConfigIO
-from ..config import CarefulConfiguration
+
+__all__ = ["ConfigParser"]
 
 
 class ConfigParser:
@@ -17,6 +20,9 @@ class ConfigParser:
     from which a base configuration can be loaded.
 
     .. versionadded:: 0.5.0
+
+    .. versionchanged:: 0.8.0
+       Argument `config_io` is no longer optional.
 
     Parameters
     ----------
@@ -33,30 +39,19 @@ class ConfigParser:
         By default, `return_ns` is set to ``True`` if `parser` is not ``None``.
     """
 
-    @staticmethod
-    def _assignment_expr(s: str) -> Tuple[str, Any]:
-        """Parse assignment expression argument."""
-        import json
-
-        key, val = s.split("=", maxsplit=1)
-        try:
-            val = json.loads(val)
-        except json.JSONDecodeError:
-            pass
-
-        return key, val
-
     def __init__(
         self,
+        config_io: ConfigIO,
         parser: Optional[ArgumentParser] = None,
-        config_io: Optional[ConfigIO] = None,
         return_ns: Optional[bool] = None,
     ):
         if return_ns is None:
             return_ns = parser is not None
+        if parser is None:
+            parser = ArgumentParser()
 
-        self._parser = ArgumentParser() if parser is None else parser
         self._config_io = config_io
+        self._parser = parser
         self.return_ns = return_ns
 
         self._modify_parser()
@@ -64,31 +59,76 @@ class ConfigParser:
     def _modify_parser(self) -> None:
         """Add the configuration group to the parser."""
         group = self._parser.add_argument_group("configuration")
+
+        def key_value_pair(s: str) -> Tuple[str, Any]:
+            """Parse simple assignment expression argument."""
+            key, val = s.split("=", maxsplit=1)
+            try:
+                val = self._config_io.read_from(StringIO(val))
+            except ValueError:
+                pass
+
+            return key, val
+
         group.add_argument(
             "overrides",
             nargs="*",
-            type=self._assignment_expr,
+            type=key_value_pair,
             help="configuration options to override in the config file",
             metavar="KEY=VALUE",
         )
-
-        if self._config_io is not None:
-            group.add_argument(
-                "--config",
-                type=Path,
-                help="path to configuration file",
-                metavar="FILE",
-                dest="config",
-            )
+        group.add_argument(
+            "--config",
+            type=Path,
+            default=None,
+            help="path to configuration file",
+            metavar="FILE",
+            dest="config",
+        )
 
     @property
     def parser(self) -> ArgumentParser:
         """Wrapped `ArgumentParser` instance."""
         return self._parser
 
+    def parse_cli(
+        self, args: Optional[Sequence[str]] = None
+    ) -> Union[Mapping[str, Any], Tuple[Mapping[str, Any], Namespace]]:
+        """
+        Parse key-value mapping from command line arguments.
+
+        .. versionadded:: 0.8.0
+
+        Parameters
+        ----------
+        args : sequence of str, optional
+            The list of arguments to parse.
+            By default, arguments are taken from ``sys.argv``.
+
+        Returns
+        -------
+        config : Mapping
+            A dictionary representing the mapping provided via CLI.
+        ns : Namespace, optional
+            The namespace with non-configuration arguments.
+            This is only returned if `return_ns` is ``True``.
+        """
+        ns = self._parser.parse_args(args)
+        result = {} if ns.config is None else self._config_io.read(ns.config)
+        result.update(ns.overrides)
+        if not self.return_ns:
+            return result
+
+        del ns.overrides
+        del ns.config
+        return result, ns
+
     def parse_config(self, args: Optional[Sequence[str]] = None):
         """
         Parse a configuration from command line arguments.
+
+        .. deprecated:: 0.8.0
+            ConfigIO.parse_config will be replaced by ConfigurationBase.from_cli
 
         Parameters
         ----------
@@ -104,18 +144,16 @@ class ConfigParser:
             The namespace with non-configuration arguments.
             This is only returned if `return_ns` is ``True``.
         """
-        ns = self._parser.parse_args(args)
-        config = (
-            CarefulConfiguration()
-            if self._config_io is None or ns.config is None
-            else self._config_io.load_config(ns.config)
+        from ..config import CarefulConfiguration
+
+        warnings.warn(
+            "ConfigParser.parse_config will be replaced by ConfigurationBase.from_cli",
+            DeprecationWarning,
+            stacklevel=2,
         )
-        config |= dict(ns.overrides)
+
+        out = self.parse_cli(args)
         if not self.return_ns:
-            return config
+            return CarefulConfiguration.from_dict(out)
 
-        del ns.overrides
-        if self._config_io is not None:
-            del ns.config
-
-        return config, ns
+        return CarefulConfiguration.from_dict(out[0]), out[1]
