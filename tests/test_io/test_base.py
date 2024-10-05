@@ -52,6 +52,11 @@ class Utils:
             data = self.io.read_from(buffer)
             self.assertDictEqual(Utils.CONFIG.to_dict(), dict(data))
 
+        def test_read_from_error(self):
+            buffer = StringIO("}bla\nbla{")
+            with self.assertRaises(ValueError):
+                self.io.read_from(buffer)
+
         def test_read_from_whitespace_key(self):
             buffer = StringIO(self.file_contents.replace("foo", "space foo"))
             data = self.io.read_from(buffer)
@@ -366,7 +371,7 @@ class TestExtensionIO(Utils.TestConfigIO):
     def test_length(self):
         io1 = ExtensionIO(JSONIO())
         self.assertEqual(1, len(io1))
-        io2 = ExtensionIO(YAMLIO())
+        io2 = ExtensionIO(YAMLIO())  # 2 extensions
         self.assertEqual(2, len(io2))
         io3 = ExtensionIO(JSONIO(), YAMLIO())
         self.assertEqual(3, len(io3))

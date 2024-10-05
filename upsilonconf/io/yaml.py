@@ -64,9 +64,12 @@ class YAMLIO(ConfigIO):
 
     @optional_dependency_to("read YAML files", package="pyyaml")
     def read_from(self, stream):
-        from yaml import load
+        from yaml import load, YAMLError
 
-        return load(stream, Loader=self._yaml_loader)
+        try:
+            return load(stream, Loader=self._yaml_loader)
+        except YAMLError as err:
+            raise ValueError("YAML decoding error") from err
 
     @optional_dependency_to("write YAML files", package="pyyaml")
     def write_to(self, stream, conf):
