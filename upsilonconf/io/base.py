@@ -123,7 +123,7 @@ class ConfigIO(ABC):
         )
 
         Config = FrozenConfiguration if frozen else PlainConfiguration
-        return Config.load(path, key_mods, io=self)
+        return Config.load(path, key_mods=key_mods, io=self)
 
     @abstractmethod
     def write_to(self, stream: TextIO, conf: Mapping[str, Any]) -> None:
@@ -196,7 +196,7 @@ class ConfigIO(ABC):
             stacklevel=2,
         )
 
-        return config.save(path, key_mods, io=self)
+        return config.save(path, key_mods=key_mods, io=self)
 
 
 class ExtensionIO(ConfigIO, MutableMapping[str, ConfigIO]):
@@ -267,7 +267,8 @@ class ExtensionIO(ConfigIO, MutableMapping[str, ConfigIO]):
         return len(self._ext2io)
 
     def __iter__(self):
-        yield from self._ext2io
+        yield self.default_ext
+        yield from filter(lambda ext: ext != self.default_ext, self._ext2io)
 
     @property
     def extensions(self):
@@ -287,8 +288,23 @@ class ExtensionIO(ConfigIO, MutableMapping[str, ConfigIO]):
         self._default_ext = ext
 
     def read_from(self, stream):
-        cls_name = self.__class__.__name__
-        raise TypeError(f"{cls_name} does not support reading from stream")
+        tried_ios = set()
+        for ext, io in self.items():
+            if io not in tried_ios:
+                try:
+                    return io.read_from(stream)
+                except ValueError:
+                    stream.seek(0)
+                    warnings.warn(
+                        f"failed to read stream with '{ext}' IO, trying next in list",
+                        RuntimeWarning,
+                        stacklevel=2,
+                    )
+                finally:
+                    tried_ios.add(io)
+
+        info = f"with extensions {self.extensions}"
+        raise ValueError(f"none of the IOs {info} could decode the stream")
 
     def read(self, path, encoding="utf-8"):
         path = Path(path)

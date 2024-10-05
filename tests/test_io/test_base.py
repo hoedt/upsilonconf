@@ -380,6 +380,11 @@ class TestExtensionIO(Utils.TestConfigIO):
         for ext in iter(self.io):
             self.assertIsNotNone(self.io[ext])
 
+    def test_iter_default_first(self):
+        self.assertEqual(next(iter(self.io)), self.io.default_ext)
+        self.io.default_ext = ".yaml"
+        self.assertEqual(next(iter(self.io)), ".yaml")
+
     def test_default_ext_setter(self):
         for ext in self.io.extensions:
             self.io.default_ext = ext
@@ -399,15 +404,42 @@ class TestExtensionIO(Utils.TestConfigIO):
         with self.assertRaises(ValueError):
             self.io.default_ext = ".invalid"
 
-    def test_read_from(self):
-        buffer = StringIO(self.file_contents)
-        with self.assertRaises(TypeError):
+    def test_read_from_default_io(self):
+        assert ".json" in self.io.extensions, "bad test setup"
+        buffer = StringIO('{"sub": {"ha": 2}}')
+        result = self.io.read_from(buffer)
+        self.assertDictEqual(result, {"sub": {"ha": 2}})
+
+    def test_read_from_secondary_io(self):
+        assert ".yaml" in self.io.extensions, "bad test setup"
+        assert self.io.default_ext != ".yaml", "bad test setup"
+        buffer = StringIO("sub: {ha: 2}")
+        with self.assertWarns(RuntimeWarning):
+            result = self.io.read_from(buffer)
+        self.assertDictEqual(result, {"sub": {"ha": 2}})
+
+    def test_read_from_missing_io(self):
+        assert ".toml" not in self.io.extensions, "bad test setup"
+        buffer = StringIO("[sub]\nha=2")
+        with self.assertRaises(ValueError):
             self.io.read_from(buffer)
 
-    def test_read_from_whitespace_key(self):
-        buffer = StringIO(self.file_contents)
-        with self.assertRaises(TypeError):
-            self.io.read_from(buffer)
+    def test_read_from_toml_string_with_yaml(self):
+        from upsilonconf.io.toml import TOMLIO
+
+        io = ExtensionIO(YAMLIO(), TOMLIO())
+        buffer = StringIO("sub={ha=2}")  # NOTE: valid TOML
+        result = io.read_from(buffer)
+        self.assertEqual(result, "sub={ha=2}")
+
+    def test_read_from_toml_string_without_yaml(self):
+        from upsilonconf.io.toml import TOMLIO
+
+        io = ExtensionIO(JSONIO(), TOMLIO())
+        buffer = StringIO("sub={ha=2}")  # NOTE: valid TOML
+        with self.assertWarns(RuntimeWarning):
+            result = io.read_from(buffer)
+        self.assertDictEqual(result, {"sub": {"ha": 2}})
 
     def test_read_unknown_ext(self):
         with self.assertRaisesRegex(ValueError, "extension"):
