@@ -5,10 +5,11 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>upsilonconf.io.base &#8212; UpsilonConf 0.7.0 documentation</title>
-    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=4f649999" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/alabaster.css?v=2f1b7ae6" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/basic.css?v=c058f7c8" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/alabaster.css?v=7e62b5ef" />
     <script src="../../../_static/documentation_options.js?v=fe7df9b0"></script>
-    <script src="../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../_static/doctools.js?v=9a2dae69"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="author" title="About these documents" href="../../../about.html" />
     <link rel="index" title="Index" href="../../../genindex.html" />
@@ -16,8 +17,9 @@
    
   <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
   
+
   
-  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+  
 
   </head><body>
   
@@ -48,6 +50,8 @@
 <span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="kn">from</span> <span class="nn">..config</span> <span class="kn">import</span> <span class="n">ConfigurationBase</span>
 
+<span class="n">CONFIG_VAL_TYPE</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
+
 
 <div class="viewcode-block" id="ConfigIO">
 <a class="viewcode-back" href="../../../generated/upsilonconf.io.ConfigIO.html#upsilonconf.io.ConfigIO">[docs]</a>
@@ -57,6 +61,11 @@
 
 <span class="sd">    .. versionadded:: 0.5.0</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># TODO: shouldn&#39;t encoding be part of the specific IO?</span>
+    <span class="c1">#       e.g. JSON proposes utf-8 as standard (https://www.rfc-editor.org/rfc/rfc8259#section-8)</span>
+    <span class="c1">#       e.g. YAML accepts utf-8, utf-16 and utf-32 (https://yaml.org/spec/1.2.2/#chapter-5-character-productions)</span>
+    <span class="c1">#       e.g. TOML explicitly requires utf-8 (https://toml.io/en/v1.0.0)</span>
 
     <span class="nd">@property</span>
     <span class="nd">@abstractmethod</span>
@@ -92,6 +101,29 @@
 <span class="sd">            If the implementation does not support reading from a stream.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="o">...</span></div>
+
+
+<div class="viewcode-block" id="ConfigIO.parse_value">
+<a class="viewcode-back" href="../../../generated/upsilonconf.io.ConfigIO.html#upsilonconf.io.ConfigIO.parse_value">[docs]</a>
+    <span class="k">def</span> <span class="nf">parse_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CONFIG_VAL_TYPE</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parse string representing a value for a configuration without key.</span>
+
+<span class="sd">        .. versionadded:: 0.8.0</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        val : str</span>
+<span class="sd">            The string representing the value.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        obj : any basic type</span>
+<span class="sd">            The value object represented by `val`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">from</span> <span class="nn">io</span> <span class="kn">import</span> <span class="n">StringIO</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_from</span><span class="p">(</span><span class="n">StringIO</span><span class="p">(</span><span class="n">val</span><span class="p">))</span></div>
 
 
 <div class="viewcode-block" id="ConfigIO.read">
@@ -165,7 +197,7 @@
         <span class="p">)</span>
 
         <span class="n">Config</span> <span class="o">=</span> <span class="n">FrozenConfiguration</span> <span class="k">if</span> <span class="n">frozen</span> <span class="k">else</span> <span class="n">PlainConfiguration</span>
-        <span class="k">return</span> <span class="n">Config</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">key_mods</span><span class="p">,</span> <span class="n">io</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">Config</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">key_mods</span><span class="o">=</span><span class="n">key_mods</span><span class="p">,</span> <span class="n">io</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="ConfigIO.write_to">
@@ -247,7 +279,7 @@
             <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
         <span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">config</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">key_mods</span><span class="p">,</span> <span class="n">io</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">config</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">key_mods</span><span class="o">=</span><span class="n">key_mods</span><span class="p">,</span> <span class="n">io</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span></div>
 </div>
 
 
@@ -322,7 +354,8 @@
         <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ext2io</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">yield from</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ext2io</span>
+        <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_ext</span>
+        <span class="k">yield from</span> <span class="nb">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">ext</span><span class="p">:</span> <span class="n">ext</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_ext</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ext2io</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">extensions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -346,6 +379,27 @@
     <span class="k">def</span> <span class="nf">read_from</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stream</span><span class="p">):</span>
         <span class="n">cls_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
         <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">cls_name</span><span class="si">}</span><span class="s2"> does not support reading from stream&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ExtensionIO.parse_value">
+<a class="viewcode-back" href="../../../generated/upsilonconf.io.ExtensionIO.html#upsilonconf.io.ExtensionIO.parse_value">[docs]</a>
+    <span class="k">def</span> <span class="nf">parse_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="n">tried_ios</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">ext</span><span class="p">,</span> <span class="n">io</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">io</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tried_ios</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">io</span><span class="o">.</span><span class="n">parse_value</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;failed to parse value with &#39;</span><span class="si">{</span><span class="n">ext</span><span class="si">}</span><span class="s2">&#39; IO, trying next IO&quot;</span><span class="p">,</span>
+                        <span class="ne">RuntimeWarning</span><span class="p">,</span>
+                        <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="k">finally</span><span class="p">:</span>
+                    <span class="n">tried_ios</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">io</span><span class="p">)</span>
+
+        <span class="n">info</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;with extensions </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">extensions</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;none of the IOs </span><span class="si">{</span><span class="n">info</span><span class="si">}</span><span class="s2"> could parse the value&quot;</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="ExtensionIO.read">
@@ -515,7 +569,7 @@
           
         </div>
       </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
         <div class="sphinxsidebarwrapper">
 <h1 class="logo"><a href="../../../index.html">UpsilonConf</a></h1>
 
@@ -526,7 +580,16 @@
 
 
 
-<h3>Navigation</h3>
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../usage.html">Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../api.html">API Reference</a></li>
@@ -544,16 +607,6 @@
   </ul></li>
 </ul>
 </div>
-<div id="searchbox" style="display: none" role="search">
-  <h3 id="searchlabel">Quick search</h3>
-    <div class="searchformwrapper">
-    <form class="search" action="../../../search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
-      <input type="submit" value="Go" />
-    </form>
-    </div>
-</div>
-<script>document.getElementById('searchbox').style.display = "block"</script>
 
 
 
@@ -567,11 +620,11 @@
       <div class="clearer"></div>
     </div>
     <div class="footer">
-      &copy;2022-2023, Pieter-Jan Hoedt.
+      &#169;2022-2024, Pieter-Jan Hoedt.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.2.5</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.0.2</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
       
     </div>
 
