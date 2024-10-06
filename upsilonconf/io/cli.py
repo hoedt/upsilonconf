@@ -122,7 +122,7 @@ class ConfigParser:
         """
         ns = self._parser.parse_args(args)
         result = {} if ns.config is None else self._config_io.read(ns.config)
-        result |= dict(ns.overrides)
+        result.update(ns.overrides)
         if not self.return_ns:
             return result
 

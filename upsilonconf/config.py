@@ -88,12 +88,10 @@ class ConfigurationBase(Mapping[str, V], ABC):
             return sum(1 for _ in self.__iter__())
 
         @abstractmethod
-        def __contains__(self, item: Any) -> bool:
-            ...
+        def __contains__(self, item: Any) -> bool: ...
 
         @abstractmethod
-        def __iter__(self) -> Iterator:
-            ...
+        def __iter__(self) -> Iterator: ...
 
         def _flat_iter(self) -> Iterator[Tuple[str, Any]]:
             """
@@ -159,8 +157,7 @@ class ConfigurationBase(Mapping[str, V], ABC):
             yield from (v for _, v in self._flat_iter())
 
     @abstractmethod
-    def __init__(self, **kwargs: V):
-        ...
+    def __init__(self, **kwargs: V): ...
 
     def __repr__(self) -> str:
         kwargs = ["=".join([k, f"{v!r}"]) for k, v in self.__dict__.items()]
@@ -216,16 +213,13 @@ class ConfigurationBase(Mapping[str, V], ABC):
     # # # Flat Iterators # # #
 
     @overload
-    def keys(self, *, flat: Literal[False] = ...) -> KeysView:
-        ...
+    def keys(self, *, flat: Literal[False] = ...) -> KeysView: ...
 
     @overload
-    def keys(self, *, flat: Literal[True]) -> FlatKeysView:
-        ...
+    def keys(self, *, flat: Literal[True]) -> FlatKeysView: ...
 
     @overload
-    def keys(self, *, flat: bool = ...) -> Union[KeysView, FlatKeysView]:
-        ...
+    def keys(self, *, flat: bool = ...) -> Union[KeysView, FlatKeysView]: ...
 
     def keys(self, *, flat=False):
         """
@@ -270,16 +264,13 @@ class ConfigurationBase(Mapping[str, V], ABC):
         return self.__class__.FlatKeysView(self)
 
     @overload
-    def values(self, *, flat: Literal[False] = ...) -> ValuesView:
-        ...
+    def values(self, *, flat: Literal[False] = ...) -> ValuesView: ...
 
     @overload
-    def values(self, *, flat: Literal[True]) -> FlatValuesView:
-        ...
+    def values(self, *, flat: Literal[True]) -> FlatValuesView: ...
 
     @overload
-    def values(self, *, flat: bool = ...) -> Union[ValuesView, FlatValuesView]:
-        ...
+    def values(self, *, flat: bool = ...) -> Union[ValuesView, FlatValuesView]: ...
 
     def values(self, *, flat=False):
         """
@@ -324,16 +315,13 @@ class ConfigurationBase(Mapping[str, V], ABC):
         return self.__class__.FlatValuesView(self)
 
     @overload
-    def items(self, *, flat: Literal[False] = ...) -> ItemsView:
-        ...
+    def items(self, *, flat: Literal[False] = ...) -> ItemsView: ...
 
     @overload
-    def items(self, *, flat: Literal[True]) -> FlatItemsView:
-        ...
+    def items(self, *, flat: Literal[True]) -> FlatItemsView: ...
 
     @overload
-    def items(self, *, flat: bool = ...) -> Union[ItemsView, FlatItemsView]:
-        ...
+    def items(self, *, flat: bool = ...) -> Union[ItemsView, FlatItemsView]: ...
 
     def items(self, *, flat=False):
         """
@@ -441,8 +429,7 @@ class ConfigurationBase(Mapping[str, V], ABC):
         value: Mapping[str, V],
         wrappers: Tuple[str, ...] = (),
         old_val: Optional[V] = None,
-    ) -> Self:
-        ...
+    ) -> Self: ...
 
     @classmethod
     @overload
@@ -451,8 +438,7 @@ class ConfigurationBase(Mapping[str, V], ABC):
         value: Any,
         wrappers: Tuple[str, ...] = (),
         old_val: Optional[V] = None,
-    ) -> V:
-        ...
+    ) -> V: ...
 
     @classmethod
     def _fix_value(cls, value, wrappers=(), old_val=None):
@@ -528,7 +514,7 @@ class ConfigurationBase(Mapping[str, V], ABC):
             io = get_default_io()
 
         m = io.read(path)
-        m |= dict(overrides)
+        m.update(overrides)
         return cls.from_dict(m, key_mods=key_mods)
 
     def save(
@@ -872,7 +858,6 @@ class PlainConfiguration(ConfigurationBase[Any], MutableMapping[str, Any]):
     """
 
     def __init__(self, **kwargs: Any):
-        super().__init__()
         self.update(**kwargs)
 
     # # # Attribute Access # # #
@@ -995,7 +980,6 @@ class FrozenConfiguration(ConfigurationBase[Hashable], Hashable):
     """
 
     def __init__(self, **kwargs: Union[Hashable, Collection, Mapping]):
-        super().__init__()
         for k, v in kwargs.items():
             conf, key, unresolved = self._resolve_key(k)
             conf.__dict__[key] = self._fix_value(v, unresolved)

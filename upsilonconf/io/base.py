@@ -43,7 +43,7 @@ class ConfigIO(ABC):
         return self.extensions[0]
 
     @abstractmethod
-    def read_from(self, stream: TextIO) -> Mapping[str, Any]:
+    def read_from(self, stream: TextIO) -> Dict[str, Any]:
         """
         Read configuration from a file-like object.
 
@@ -84,9 +84,7 @@ class ConfigIO(ABC):
 
         return self.read_from(StringIO(val))
 
-    def read(
-        self, path: Union[Path, str], encoding: str = "utf-8"
-    ) -> Mapping[str, Any]:
+    def read(self, path: Union[Path, str], encoding: str = "utf-8") -> Dict[str, Any]:
         """
         Read configuration from a file.
 
