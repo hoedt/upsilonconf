@@ -7,6 +7,7 @@ from .json import JSONIO
 from .yaml import YAMLIO
 from .toml import TOMLIO
 from .directory import DirectoryIO
+from .cli import ConfigParser
 
 if TYPE_CHECKING:
     from ..config import ConfigurationBase
@@ -19,6 +20,7 @@ __all__ = [
     "YAMLIO",
     "TOMLIO",
     "DirectoryIO",
+    "ConfigParser",
     "load_config",
     "save_config",
     "from_cli",
@@ -156,8 +158,6 @@ def from_cli(args=None, parser=None, config_io=None):
         The namespace with additional arguments from the command line arguments.
         This is only returned if `parser` is not ``None``
     """
-    from .cli import ConfigParser
-
     if config_io is None:
         config_io = get_default_io()
 

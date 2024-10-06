@@ -2,6 +2,7 @@ import keyword
 import re
 import warnings
 from abc import ABC, abstractmethod
+from argparse import ArgumentParser, Namespace
 from pathlib import Path
 from typing import (
     TypeVar,
@@ -22,9 +23,11 @@ from typing import (
     ValuesView,
     Collection,
     Hashable,
+    Sequence,
+    Literal,
 )
 
-from .io import ConfigIO, get_default_io
+from .io import ConfigIO, ConfigParser, get_default_io
 
 __all__ = [
     "ConfigurationBase",
@@ -213,14 +216,18 @@ class ConfigurationBase(Mapping[str, V], ABC):
     # # # Flat Iterators # # #
 
     @overload
-    def keys(self) -> KeysView:
+    def keys(self, *, flat: Literal[False] = ...) -> KeysView:
         ...
 
     @overload
-    def keys(self, flat: bool = ...) -> Union[KeysView, FlatKeysView]:
+    def keys(self, *, flat: Literal[True]) -> FlatKeysView:
         ...
 
-    def keys(self, flat=False):
+    @overload
+    def keys(self, *, flat: bool = ...) -> Union[KeysView, FlatKeysView]:
+        ...
+
+    def keys(self, *, flat=False):
         """
         Get a view of this configuration's keys.
 
@@ -263,14 +270,18 @@ class ConfigurationBase(Mapping[str, V], ABC):
         return self.__class__.FlatKeysView(self)
 
     @overload
-    def values(self) -> ValuesView:
+    def values(self, *, flat: Literal[False] = ...) -> ValuesView:
         ...
 
     @overload
-    def values(self, flat: bool = ...) -> Union[ValuesView, FlatValuesView]:
+    def values(self, *, flat: Literal[True]) -> FlatValuesView:
         ...
 
-    def values(self, flat=False):
+    @overload
+    def values(self, *, flat: bool = ...) -> Union[ValuesView, FlatValuesView]:
+        ...
+
+    def values(self, *, flat=False):
         """
         Get a view of this configuration's values.
 
@@ -313,14 +324,18 @@ class ConfigurationBase(Mapping[str, V], ABC):
         return self.__class__.FlatValuesView(self)
 
     @overload
-    def items(self) -> ItemsView:
+    def items(self, *, flat: Literal[False] = ...) -> ItemsView:
         ...
 
     @overload
-    def items(self, flat: bool = ...) -> Union[ItemsView, FlatItemsView]:
+    def items(self, *, flat: Literal[True]) -> FlatItemsView:
         ...
 
-    def items(self, flat=False):
+    @overload
+    def items(self, *, flat: bool = ...) -> Union[ItemsView, FlatItemsView]:
+        ...
+
+    def items(self, *, flat=False):
         """
         Get a view of this configuration's key-value pairs.
 
@@ -473,11 +488,13 @@ class ConfigurationBase(Mapping[str, V], ABC):
 
     @classmethod
     def load(
-        cls,
+        cls: Type[Self],
         path: Union[Path, str],
+        *,
+        overrides: Union[Mapping[str, V], Sequence[Tuple[str, V]]] = (),
         key_mods: Optional[Mapping[str, str]] = None,
         io: Optional[ConfigIO] = None,
-    ):
+    ) -> Self:
         """
         Load configuration from a file.
 
@@ -487,6 +504,9 @@ class ConfigurationBase(Mapping[str, V], ABC):
         ----------
         path : Path or str
             Path to a readable text file on disk.
+        overrides : dict or sequence of tuples, optional
+            Collection of key-value pairs to update the original configuration with.
+            This enables adding keys and overriding values for existing keys.
         key_mods : dict, optional
             A mapping from key patterns to their respective replacement.
             With multiple patterns, longer patterns are replaced first.
@@ -508,11 +528,13 @@ class ConfigurationBase(Mapping[str, V], ABC):
             io = get_default_io()
 
         m = io.read(path)
-        return cls.from_dict(m, key_mods)
+        m |= dict(overrides)
+        return cls.from_dict(m, key_mods=key_mods)
 
     def save(
         self,
         path: Union[Path, str],
+        *,
         key_mods: Optional[Mapping[str, str]] = None,
         io: Optional[ConfigIO] = None,
     ):
@@ -540,8 +562,69 @@ class ConfigurationBase(Mapping[str, V], ABC):
         if io is None:
             io = get_default_io()
 
-        m = self.to_dict(key_mods)
+        m = self.to_dict(key_mods=key_mods)
         io.write(m, path)
+
+    @classmethod
+    def from_cli(
+        cls: Type[Self],
+        args: Optional[Sequence[str]] = None,
+        *,
+        parser: Optional[Union[ConfigParser, ArgumentParser]] = None,
+        key_mods: Optional[Mapping[str, str]] = None,
+        io: Optional[ConfigIO] = None,
+    ) -> Union[Self, Tuple[Self, Namespace]]:
+        """
+        Create configuration from command-line arguments.
+
+        .. versionadded:: 0.8.0
+
+        Parameters
+        ----------
+        args : sequence of str, optional
+            The list of arguments to parse.
+            By default, arguments are taken from ``sys.argv``.
+        parser : ArgumentParser or ConfigParser, optional
+            The CLI parser to use as a base for retrieving configuration options.
+            If not specified, an empty parser will be created.
+        io : ConfigIO, optional
+            Specifies how configuration files and command-line arguments are read.
+            This argument is ignored if a `ConfigParser` is passed for `parser`.
+
+        Returns
+        -------
+        config : ConfigurationBase
+            A configuration object with keys and values as specified
+            through the command line arguments.
+        ns : Namespace, optional
+            A namespace object with non-configuration arguments.
+            This is only returned if `parser` is given and
+            not a `ConfigParser` object with ``return_ns == False``.
+
+        See Also
+        --------
+        from_dict : method used for key modifications
+        ConfigParser.parse_cli : parse CLI arguments
+        """
+        io_given = io is not None
+        if io is None:
+            io = get_default_io()
+        if parser is None:
+            parser = ConfigParser(io)
+        elif not isinstance(parser, ConfigParser):
+            parser = ConfigParser(io, parser=parser)
+        elif io_given:
+            warnings.warn(
+                "ignoring io argument, using io from ConfigParser argument",
+                UserWarning,
+                stacklevel=2,
+            )
+
+        out = parser.parse_cli(args)
+        if isinstance(out, tuple):
+            return cls.from_dict(out[0], key_mods=key_mods), out[1]
+        else:
+            return cls.from_dict(out, key_mods=key_mods)
 
     # # # Dict Conversion # # #
 
@@ -549,6 +632,7 @@ class ConfigurationBase(Mapping[str, V], ABC):
     def from_dict(
         cls: Type[Self],
         mapping: Mapping[str, V],
+        *,
         key_mods: Optional[Mapping[str, str]] = None,
     ) -> Self:
         """
@@ -557,6 +641,9 @@ class ConfigurationBase(Mapping[str, V], ABC):
         In its simplest form, this method unpacks the dictionary
         and passes the key-value pairs as arguments to the constructor.
         The `key_mods` argument additionally allows to *clean up* keys.
+
+        .. versionchanged:: 0.8.0
+           `key_mods` can no longer be passed as positional argument.
 
         Parameters
         ----------
@@ -625,7 +712,7 @@ class ConfigurationBase(Mapping[str, V], ABC):
         return cls(**_modify_keys(mapping.items(), key_mods))
 
     def to_dict(
-        self, key_mods: Optional[Mapping[str, str]] = None, flat: bool = False
+        self, *, key_mods: Optional[Mapping[str, str]] = None, flat: bool = False
     ) -> Dict[str, V]:
         """
         Convert this configuration to a dictionary.
@@ -634,6 +721,9 @@ class ConfigurationBase(Mapping[str, V], ABC):
         to a dictionary recursively (for hierarchical configurations).
         The `key_mods` argument additionally allows to modify keys.
         The `flat` argument allows to flatten hierarchical configurations.
+
+        .. versionchanged:: 0.8.0
+           `key_mods` can no longer be passed as positional argument.
 
         Parameters
         ----------

@@ -1,10 +1,12 @@
 import copy
 import doctest
+import argparse
 from pathlib import Path
 from typing import Type
 from unittest import TestCase, mock
 
 import upsilonconf.config
+from upsilonconf.io import ConfigParser, get_default_io
 from upsilonconf.config import *
 
 
@@ -707,19 +709,19 @@ class TestCarefulConfiguration(TestCase):
     def test_from_dict_key_modifiers(self):
         d = {"keyX1": "with X", "keyO2": "with O"}
         key_mods = {"X": "_", "O": "_minus_"}
-        conf = CarefulConfiguration.from_dict(d, key_mods)
+        conf = CarefulConfiguration.from_dict(d, key_mods=key_mods)
         ref = CarefulConfiguration(key_1="with X", key_minus_2="with O")
         self.assertIsInstance(conf, CarefulConfiguration)
         self.assertEqual(ref, conf)
 
     def test_from_dict_key_modifiers_neighbours(self):
         d = {"keyX1": "with X"}
-        conf = CarefulConfiguration.from_dict(d, {"X": "_", "1": "3"})
+        conf = CarefulConfiguration.from_dict(d, key_mods={"X": "_", "1": "3"})
         ref = CarefulConfiguration(key_3="with X")
         self.assertIsInstance(conf, CarefulConfiguration)
         self.assertEqual(ref, conf)
 
-        conf = CarefulConfiguration.from_dict(d, {"1": "3", "X": "_"})
+        conf = CarefulConfiguration.from_dict(d, key_mods={"1": "3", "X": "_"})
         ref = CarefulConfiguration(key_3="with X")
         self.assertIsInstance(conf, CarefulConfiguration)
         self.assertEqual(ref, conf)
@@ -734,7 +736,7 @@ class TestCarefulConfiguration(TestCase):
     def test_from_dict_key_modifiers_combination(self):
         d = {"keyX1": "with X", "keyO2": "with O"}
         key_mods = {"X": "_", "O": "_minus_", "k": "K"}
-        conf = CarefulConfiguration.from_dict(d, key_mods)
+        conf = CarefulConfiguration.from_dict(d, key_mods=key_mods)
         ref = CarefulConfiguration(Key_1="with X", Key_minus_2="with O")
         self.assertIsInstance(conf, CarefulConfiguration)
         self.assertEqual(ref, conf)
@@ -742,13 +744,13 @@ class TestCarefulConfiguration(TestCase):
     def test_from_dict_key_modifiers_order(self):
         d = {"keyX1": "with X", "keyO2": "with O"}
         key_mods = {"X": "0", "O": "_"}
-        conf = CarefulConfiguration.from_dict(d, key_mods)
+        conf = CarefulConfiguration.from_dict(d, key_mods=key_mods)
         ref = CarefulConfiguration(key01="with X", key_2="with O")
         self.assertIsInstance(conf, CarefulConfiguration)
         self.assertEqual(ref, conf)
 
         key_mods = {"O": "_", "X": "0"}  # reversed
-        conf = CarefulConfiguration.from_dict(d, key_mods)
+        conf = CarefulConfiguration.from_dict(d, key_mods=key_mods)
         ref = CarefulConfiguration(key01="with X", key_2="with O")
         self.assertIsInstance(conf, CarefulConfiguration)
         self.assertEqual(ref, conf)
@@ -756,13 +758,13 @@ class TestCarefulConfiguration(TestCase):
     def test_from_dict_key_modifiers_order_length(self):
         d = {"keyX1": "with X", "keyO2": "with O"}
         key_mods = {"keyX": "k", "keyO": "K", " X": "_", "O": "_"}
-        conf = CarefulConfiguration.from_dict(d, key_mods)
+        conf = CarefulConfiguration.from_dict(d, key_mods=key_mods)
         ref = CarefulConfiguration(k1="with X", K2="with O")
         self.assertIsInstance(conf, CarefulConfiguration)
         self.assertEqual(ref, conf)
 
         key_mods = {"O": "_", "X": "A", "keyO": "K", "keyX": "k"}  # reversed
-        conf = CarefulConfiguration.from_dict(d, key_mods)
+        conf = CarefulConfiguration.from_dict(d, key_mods=key_mods)
         ref = CarefulConfiguration(k1="with X", K2="with O")
         self.assertIsInstance(conf, CarefulConfiguration)
         self.assertEqual(ref, conf)
@@ -770,13 +772,13 @@ class TestCarefulConfiguration(TestCase):
     def test_from_dict_key_modifiers_nested(self):
         d = {"keyX1": "with X", "keyO2": {"keyO1": 1, "keyX2": 2}}
         key_mods = {"keyX": "k", "keyO": "K", " X": "_", "O": "_"}
-        conf = CarefulConfiguration.from_dict(d, key_mods)
+        conf = CarefulConfiguration.from_dict(d, key_mods=key_mods)
         ref = CarefulConfiguration(k1="with X", K2=CarefulConfiguration(K1=1, k2=2))
         self.assertIsInstance(conf, CarefulConfiguration)
         self.assertEqual(ref, conf)
 
         key_mods = {"O": "_", "X": "A", "keyO": "K", "keyX": "k"}  # reversed
-        conf = CarefulConfiguration.from_dict(d, key_mods)
+        conf = CarefulConfiguration.from_dict(d, key_mods=key_mods)
         ref = CarefulConfiguration(k1="with X", K2=CarefulConfiguration(K1=1, k2=2))
         self.assertIsInstance(conf, CarefulConfiguration)
         self.assertEqual(ref, conf)
@@ -806,43 +808,45 @@ class TestCarefulConfiguration(TestCase):
 
     def test_to_dict_key_modifiers(self):
         conf = CarefulConfiguration(key_1="with space", key02="with hyphen")
-        d = conf.to_dict({"_": " ", "0": "-"})
+        d = conf.to_dict(key_mods={"_": " ", "0": "-"})
         d_ref = {"key 1": "with space", "key-2": "with hyphen"}
         self.assertDictEqual(d_ref, d)
 
     def test_to_dict_key_modifiers_combination(self):
         conf = CarefulConfiguration(key_1="with space", key02="with hyphen")
-        d = conf.to_dict({"_": " ", "0": "-", "k": "K"})
+        d = conf.to_dict(key_mods={"_": " ", "0": "-", "k": "K"})
         d_ref = {"Key 1": "with space", "Key-2": "with hyphen"}
         self.assertDictEqual(d_ref, d)
 
     def test_to_dict_key_modifiers_combination_neighbours(self):
         conf = CarefulConfiguration(key_1="with space")
-        d = conf.to_dict({"1": "3", "_": " "})
+        d = conf.to_dict(key_mods={"1": "3", "_": " "})
         d_ref = {"key 3": "with space"}
         self.assertDictEqual(d_ref, d)
 
-        d = conf.to_dict({"_": " ", "1": "3"})
+        d = conf.to_dict(key_mods={"_": " ", "1": "3"})
         d_ref = {"key 3": "with space"}
         self.assertDictEqual(d_ref, d)
 
     def test_to_dict_key_modifiers_order(self):
         conf = CarefulConfiguration(key_1="with space", key02="with space")
-        d = conf.to_dict({"0": "_", "_": " "})
+        d = conf.to_dict(key_mods={"0": "_", "_": " "})
         d_ref = {"key 1": "with space", "key_2": "with space"}
         self.assertDictEqual(d_ref, d)
 
-        d = conf.to_dict({"_": " ", "0": "_"})  # key-mods reversed
+        d = conf.to_dict(key_mods={"_": " ", "0": "_"})  # key-mods reversed
         d_ref = {"key 1": "with space", "key_2": "with space"}
         self.assertDictEqual(d_ref, d)
 
     def test_to_dict_key_modifiers_order_length(self):
         conf = CarefulConfiguration(key_1="with space", key_2="with hyphen")
-        d = conf.to_dict({"_1": " 1", "_2": "-2", "_": "0"})
+        d = conf.to_dict(key_mods={"_1": " 1", "_2": "-2", "_": "0"})
         d_ref = {"key 1": "with space", "key-2": "with hyphen"}
         self.assertDictEqual(d_ref, d)
 
-        d = conf.to_dict({"_": "0", "_2": "-2", "_1": " 1"})  # key-mods reversed
+        d = conf.to_dict(
+            key_mods={"_": "0", "_2": "-2", "_1": " 1"}
+        )  # key-mods reversed
         d_ref = {"key 1": "with space", "key-2": "with hyphen"}
         self.assertDictEqual(d_ref, d)
 
@@ -850,11 +854,13 @@ class TestCarefulConfiguration(TestCase):
         conf = CarefulConfiguration(
             key_1="with space", key_2=CarefulConfiguration(key_1=1, key_2=2)
         )
-        d = conf.to_dict({"_1": " 1", "_2": "-2", "_": "0"})
+        d = conf.to_dict(key_mods={"_1": " 1", "_2": "-2", "_": "0"})
         d_ref = {"key 1": "with space", "key-2": {"key 1": 1, "key-2": 2}}
         self.assertDictEqual(d_ref, d)
 
-        d = conf.to_dict({"_": "0", "_2": "-2", "_1": " 1"})  # key-mods reversed
+        d = conf.to_dict(
+            key_mods={"_": "0", "_2": "-2", "_1": " 1"}
+        )  # key-mods reversed
         d_ref = {"key 1": "with space", "key-2": {"key 1": 1, "key-2": 2}}
         self.assertEqual(d_ref, d)
 
@@ -1800,6 +1806,158 @@ class Utils:
             file_path = Path.home() / "config.invalid"
             with self.assertRaisesRegex(ValueError, "extension"):
                 self.config_class(key=0.01).save(file_path)
+
+        def test_from_cli(self):
+            config = self.config_class.from_cli(["key=0.01"])
+            self.assertIsInstance(config, self.config_class)
+            self.assertDictEqual({"key": 0.01}, config.to_dict())
+
+        def test_from_cli_empty(self):
+            config = self.config_class.from_cli([])
+            self.assertDictEqual({}, config.to_dict())
+
+        def test_from_cli_pos_args(self):
+            with self.assertRaises(TypeError):
+                self.config_class.from_cli(["key=0.01"], None)
+            with self.assertRaises(TypeError):
+                self.config_class.from_cli(["key=0.01"], None, None)
+
+        def test_from_cli_dot_key(self):
+            config = self.config_class.from_cli(["sub.key=0.01"])
+            self.assertIsInstance(config, self.config_class)
+            self.assertDictEqual({"sub": {"key": 0.01}}, config.to_dict())
+
+        def test_from_cli_config_parser(self):
+            parser = ConfigParser(get_default_io())
+            config = self.config_class.from_cli(["key=0.01"], parser=parser)
+            self.assertDictEqual({"key": 0.01}, config.to_dict())
+
+        def test_from_cli_config_parser_return_ns(self):
+            parser = ConfigParser(get_default_io(), return_ns=True)
+            config, ns = self.config_class.from_cli(["key=0.01"], parser=parser)
+            self.assertDictEqual({"key": 0.01}, config.to_dict())
+            self.assertEqual(argparse.Namespace(), ns)
+
+        def test_from_cli_config_parser_arg_parse_without_ns(self):
+            parser = ConfigParser(
+                get_default_io(), parser=argparse.ArgumentParser(), return_ns=False
+            )
+            config = self.config_class.from_cli(["key=0.01"], parser=parser)
+            self.assertDictEqual({"key": 0.01}, config.to_dict())
+
+        def test_from_cli_argument_parser(self):
+            parser = argparse.ArgumentParser(exit_on_error=False)
+            config, ns = self.config_class.from_cli(["key=0.01"], parser=parser)
+            self.assertDictEqual({"key": 0.01}, config.to_dict())
+            self.assertEqual(argparse.Namespace(), ns)
+
+        def test_from_cli_argument_parser_with_flag_unused(self):
+            parser = argparse.ArgumentParser(exit_on_error=False)
+            parser.add_argument("--flag", action="store_true")
+            config, ns = self.config_class.from_cli(["key=0.01"], parser=parser)
+            self.assertDictEqual({"key": 0.01}, config.to_dict())
+            self.assertEqual(argparse.Namespace(flag=False), ns)
+
+        def test_from_cli_argument_parser_with_flag_used(self):
+            parser = argparse.ArgumentParser(exit_on_error=False)
+            parser.add_argument("--flag", action="store_true")
+            config, ns = self.config_class.from_cli(
+                ["key=0.01", "--flag"], parser=parser
+            )
+            self.assertDictEqual({"key": 0.01}, config.to_dict())
+            self.assertEqual(argparse.Namespace(flag=True), ns)
+
+        def test_from_cli_argument_parser_with_flag_arg(self):
+            parser = argparse.ArgumentParser(exit_on_error=False)
+            parser.add_argument("--flag", default=0, type=int)
+            config, ns = self.config_class.from_cli(
+                ["key=0.01", "--flag", "42"], parser=parser
+            )
+            self.assertDictEqual({"key": 0.01}, config.to_dict())
+            self.assertEqual(argparse.Namespace(flag=42), ns)
+
+        def test_from_cli_argument_parser_with_pos_args(self):
+            parser = argparse.ArgumentParser(exit_on_error=False)
+            parser.add_argument("positional", type=int)
+            config, ns = self.config_class.from_cli(["42", "key=0.01"], parser=parser)
+            self.assertDictEqual({"key": 0.01}, config.to_dict())
+            self.assertEqual(argparse.Namespace(positional=42), ns)
+
+        def test_from_cli_io(self):
+            from upsilonconf.io import JSONIO, YAMLIO, TOMLIO
+
+            config = self.config_class.from_cli(['sub={"key": 0.01}'], io=JSONIO())
+            self.assertDictEqual({"sub": {"key": 0.01}}, config.to_dict())
+            config = self.config_class.from_cli(["sub={key: 0.01}"], io=YAMLIO())
+            self.assertDictEqual({"sub": {"key": 0.01}}, config.to_dict())
+            config = self.config_class.from_cli(["sub={key=0.01}"], io=TOMLIO())
+            self.assertDictEqual({"sub": {"key": 0.01}}, config.to_dict())
+
+        def test_from_cli_config_parser_io(self):
+            parser = ConfigParser(get_default_io())
+            with self.assertWarns(UserWarning):
+                config = self.config_class.from_cli(
+                    ['sub={"key": 0.01}'], parser=parser, io=get_default_io()
+                )
+            self.assertDictEqual({"sub": {"key": 0.01}}, config.to_dict())
+
+        def test_from_cli_argument_parser_io(self):
+            parser = argparse.ArgumentParser(exit_on_error=False)
+            config, ns = self.config_class.from_cli(
+                ['sub={"key": 0.01}'], parser=parser, io=get_default_io()
+            )
+            self.assertDictEqual({"sub": {"key": 0.01}}, config.to_dict())
+            self.assertEqual(argparse.Namespace(), ns)
+
+        def test_from_cli_file(self):
+            file_path = Path.home() / "config.json"
+            m_open = mock.mock_open(read_data='{"key": 0.01}')
+            with mock.patch("upsilonconf.io.base.open", m_open):
+                config = self.config_class.from_cli(["--config", str(file_path)])
+
+            m_open.assert_called_once_with(file_path, "r", encoding="utf-8")
+            self.assertIsInstance(config, self.config_class)
+            self.assertDictEqual({"key": 0.01}, config.to_dict())
+
+        def test_from_cli_file_with_override(self):
+            file_path = Path.home() / "config.json"
+            m_open = mock.mock_open(read_data='{"key": 0.01}')
+            with mock.patch("upsilonconf.io.base.open", m_open):
+                config = self.config_class.from_cli(
+                    ["--config", str(file_path), "key=-0.02"]
+                )
+
+            m_open.assert_called_once_with(file_path, "r", encoding="utf-8")
+            self.assertIsInstance(config, self.config_class)
+            self.assertDictEqual({"key": -0.02}, config.to_dict())
+
+        def test_from_cli_argument_parser_file(self):
+            file_path = Path.home() / "config.json"
+            m_open = mock.mock_open(read_data='{"key": 0.01}')
+            with mock.patch("upsilonconf.io.base.open", m_open):
+                config, ns = self.config_class.from_cli(
+                    ["--config", str(file_path)],
+                    parser=argparse.ArgumentParser(exit_on_error=False),
+                )
+
+            m_open.assert_called_once_with(file_path, "r", encoding="utf-8")
+            self.assertIsInstance(config, self.config_class)
+            self.assertDictEqual({"key": 0.01}, config.to_dict())
+            self.assertEqual(argparse.Namespace(), ns)
+
+        def test_from_cli_argument_parser_file_with_override(self):
+            file_path = Path.home() / "config.json"
+            m_open = mock.mock_open(read_data='{"key": 0.01}')
+            with mock.patch("upsilonconf.io.base.open", m_open):
+                config, ns = self.config_class.from_cli(
+                    ["--config", str(file_path), "key=-0.02"],
+                    parser=argparse.ArgumentParser(exit_on_error=False),
+                )
+
+            m_open.assert_called_once_with(file_path, "r", encoding="utf-8")
+            self.assertIsInstance(config, self.config_class)
+            self.assertDictEqual({"key": -0.02}, config.to_dict())
+            self.assertEqual(argparse.Namespace(), ns)
 
         # # # Conversions # # #
 
