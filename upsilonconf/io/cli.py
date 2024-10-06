@@ -1,7 +1,6 @@
 import warnings
 from pathlib import Path
-from io import StringIO
-from argparse import ArgumentParser, Namespace
+from argparse import ArgumentParser, ArgumentError, Namespace
 from typing import Tuple, Any, Sequence, Optional, Union, Mapping
 
 from .base import ConfigIO
@@ -54,7 +53,14 @@ class ConfigParser:
         self._parser = parser
         self.return_ns = return_ns
 
-        self._modify_parser()
+        try:
+            self._modify_parser()
+        except ArgumentError:
+            warnings.warn(
+                "ArgumentParser already has config section. Are you reusing a parser object?",
+                UserWarning,
+                stacklevel=2,
+            )
 
     def _modify_parser(self) -> None:
         """Add the configuration group to the parser."""
@@ -72,19 +78,19 @@ class ConfigParser:
             return key, val
 
         group.add_argument(
-            "overrides",
-            nargs="*",
-            type=key_value_pair,
-            help="configuration options to override in the config file",
-            metavar="KEY=VALUE",
-        )
-        group.add_argument(
             "--config",
             type=Path,
             default=None,
             help="path to configuration file",
             metavar="FILE",
             dest="config",
+        )
+        group.add_argument(
+            "overrides",
+            nargs="*",
+            type=key_value_pair,
+            help="configuration options to override in the config file",
+            metavar="KEY=VALUE",
         )
 
     @property

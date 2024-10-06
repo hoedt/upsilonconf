@@ -37,6 +37,12 @@ class TestConfigParser(TestCase):
         self.assertIn("KEY=VALUE", cli.parser.format_usage())
         self.assertIn("--config", cli.parser.format_usage())
 
+    def test_constructor_parser_reuse(self):
+        parser = ArgumentParser()
+        ConfigParser(JSONIO(), parser=parser)
+        with self.assertWarns(UserWarning):
+            ConfigParser(JSONIO(), parser=parser)
+
     def test_constructor_io(self):
         cli = ConfigParser(JSONIO())
         self.assertFalse(cli.return_ns)
