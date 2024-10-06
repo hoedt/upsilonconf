@@ -1846,20 +1846,20 @@ class Utils:
             self.assertDictEqual({"key": 0.01}, config.to_dict())
 
         def test_from_cli_argument_parser(self):
-            parser = argparse.ArgumentParser(exit_on_error=False)
+            parser = argparse.ArgumentParser()
             config, ns = self.config_class.from_cli(["key=0.01"], parser=parser)
             self.assertDictEqual({"key": 0.01}, config.to_dict())
             self.assertEqual(argparse.Namespace(), ns)
 
         def test_from_cli_argument_parser_with_flag_unused(self):
-            parser = argparse.ArgumentParser(exit_on_error=False)
+            parser = argparse.ArgumentParser()
             parser.add_argument("--flag", action="store_true")
             config, ns = self.config_class.from_cli(["key=0.01"], parser=parser)
             self.assertDictEqual({"key": 0.01}, config.to_dict())
             self.assertEqual(argparse.Namespace(flag=False), ns)
 
         def test_from_cli_argument_parser_with_flag_used(self):
-            parser = argparse.ArgumentParser(exit_on_error=False)
+            parser = argparse.ArgumentParser()
             parser.add_argument("--flag", action="store_true")
             config, ns = self.config_class.from_cli(
                 ["key=0.01", "--flag"], parser=parser
@@ -1868,7 +1868,7 @@ class Utils:
             self.assertEqual(argparse.Namespace(flag=True), ns)
 
         def test_from_cli_argument_parser_with_flag_arg(self):
-            parser = argparse.ArgumentParser(exit_on_error=False)
+            parser = argparse.ArgumentParser()
             parser.add_argument("--flag", default=0, type=int)
             config, ns = self.config_class.from_cli(
                 ["key=0.01", "--flag", "42"], parser=parser
@@ -1877,7 +1877,7 @@ class Utils:
             self.assertEqual(argparse.Namespace(flag=42), ns)
 
         def test_from_cli_argument_parser_with_pos_args(self):
-            parser = argparse.ArgumentParser(exit_on_error=False)
+            parser = argparse.ArgumentParser()
             parser.add_argument("positional", type=int)
             config, ns = self.config_class.from_cli(["42", "key=0.01"], parser=parser)
             self.assertDictEqual({"key": 0.01}, config.to_dict())
@@ -1902,7 +1902,7 @@ class Utils:
             self.assertDictEqual({"sub": {"key": 0.01}}, config.to_dict())
 
         def test_from_cli_argument_parser_io(self):
-            parser = argparse.ArgumentParser(exit_on_error=False)
+            parser = argparse.ArgumentParser()
             config, ns = self.config_class.from_cli(
                 ['sub={"key": 0.01}'], parser=parser, io=get_default_io()
             )
@@ -1937,7 +1937,7 @@ class Utils:
             with mock.patch("upsilonconf.io.base.open", m_open):
                 config, ns = self.config_class.from_cli(
                     ["--config", str(file_path)],
-                    parser=argparse.ArgumentParser(exit_on_error=False),
+                    parser=argparse.ArgumentParser(),
                 )
 
             m_open.assert_called_once_with(file_path, "r", encoding="utf-8")
@@ -1951,7 +1951,7 @@ class Utils:
             with mock.patch("upsilonconf.io.base.open", m_open):
                 config, ns = self.config_class.from_cli(
                     ["--config", str(file_path), "key=-0.02"],
-                    parser=argparse.ArgumentParser(exit_on_error=False),
+                    parser=argparse.ArgumentParser(),
                 )
 
             m_open.assert_called_once_with(file_path, "r", encoding="utf-8")

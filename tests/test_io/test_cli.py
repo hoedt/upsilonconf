@@ -97,7 +97,9 @@ class TestConfigParser(TestCase):
         m_open.assert_called_once_with(
             Path.cwd() / "hparam.json", "r", encoding="utf-8"
         )
-        self.assertDictEqual(Utils.CONFIG.to_dict() | {_k: v}, mapping)
+        expected = Utils.CONFIG.to_dict()
+        expected.update({_k: v})
+        self.assertDictEqual(expected, mapping)
 
     def test_parse_cli_override_twice(self):
         _k, _ = next(_as_dot_keys(Utils.CONFIG))
@@ -113,7 +115,9 @@ class TestConfigParser(TestCase):
         m_open.assert_called_once_with(
             Path.cwd() / "hparam.json", "r", encoding="utf-8"
         )
-        self.assertDictEqual(Utils.CONFIG.to_dict() | {_k: v}, mapping)
+        expected = Utils.CONFIG.to_dict()
+        expected.update({_k: v})
+        self.assertDictEqual(expected, mapping)
 
     def test_parse_cli_json(self):
         cli = ConfigParser(config_io=JSONIO())

@@ -18,10 +18,10 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: set up python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
       
@@ -41,10 +41,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: set up python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
@@ -64,15 +64,31 @@ jobs:
         exclude:
           - os: ubuntu-latest
             python-version: '3.6'
+          - os: macos-latest
+            python-version: '3.6'
+          - os: macos-latest
+            python-version: '3.7'
+          - os: macos-latest
+            python-version: '3.8'
+          - os: macos-latest
+            python-version: '3.9'
         include:
           - os: ubuntu-20.04
             python-version: '3.6'
+          - os: macos-latest-large
+            python-version: '3.6'
+          - os: macos-latest-large
+            python-version: '3.7'
+          - os: macos-latest-large
+            python-version: '3.8'
+          - os: macos-latest-large
+            python-version: '3.9'
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: set up python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
       

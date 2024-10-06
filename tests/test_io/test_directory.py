@@ -1,4 +1,6 @@
 import os
+import sys
+
 from io import StringIO
 from pathlib import Path
 from unittest import TestCase, mock
@@ -13,6 +15,11 @@ from .test_base import Utils, deprecated
 
 def fake_directory_structure(root, paths):
     root = Path(root)
+    glob_scan_dir = (
+        "pathlib._normal_accessor.scandir"
+        if sys.version_info < (3, 11)
+        else "pathlib.io.base._scandir"
+    )
 
     class _MockedScandirIterator:
         def __enter__(self):
@@ -30,7 +37,7 @@ def fake_directory_structure(root, paths):
         @mock.patch("upsilonconf.io.base.Path.iterdir")
         def wrapper(*args, **kwargs):
             *og_args, m_iterdir, m_is_dir, m_exists = args
-            with mock.patch("pathlib._normal_accessor.scandir") as m_scandir:
+            with mock.patch(glob_scan_dir) as m_scandir:
                 m_is_dir.side_effect = lambda p: p == root
                 m_exists.side_effect = lambda p: p.file_name in paths
                 m_scandir.return_value = _MockedScandirIterator()
