@@ -25,6 +25,9 @@ class TOMLIO(ConfigIO):
 
         return loads(stream.read())
 
+    def parse_value(self, val):
+        return super().parse_value(f"k={val}")["k"]
+
     @optional_dependency_to("write TOML files")
     def write_to(self, stream, conf):
         import tomlkit

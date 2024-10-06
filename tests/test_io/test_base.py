@@ -52,16 +52,40 @@ class Utils:
             data = self.io.read_from(buffer)
             self.assertDictEqual(Utils.CONFIG.to_dict(), dict(data))
 
-        def test_read_from_error(self):
-            buffer = StringIO("}bla\nbla{")
-            with self.assertRaises(ValueError):
-                self.io.read_from(buffer)
-
         def test_read_from_whitespace_key(self):
             buffer = StringIO(self.file_contents.replace("foo", "space foo"))
             data = self.io.read_from(buffer)
             ref = Utils.CONFIG.to_dict(key_mods={"foo": "space foo"})
             self.assertDictEqual(ref, dict(data))
+
+        def test_parse_value_bool(self):
+            self.assertTrue(self.io.parse_value("true"))
+            self.assertFalse(self.io.parse_value("false"))
+
+        def test_parse_value_int(self):
+            self.assertEqual(42, self.io.parse_value("42"))
+
+        def test_parse_value_float(self):
+            pi = self.io.parse_value("3.1415")
+            self.assertEqual(3.1415, pi)
+            sc = self.io.parse_value("1e-6")
+            self.assertEqual(1e-6, sc)
+
+        def test_parse_value_str(self):
+            data = self.io.parse_value('"some string"')
+            self.assertEqual(data, "some string")
+
+        def test_parse_value_seq(self):
+            data = self.io.parse_value("[1, 2, 3]")
+            self.assertSequenceEqual(data, [1, 2, 3])
+
+        def test_parse_value_map(self):
+            data = self.io.parse_value('{"a": 4, "b": 2}')
+            self.assertDictEqual(data, {"a": 4, "b": 2})
+
+        def test_parse_value_error(self):
+            with self.assertRaises(ValueError):
+                self.io.parse_value("}bla\nbla{")
 
         def test_read(self):
             m_open = mock.mock_open(read_data=self.file_contents)
@@ -404,42 +428,47 @@ class TestExtensionIO(Utils.TestConfigIO):
         with self.assertRaises(ValueError):
             self.io.default_ext = ".invalid"
 
-    def test_read_from_default_io(self):
+    def test_read_from(self):
+        buffer = StringIO(self.file_contents)
+        with self.assertRaises(TypeError):
+            self.io.read_from(buffer)
+
+    def test_read_from_whitespace_key(self):
+        buffer = StringIO(self.file_contents.replace("foo", "space foo"))
+        with self.assertRaises(TypeError):
+            self.io.read_from(buffer)
+
+    def test_parse_value_default_io(self):
         assert ".json" in self.io.extensions, "bad test setup"
-        buffer = StringIO('{"sub": {"ha": 2}}')
-        result = self.io.read_from(buffer)
+        result = self.io.parse_value('{"sub": {"ha": 2}}')
         self.assertDictEqual(result, {"sub": {"ha": 2}})
 
-    def test_read_from_secondary_io(self):
+    def test_parse_value_secondary_io(self):
         assert ".yaml" in self.io.extensions, "bad test setup"
         assert self.io.default_ext != ".yaml", "bad test setup"
-        buffer = StringIO("sub: {ha: 2}")
         with self.assertWarns(RuntimeWarning):
-            result = self.io.read_from(buffer)
+            result = self.io.parse_value("sub: {ha: 2}")
         self.assertDictEqual(result, {"sub": {"ha": 2}})
 
     def test_read_from_missing_io(self):
         assert ".toml" not in self.io.extensions, "bad test setup"
-        buffer = StringIO("[sub]\nha=2")
         with self.assertRaises(ValueError):
-            self.io.read_from(buffer)
+            self.io.parse_value("{sub={value=2}}")
 
     def test_read_from_toml_string_with_yaml(self):
         from upsilonconf.io.toml import TOMLIO
 
         io = ExtensionIO(YAMLIO(), TOMLIO())
-        buffer = StringIO("sub={ha=2}")  # NOTE: valid TOML
-        result = io.read_from(buffer)
-        self.assertEqual(result, "sub={ha=2}")
+        result = io.parse_value("{ha=2}")  # NOTE: valid TOML
+        self.assertDictEqual(result, {"ha=2": None})
 
     def test_read_from_toml_string_without_yaml(self):
         from upsilonconf.io.toml import TOMLIO
 
         io = ExtensionIO(JSONIO(), TOMLIO())
-        buffer = StringIO("sub={ha=2}")  # NOTE: valid TOML
         with self.assertWarns(RuntimeWarning):
-            result = io.read_from(buffer)
-        self.assertDictEqual(result, {"sub": {"ha": 2}})
+            result = io.parse_value("{ha=2}")
+        self.assertDictEqual(result, {"ha": 2})
 
     def test_read_unknown_ext(self):
         with self.assertRaisesRegex(ValueError, "extension"):

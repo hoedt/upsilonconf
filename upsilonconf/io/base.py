@@ -16,6 +16,8 @@ from typing import (
 if TYPE_CHECKING:
     from ..config import ConfigurationBase
 
+CONFIG_VAL_TYPE = Union[bool, int, float, str, Sequence, Mapping[str, Any]]
+
 
 class ConfigIO(ABC):
     """
@@ -23,6 +25,11 @@ class ConfigIO(ABC):
 
     .. versionadded:: 0.5.0
     """
+
+    # TODO: shouldn't encoding be part of the specific IO?
+    #       e.g. JSON proposes utf-8 as standard (https://www.rfc-editor.org/rfc/rfc8259#section-8)
+    #       e.g. YAML accepts utf-8, utf-16 and utf-32 (https://yaml.org/spec/1.2.2/#chapter-5-character-productions)
+    #       e.g. TOML explicitly requires utf-8 (https://toml.io/en/v1.0.0)
 
     @property
     @abstractmethod
@@ -56,6 +63,26 @@ class ConfigIO(ABC):
             If the implementation does not support reading from a stream.
         """
         ...
+
+    def parse_value(self, val: str) -> CONFIG_VAL_TYPE:
+        """
+        Parse string representing a value for a configuration without key.
+
+        .. versionadded:: 0.8.0
+
+        Parameters
+        ----------
+        val : str
+            The string representing the value.
+
+        Returns
+        -------
+        obj : any basic type
+            The value object represented by `val`.
+        """
+        from io import StringIO
+
+        return self.read_from(StringIO(val))
 
     def read(
         self, path: Union[Path, str], encoding: str = "utf-8"
@@ -288,15 +315,18 @@ class ExtensionIO(ConfigIO, MutableMapping[str, ConfigIO]):
         self._default_ext = ext
 
     def read_from(self, stream):
+        cls_name = self.__class__.__name__
+        raise TypeError(f"{cls_name} does not support reading from stream")
+
+    def parse_value(self, val):
         tried_ios = set()
         for ext, io in self.items():
             if io not in tried_ios:
                 try:
-                    return io.read_from(stream)
+                    return io.parse_value(val)
                 except ValueError:
-                    stream.seek(0)
                     warnings.warn(
-                        f"failed to read stream with '{ext}' IO, trying next in list",
+                        f"failed to parse value with '{ext}' IO, trying next IO",
                         RuntimeWarning,
                         stacklevel=2,
                     )
@@ -304,7 +334,7 @@ class ExtensionIO(ConfigIO, MutableMapping[str, ConfigIO]):
                     tried_ios.add(io)
 
         info = f"with extensions {self.extensions}"
-        raise ValueError(f"none of the IOs {info} could decode the stream")
+        raise ValueError(f"none of the IOs {info} could parse the value")
 
     def read(self, path, encoding="utf-8"):
         path = Path(path)

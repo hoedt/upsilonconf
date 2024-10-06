@@ -87,6 +87,35 @@ class TestDirectoryIO(TestCase):
         with self.assertRaises(TypeError):
             self.io.read_from(StringIO())
 
+    def test_parse_value_bool(self):
+        self.assertTrue(self.io.parse_value("true"))
+        self.assertFalse(self.io.parse_value("false"))
+
+    def test_parse_value_int(self):
+        self.assertEqual(42, self.io.parse_value("42"))
+
+    def test_parse_value_float(self):
+        pi = self.io.parse_value("3.1415")
+        self.assertEqual(3.1415, pi)
+        sc = self.io.parse_value("1e-6")
+        self.assertEqual(1e-6, sc)
+
+    def test_parse_value_str(self):
+        data = self.io.parse_value('"some string"')
+        self.assertEqual(data, "some string")
+
+    def test_parse_value_seq(self):
+        data = self.io.parse_value("[1, 2, 3]")
+        self.assertSequenceEqual(data, [1, 2, 3])
+
+    def test_parse_value_map(self):
+        data = self.io.parse_value('{"a": 4, "b": 2}')
+        self.assertDictEqual(data, {"a": 4, "b": 2})
+
+    def test_parse_value_error(self):
+        with self.assertRaises(ValueError):
+            self.io.parse_value("}bla\nbla{")
+
     @fake_directory_structure(path, ["config.json"])
     def test_read(self):
         m_open = mock.mock_open(read_data=self.file_contents)

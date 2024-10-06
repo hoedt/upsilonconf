@@ -22,6 +22,10 @@ class TestTOMLIO(Utils.TestConfigIO):
     def test_extensions(self):
         self.assertIn(".toml", self.io.extensions)
 
+    def test_parse_value_map(self):
+        data = self.io.parse_value("{a = 4, b = 2}")
+        self.assertDictEqual(data, {"a": 4, "b": 2})
+
     @deprecated
     def test_load_config_whitespace_key(self):
         file_contents = self.file_contents.replace("foo", "'space foo'")

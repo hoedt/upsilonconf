@@ -84,6 +84,9 @@ class DirectoryIO(ConfigIO):
         cls_name = self.__class__.__name__
         raise TypeError(f"{cls_name} does not support reading from stream")
 
+    def parse_value(self, val):
+        return self.config_io.parse_value(val)
+
     def read(self, path, encoding="utf-8"):
         try:
             base_path = next(path.glob(f"{self._file_name}.*"))

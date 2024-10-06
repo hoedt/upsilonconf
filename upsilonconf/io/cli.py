@@ -64,7 +64,7 @@ class ConfigParser:
             """Parse simple assignment expression argument."""
             key, val = s.split("=", maxsplit=1)
             try:
-                new_val = self._config_io.read_from(StringIO(val))
+                new_val = self._config_io.parse_value(val)
                 return key, new_val
             except ValueError:
                 pass

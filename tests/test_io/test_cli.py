@@ -91,7 +91,7 @@ class TestConfigParser(TestCase):
         m_open.assert_called_once_with(
             Path.cwd() / "hparam.json", "r", encoding="utf-8"
         )
-        self.assertEqual(Utils.CONFIG.to_dict() | {_k: v}, mapping)
+        self.assertDictEqual(Utils.CONFIG.to_dict() | {_k: v}, mapping)
 
     def test_parse_cli_override_twice(self):
         _k, _ = next(_as_dot_keys(Utils.CONFIG))
@@ -107,7 +107,26 @@ class TestConfigParser(TestCase):
         m_open.assert_called_once_with(
             Path.cwd() / "hparam.json", "r", encoding="utf-8"
         )
-        self.assertEqual(Utils.CONFIG.to_dict() | {_k: v}, mapping)
+        self.assertDictEqual(Utils.CONFIG.to_dict() | {_k: v}, mapping)
+
+    def test_parse_cli_json(self):
+        cli = ConfigParser(config_io=JSONIO())
+        mapping = cli.parse_cli(['key={"v1": 1, "v2": 2}'])
+        self.assertDictEqual({"key": {"v1": 1, "v2": 2}}, mapping)
+
+    def test_parse_cli_yaml(self):
+        from upsilonconf.io import YAMLIO
+
+        cli = ConfigParser(config_io=YAMLIO())
+        mapping = cli.parse_cli(["key={v1: 1, v2: 2}"])
+        self.assertDictEqual({"key": {"v1": 1, "v2": 2}}, mapping)
+
+    def test_parse_cli_toml(self):
+        from upsilonconf.io import TOMLIO
+
+        cli = ConfigParser(config_io=TOMLIO())
+        mapping = cli.parse_cli(["key={v1 = 1, v2 = 2}"])
+        self.assertDictEqual({"key": {"v1": 1, "v2": 2}}, mapping)
 
     def test_parse_cli_parser_options(self):
         parser = ArgumentParser()
