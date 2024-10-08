@@ -911,6 +911,9 @@ class FrozenConfiguration(ConfigurationBase[Hashable], Hashable):
 
     .. versionadded:: 0.7.0
 
+    .. versionchanged:: 0.8.0
+       ``set`` objects are now stored as ``frozenset`` istead of ``tuple``.
+
     See Also
     --------
     ConfigurationBase : the configuration interface.
@@ -979,7 +982,7 @@ class FrozenConfiguration(ConfigurationBase[Hashable], Hashable):
     (FrozenConfiguration(option=2), 0.9)
     """
 
-    def __init__(self, **kwargs: Union[Hashable, Collection, Mapping]):
+    def __init__(self, **kwargs: Union[Hashable, set, Sequence, Mapping]):
         for k, v in kwargs.items():
             conf, key, unresolved = self._resolve_key(k)
             conf.__dict__[key] = self._fix_value(v, unresolved)
@@ -1011,7 +1014,9 @@ class FrozenConfiguration(ConfigurationBase[Hashable], Hashable):
                 return o
             elif isinstance(o, Mapping):
                 return cls(**o)
-            elif isinstance(o, Collection):
+            elif isinstance(o, set):
+                return frozenset(o)
+            elif isinstance(o, Sequence):
                 return tuple(_make_hashable(v) for v in o)
 
             raise TypeError(f"unhashable type: '{type(o).__name__}'")

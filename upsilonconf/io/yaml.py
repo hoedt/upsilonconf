@@ -54,6 +54,7 @@ class YAMLIO(ConfigIO):
 
         import yaml
 
+        yaml.SafeDumper.add_representer(frozenset, yaml.SafeDumper.represent_set)
         yaml.SafeDumper.add_multi_representer(Mapping, yaml.SafeDumper.represent_dict)
         self._dumper = yaml.SafeDumper
         return self._dumper

@@ -34,6 +34,8 @@ class TOMLIO(ConfigIO):
 
         d = tomlkit.document()
         for k, v in conf.items():
+            if isinstance(v, (set, frozenset)):
+                v = tuple(v)  # approximate
             if isinstance(v, Mapping):
                 v = dict(v)
             d.add(k, tomlkit.item(v))

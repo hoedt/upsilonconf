@@ -2480,8 +2480,10 @@ class TestFrozenConfiguration(Utils.TestConfigurationBase):
         self.assertDictEqual({"a": (123,)}, conf.__dict__)
         conf = FrozenConfiguration(a=[123])
         self.assertDictEqual({"a": (123,)}, conf.__dict__, msg="list conversion")
+
+    def test_constructor_set(self):
         conf = FrozenConfiguration(a={123})
-        self.assertDictEqual({"a": (123,)}, conf.__dict__, msg="set conversion")
+        self.assertDictEqual({"a": frozenset({123})}, conf.__dict__)
 
     def test_constructor_unhashable(self):
         with self.assertRaisesRegex(TypeError, "unhashable"):

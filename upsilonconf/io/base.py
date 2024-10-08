@@ -16,7 +16,7 @@ from typing import (
 if TYPE_CHECKING:
     from ..config import ConfigurationBase
 
-CONFIG_VAL_TYPE = Union[bool, int, float, str, Sequence, Mapping[str, Any]]
+CONFIG_VAL_TYPE = Union[bool, int, float, str, list, Dict[str, Any]]
 
 
 class ConfigIO(ABC):

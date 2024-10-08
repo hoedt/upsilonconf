@@ -123,6 +123,18 @@ class Utils:
             buffer.seek(0)
             self.assertMultiLineEqual(self.file_contents, buffer.getvalue().rstrip())
 
+        def test_write_to_set(self):
+            buffer = StringIO()
+            self.io.write_to(buffer, {"key": {1, 2, 3}})
+            buffer.seek(0)
+            self.assertIsNot(buffer.read(), "")
+
+        def test_write_to_frozenset(self):
+            buffer = StringIO()
+            self.io.write_to(buffer, {"key": frozenset((1, 2, 3))})
+            buffer.seek(0)
+            self.assertIsNot(buffer.read(), "")
+
         def test_write(self):
             m_open = mock.mock_open()
             buffer = StringIO()
@@ -488,6 +500,16 @@ class TestExtensionIO(Utils.TestConfigIO):
         buffer = StringIO()
         with self.assertRaises(TypeError):
             self.io.write_to(buffer, Utils.CONFIG)
+
+    def test_write_to_set(self):
+        buffer = StringIO()
+        with self.assertRaises(TypeError):
+            self.io.write_to(buffer, {"key": {1, 2, 3}})
+
+    def test_write_to_frozenset(self):
+        buffer = StringIO()
+        with self.assertRaises(TypeError):
+            self.io.write_to(buffer, {"key": frozenset((1, 2, 3))})
 
     def test_write_unknown_ext(self):
         with self.assertRaisesRegex(ValueError, "extension"):

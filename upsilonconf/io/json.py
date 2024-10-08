@@ -31,6 +31,9 @@ class JSONIO(ConfigIO):
 
         class PatchedJSONEncoder(JSONEncoder):
             def default(self, o):
+                if isinstance(o, (set, frozenset)):
+                    return tuple(o)  # approximate
+
                 try:
                     return dict(**o)
                 except TypeError:
