@@ -967,10 +967,14 @@ class FrozenConfiguration(ConfigurationBase[Hashable], Hashable):
 
     >>> print(FrozenConfiguration(value=[1, 2, 3]))
     {value: (1, 2, 3)}
-    >>> print(FrozenConfiguration(value=slice(None)))
+    >>> class Unhashable:
+    ...     def __eq__(self, other):
+    ...         return False
+    ...
+    >>> print(FrozenConfiguration(value=Unhashable()))
     Traceback (most recent call last):
         ...
-    TypeError: unhashable type: 'slice'
+    TypeError: unhashable type: 'Unhashable'
 
     Frozen configurations can be used keys in a ``dict``.
 

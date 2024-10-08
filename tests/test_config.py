@@ -2487,11 +2487,15 @@ class TestFrozenConfiguration(Utils.TestConfigurationBase):
 
     def test_constructor_unhashable(self):
         with self.assertRaisesRegex(TypeError, "unhashable"):
-            FrozenConfiguration(unhashable=slice(None))
+            FrozenConfiguration(
+                unhashable=type("dummy", (), {"__eq__": lambda s, o: False})()
+            )
 
     def test_constructor_unhashable_sequence(self):
         with self.assertRaisesRegex(TypeError, "unhashable"):
-            FrozenConfiguration(unhashable=[slice(None)])
+            FrozenConfiguration(
+                unhashable=[type("dummy", (), {"__eq__": lambda s, o: False})()]
+            )
 
     # # # Immutability (consenting adults) # # #
     #
