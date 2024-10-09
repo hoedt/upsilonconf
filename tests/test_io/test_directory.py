@@ -18,7 +18,7 @@ def fake_directory_structure(root, paths):
     glob_scan_dir = (
         "pathlib._normal_accessor.scandir"
         if sys.version_info < (3, 11)
-        else "pathlib.io.base._scandir"
+        else "upsilonconf.io.base.Path._scandir"
     )
 
     class _MockedScandirIterator:
@@ -33,7 +33,7 @@ def fake_directory_structure(root, paths):
 
     def decorator(func):
         @mock.patch("upsilonconf.io.base.Path.exists")
-        @mock.patch("upsilonconf.io.base.Path.is_dir")
+        @mock.patch("upsilonconf.io.base.Path.is_dir", autospec=True)
         @mock.patch("upsilonconf.io.base.Path.iterdir")
         def wrapper(*args, **kwargs):
             *og_args, m_iterdir, m_is_dir, m_exists = args
