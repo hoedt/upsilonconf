@@ -90,6 +90,7 @@
 
         <span class="kn">import</span> <span class="nn">yaml</span>
 
+        <span class="n">yaml</span><span class="o">.</span><span class="n">SafeDumper</span><span class="o">.</span><span class="n">add_representer</span><span class="p">(</span><span class="nb">frozenset</span><span class="p">,</span> <span class="n">yaml</span><span class="o">.</span><span class="n">SafeDumper</span><span class="o">.</span><span class="n">represent_set</span><span class="p">)</span>
         <span class="n">yaml</span><span class="o">.</span><span class="n">SafeDumper</span><span class="o">.</span><span class="n">add_multi_representer</span><span class="p">(</span><span class="n">Mapping</span><span class="p">,</span> <span class="n">yaml</span><span class="o">.</span><span class="n">SafeDumper</span><span class="o">.</span><span class="n">represent_dict</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_dumper</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">SafeDumper</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dumper</span>

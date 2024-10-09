@@ -58,7 +58,6 @@
     <span class="n">Collection</span><span class="p">,</span>
     <span class="n">Hashable</span><span class="p">,</span>
     <span class="n">Sequence</span><span class="p">,</span>
-    <span class="n">Literal</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="kn">from</span> <span class="nn">.io</span> <span class="kn">import</span> <span class="n">ConfigIO</span><span class="p">,</span> <span class="n">ConfigParser</span><span class="p">,</span> <span class="n">get_default_io</span>
@@ -261,10 +260,13 @@
     <span class="c1"># # # Flat Iterators # # #</span>
 
     <span class="nd">@overload</span>
-    <span class="k">def</span> <span class="nf">keys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">flat</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="kc">False</span><span class="p">]</span> <span class="o">=</span> <span class="o">...</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">KeysView</span><span class="p">:</span> <span class="o">...</span>
+    <span class="k">def</span> <span class="nf">keys</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">KeysView</span><span class="p">:</span> <span class="o">...</span>
 
-    <span class="nd">@overload</span>
-    <span class="k">def</span> <span class="nf">keys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">flat</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="kc">True</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">FlatKeysView</span><span class="p">:</span> <span class="o">...</span>
+    <span class="c1"># @overload</span>
+    <span class="c1"># def keys(self, *, flat: Literal[False] = ...) -&gt; KeysView: ...</span>
+    <span class="c1">#</span>
+    <span class="c1"># @overload</span>
+    <span class="c1"># def keys(self, *, flat: Literal[True]) -&gt; FlatKeysView: ...</span>
 
     <span class="nd">@overload</span>
     <span class="k">def</span> <span class="nf">keys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">flat</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="o">...</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">KeysView</span><span class="p">,</span> <span class="n">FlatKeysView</span><span class="p">]:</span> <span class="o">...</span>
@@ -315,10 +317,13 @@
 
 
     <span class="nd">@overload</span>
-    <span class="k">def</span> <span class="nf">values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">flat</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="kc">False</span><span class="p">]</span> <span class="o">=</span> <span class="o">...</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ValuesView</span><span class="p">:</span> <span class="o">...</span>
+    <span class="k">def</span> <span class="nf">values</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ValuesView</span><span class="p">:</span> <span class="o">...</span>
 
-    <span class="nd">@overload</span>
-    <span class="k">def</span> <span class="nf">values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">flat</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="kc">True</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">FlatValuesView</span><span class="p">:</span> <span class="o">...</span>
+    <span class="c1"># @overload</span>
+    <span class="c1"># def values(self, *, flat: Literal[False] = ...) -&gt; ValuesView: ...</span>
+    <span class="c1">#</span>
+    <span class="c1"># @overload</span>
+    <span class="c1"># def values(self, *, flat: Literal[True]) -&gt; FlatValuesView: ...</span>
 
     <span class="nd">@overload</span>
     <span class="k">def</span> <span class="nf">values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">flat</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="o">...</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">ValuesView</span><span class="p">,</span> <span class="n">FlatValuesView</span><span class="p">]:</span> <span class="o">...</span>
@@ -369,10 +374,13 @@
 
 
     <span class="nd">@overload</span>
-    <span class="k">def</span> <span class="nf">items</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">flat</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="kc">False</span><span class="p">]</span> <span class="o">=</span> <span class="o">...</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ItemsView</span><span class="p">:</span> <span class="o">...</span>
+    <span class="k">def</span> <span class="nf">items</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ItemsView</span><span class="p">:</span> <span class="o">...</span>
 
-    <span class="nd">@overload</span>
-    <span class="k">def</span> <span class="nf">items</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">flat</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="kc">True</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">FlatItemsView</span><span class="p">:</span> <span class="o">...</span>
+    <span class="c1"># @overload</span>
+    <span class="c1"># def items(self, *, flat: Literal[False] = ...) -&gt; ItemsView: ...</span>
+    <span class="c1">#</span>
+    <span class="c1"># @overload</span>
+    <span class="c1"># def items(self, *, flat: Literal[True]) -&gt; FlatItemsView: ...</span>
 
     <span class="nd">@overload</span>
     <span class="k">def</span> <span class="nf">items</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">flat</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="o">...</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">ItemsView</span><span class="p">,</span> <span class="n">FlatItemsView</span><span class="p">]:</span> <span class="o">...</span>
@@ -989,6 +997,9 @@
 
 <span class="sd">    .. versionadded:: 0.7.0</span>
 
+<span class="sd">    .. versionchanged:: 0.8.0</span>
+<span class="sd">       ``set`` objects are now stored as ``frozenset`` istead of ``tuple``.</span>
+
 <span class="sd">    See Also</span>
 <span class="sd">    --------</span>
 <span class="sd">    ConfigurationBase : the configuration interface.</span>
@@ -1042,10 +1053,14 @@
 
 <span class="sd">    &gt;&gt;&gt; print(FrozenConfiguration(value=[1, 2, 3]))</span>
 <span class="sd">    {value: (1, 2, 3)}</span>
-<span class="sd">    &gt;&gt;&gt; print(FrozenConfiguration(value=slice(None)))</span>
+<span class="sd">    &gt;&gt;&gt; class Unhashable:</span>
+<span class="sd">    ...     def __eq__(self, other):</span>
+<span class="sd">    ...         return False</span>
+<span class="sd">    ...</span>
+<span class="sd">    &gt;&gt;&gt; print(FrozenConfiguration(value=Unhashable()))</span>
 <span class="sd">    Traceback (most recent call last):</span>
 <span class="sd">        ...</span>
-<span class="sd">    TypeError: unhashable type: &#39;slice&#39;</span>
+<span class="sd">    TypeError: unhashable type: &#39;Unhashable&#39;</span>
 
 <span class="sd">    Frozen configurations can be used keys in a ``dict``.</span>
 
@@ -1057,7 +1072,7 @@
 <span class="sd">    (FrozenConfiguration(option=2), 0.9)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Hashable</span><span class="p">,</span> <span class="n">Collection</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">]):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Hashable</span><span class="p">,</span> <span class="nb">set</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">]):</span>
         <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="n">conf</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">unresolved</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_key</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
             <span class="n">conf</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fix_value</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">unresolved</span><span class="p">)</span>
@@ -1089,7 +1104,9 @@
                 <span class="k">return</span> <span class="n">o</span>
             <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">):</span>
                 <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">o</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">Collection</span><span class="p">):</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="nb">set</span><span class="p">):</span>
+                <span class="k">return</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">o</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">):</span>
                 <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">_make_hashable</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">o</span><span class="p">)</span>
 
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;unhashable type: &#39;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">o</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>

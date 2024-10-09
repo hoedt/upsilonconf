@@ -38,7 +38,7 @@
 <h1>FrozenConfiguration<a class="headerlink" href="#frozenconfiguration" title="Link to this heading">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="upsilonconf.FrozenConfiguration">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">upsilonconf.</span></span><span class="sig-name descname"><span class="pre">FrozenConfiguration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Hashable</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Collection</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Mapping</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/upsilonconf/config.html#FrozenConfiguration"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#upsilonconf.FrozenConfiguration" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">upsilonconf.</span></span><span class="sig-name descname"><span class="pre">FrozenConfiguration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Hashable</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">set</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Sequence</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Mapping</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/upsilonconf/config.html#FrozenConfiguration"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#upsilonconf.FrozenConfiguration" title="Link to this definition">¶</a></dt>
 <dd><p>Immutable configuration.</p>
 <p><cite>FrozenConfiguration</cite> is an immutable <cite>ConfigurationBase</cite> implementation.
 This means that values can <strong>not</strong> be added, changed and/or deleted.
@@ -47,6 +47,9 @@ which means that they can be used in a <code class="docutils literal notranslate
 or serve as keys in a <code class="docutils literal notranslate"><span class="pre">dict</span></code>.</p>
 <div class="versionadded">
 <p><span class="versionmodified added">Added in version 0.7.0.</span></p>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.8.0: </span><code class="docutils literal notranslate"><span class="pre">set</span></code> objects are now stored as <code class="docutils literal notranslate"><span class="pre">frozenset</span></code> istead of <code class="docutils literal notranslate"><span class="pre">tuple</span></code>.</p>
 </div>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
@@ -104,10 +107,14 @@ or serve as keys in a <code class="docutils literal notranslate"><span class="pr
 but non-hashable types are converted if possible.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">FrozenConfiguration</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]))</span>
 <span class="go">{value: (1, 2, 3)}</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">FrozenConfiguration</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">)))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">class</span> <span class="nc">Unhashable</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+<span class="gp">... </span>        <span class="k">return</span> <span class="kc">False</span>
+<span class="gp">...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">FrozenConfiguration</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">Unhashable</span><span class="p">()))</span>
 <span class="gt">Traceback (most recent call last):</span>
 <span class="w">    </span><span class="o">...</span>
-<span class="gr">TypeError</span>: <span class="n">unhashable type: &#39;slice&#39;</span>
+<span class="gr">TypeError</span>: <span class="n">unhashable type: &#39;Unhashable&#39;</span>
 </pre></div>
 </div>
 <p>Frozen configurations can be used keys in a <code class="docutils literal notranslate"><span class="pre">dict</span></code>.</p>
